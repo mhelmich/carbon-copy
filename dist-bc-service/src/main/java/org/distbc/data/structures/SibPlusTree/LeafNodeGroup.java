@@ -11,7 +11,6 @@ import java.util.Vector;
  * - you could conceive of CAS operations and optimistic locking happening
  * - beware of the order in which you do things: everything needs to be searchable by concurrent threads
  *
- * Created by mhelmich on 10/12/16.
  */
 class LeafNodeGroup extends NodeGroup {
     List<LeafNode> nodes;

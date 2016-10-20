@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-/**
- * Created by mhelmich on 10/12/16.
- */
 class InternalNodeGroup extends NodeGroup {
     private final short level;
     private List<InternalNode> nodes;
