@@ -1,9 +1,15 @@
 package org.distbc.data.structures.SibPlusTree;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SibPlusTree {
+    private static final Logger logger = Logger.getLogger(SibPlusTree.class);
     private static final int MAX_BYTE_SIZE = 32768;
 
     private InternalNodeGroup root;
@@ -34,13 +40,16 @@ public class SibPlusTree {
     }
 
     public void put(Integer key, String value) {
-//        List<InternalNodeGroup> treeTrace = new ArrayList<>();
+        List<InternalNodeGroup> treeTrace = new ArrayList<>();
         NodeGroup ng = root;
         int offset = 0;
-        while (!(ng instanceof LeafNodeGroup)) {
+        while (ng.getLevel() > 0) {
             Pair<NodeGroup, Integer> newNGAndOffset = searchThroughInternalNodes(key, (InternalNodeGroup) ng, offset);
             ng = newNGAndOffset.getLeft();
             offset = newNGAndOffset.getRight();
+            if (ng.getLevel() > 0) {
+                treeTrace.add((InternalNodeGroup) newNGAndOffset.getLeft());
+            }
         }
 
         LeafNodeGroup leafNG = (LeafNodeGroup) ng;
@@ -52,6 +61,8 @@ public class SibPlusTree {
             // split happens..!
             // and that will likely turn into a recurse affair
             // since internal node groups must be split as well
+            logger.info(treeTrace);
+            throw new NotImplementedException("splits");
         }
     }
 
@@ -59,7 +70,7 @@ public class SibPlusTree {
         // iterative search instead of recursive
         NodeGroup ng = root;
         int offset = 0;
-        while (!(ng instanceof LeafNodeGroup)) {
+        while (ng.getLevel() > 0) {
             Pair<NodeGroup, Integer> newNGAndOffset = searchThroughInternalNodes(key, (InternalNodeGroup) ng, offset);
             ng = newNGAndOffset.getLeft();
             offset = newNGAndOffset.getRight();
