@@ -7,18 +7,19 @@ abstract class NodeGroup {
     // bitmap for full spots in the node group
     private byte[] full;
     protected short numEmptySlots;
+    protected transient int numberOfNodes;
+    protected transient int nodeSize;
 
     NodeGroup(int numberOfNodes, int nodeSize) {
-        this(numberOfNodes * nodeSize);
-    }
-
-    private NodeGroup(int size) {
-        numEmptySlots = (short) Math.min(size, Short.MAX_VALUE);
+        int bitArraySize = numberOfNodes * nodeSize;
+        numEmptySlots = (short) Math.min(bitArraySize, Short.MAX_VALUE);
         full = new byte[
-                (size % 8 == 0)
-                        ? size / 8
-                        : (size / 8) + 1
+                (bitArraySize % 8 == 0)
+                        ? bitArraySize / 8
+                        : (bitArraySize / 8) + 1
                 ];
+        this.numberOfNodes = numberOfNodes;
+        this.nodeSize = nodeSize;
     }
 
     private boolean getBit(byte bite, int pos) {
