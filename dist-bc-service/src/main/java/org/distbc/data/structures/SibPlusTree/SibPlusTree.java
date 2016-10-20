@@ -33,7 +33,7 @@ public class SibPlusTree {
         // allocate memory greedily
         root = new InternalNodeGroup((short)1, numberOfNodesInInternalNodeGroup, internalNodeSize);
         LeafNodeGroup lng = new LeafNodeGroup(numberOfNodesInLeafNodeGroup, leafNodeSize);
-        root.nodes.get(0).child = lng;
+        root.setChild(0, lng);
     }
 
     public void insert(Integer key, String value) {}
@@ -57,16 +57,16 @@ public class SibPlusTree {
     private Pair<NodeGroup, Integer> searchThroughInternalNodes(Integer key, InternalNodeGroup n, int offset) {
         for (int i = offset; i < numberOfNodesInInternalNodeGroup; i++) {
             for (int j = 0; j < internalNodeSize; j++) {
-                if (n.nodes.get(i).keys.get(j) == null) {
-                    return new ImmutablePair<>(n.nodes.get(i).child, j);
+                if (n.getKey(i, j) == null) {
+                    return new ImmutablePair<>(n.getChild(i), j);
                 }
-                int cmp = key.compareTo(n.nodes.get(i).keys.get(j));
+                int cmp = key.compareTo(n.getKey(i, j));
                 if (cmp < 0) {
                     continue;
                 } else if (cmp == 0) {
-                    return new ImmutablePair<>(n.nodes.get(i).child, j);
+                    return new ImmutablePair<>(n.getChild(i), j);
                 } else if (cmp > 0) {
-                    return new ImmutablePair<>(n.nodes.get(i).child, j - 1);
+                    return new ImmutablePair<>(n.getChild(i), j - 1);
                 }
             }
         }

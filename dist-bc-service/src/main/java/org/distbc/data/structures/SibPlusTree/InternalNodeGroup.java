@@ -9,7 +9,14 @@ import java.util.Vector;
  */
 class InternalNodeGroup extends NodeGroup {
     final short level;
-    final List<InternalNode> nodes;
+    private List<InternalNode> nodes;
+
+    // CONVENIENCE LAZY-NESS CTOR
+    // don't use in prod!!!
+    InternalNodeGroup(int level, int numberOfNodes, int nodeSize) {
+        this((short) level, numberOfNodes, nodeSize);
+    }
+
     InternalNodeGroup(short level, int numberOfNodes, int nodeSize) {
         super(numberOfNodes, nodeSize);
         this.level = level;
@@ -19,5 +26,28 @@ class InternalNodeGroup extends NodeGroup {
         for (int i = 0; i < numberOfNodes; i++) {
             nodes.set(i, new InternalNode(nodeSize));
         }
+    }
+
+    void put(int nodeIndex, int nodeOffset, Integer key) {
+    }
+
+    void delete(int nodeIndex, int nodeOffset) {
+    }
+
+    void setChild(int nodeIndex, NodeGroup child) {
+        nodes.get(nodeIndex).child = child;
+    }
+
+    NodeGroup getChild(int nodeIndex) {
+        return nodes.get(nodeIndex).child;
+    }
+
+    Integer getKey(int nodeIndex, int nodeOffset) {
+        return nodes.get(nodeIndex).keys.get(nodeOffset);
+    }
+
+    InternalNodeGroup split() {
+        InternalNodeGroup newNode = new InternalNodeGroup(level, numberOfNodes, nodeSize);
+        return newNode;
     }
 }

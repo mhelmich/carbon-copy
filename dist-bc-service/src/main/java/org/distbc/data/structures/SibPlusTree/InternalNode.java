@@ -11,7 +11,6 @@ class InternalNode extends Node {
     List<Integer> keys;
     NodeGroup child;
 
-    @SuppressWarnings("unchecked")
     InternalNode(int size) {
         Vector<Integer> v = new Vector<>(size);
         v.setSize(size);
