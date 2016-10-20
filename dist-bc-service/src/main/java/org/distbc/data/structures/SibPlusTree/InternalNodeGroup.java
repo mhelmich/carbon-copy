@@ -46,4 +46,9 @@ class InternalNodeGroup extends NodeGroup {
     Integer getKey(int nodeIndex, int nodeOffset) {
         return nodes.get(nodeIndex).keys.get(nodeOffset);
     }
+
+    @Override
+    short getLevel() {
+        return level;
+    }
 }

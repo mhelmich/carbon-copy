@@ -144,4 +144,9 @@ class LeafNodeGroup extends NodeGroup {
     String getValue(int nodeIndex, int nodeOffset) {
         return nodes.get(nodeIndex).values.get(nodeOffset);
     }
+
+    @Override
+    short getLevel() {
+        return 0;
+    }
 }

@@ -109,4 +109,6 @@ abstract class NodeGroup {
     int absolutePosition(int nodeIndex, int nodeOffset) {
         return (nodeIndex * nodeSize) + nodeOffset;
     }
+
+    abstract short getLevel();
 }
