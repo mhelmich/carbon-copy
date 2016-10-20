@@ -137,7 +137,11 @@ class LeafNodeGroup extends NodeGroup {
         return newLng;
     }
 
-    String get(int nodeIndex, int offsetWithinNode) {
-        return nodes.get(nodeIndex).values.get(offsetWithinNode);
+    Integer getKey(int nodeIndex, int nodeOffset) {
+        return nodes.get(nodeIndex).keys.get(nodeOffset);
+    }
+
+    String getValue(int nodeIndex, int nodeOffset) {
+        return nodes.get(nodeIndex).values.get(nodeOffset);
     }
 }
