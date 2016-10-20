@@ -14,8 +14,6 @@ import java.util.Vector;
  * Created by mhelmich on 10/12/16.
  */
 class LeafNodeGroup extends NodeGroup {
-    private transient final int nodeSize;
-    private transient final int numberOfNodes;
     List<LeafNode> nodes;
     LeafNodeGroup next;
     LeafNodeGroup previous;
@@ -27,8 +25,6 @@ class LeafNodeGroup extends NodeGroup {
         for (int i = 0; i < numberOfNodes; i++) {
             nodes.set(i, new LeafNode(nodeSize));
         }
-        this.nodeSize = nodeSize;
-        this.numberOfNodes = numberOfNodes;
     }
 
     private void shift(int absoluteOffsetToShiftFrom, int absoluteOffsetToShiftTo) {
