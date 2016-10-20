@@ -8,7 +8,7 @@ import java.util.Vector;
  * Created by mhelmich on 10/12/16.
  */
 class InternalNodeGroup extends NodeGroup {
-    final short level;
+    private final short level;
     private List<InternalNode> nodes;
 
     // CONVENIENCE LAZY-NESS CTOR
@@ -29,9 +29,13 @@ class InternalNodeGroup extends NodeGroup {
     }
 
     void put(int nodeIndex, int nodeOffset, Integer key) {
+        nodes.get(nodeIndex).keys.set(nodeOffset, key);
+        markFull(nodeIndex, nodeOffset);
     }
 
     void delete(int nodeIndex, int nodeOffset) {
+        nodes.get(nodeIndex).keys.set(nodeOffset, null);
+        markEmpty(nodeIndex, nodeOffset);
     }
 
     void setChild(int nodeIndex, NodeGroup child) {

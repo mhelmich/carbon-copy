@@ -1,8 +1,5 @@
 package org.distbc.data.structures.SibPlusTree;
 
-/**
- * Created by mhelmich on 10/12/16.
- */
 abstract class NodeGroup {
     // bit array for full spots in the node group
     private byte[] full;
@@ -51,9 +48,17 @@ abstract class NodeGroup {
         return bites;
     }
 
+    void markFull(int nodeIndex, int nodeOffset) {
+        markFull(absolutePosition(nodeIndex, nodeOffset));
+    }
+
     void markFull(int pos) {
         numEmptySlots--;
         setBit(full, pos, true);
+    }
+
+    void markEmpty(int nodeIndex, int nodeOffset) {
+        markEmpty(absolutePosition(nodeIndex, nodeOffset));
     }
 
     void markEmpty(int pos) {
@@ -99,5 +104,9 @@ abstract class NodeGroup {
 
     boolean hasSpace() {
         return numEmptySlots > 0;
+    }
+
+    int absolutePosition(int nodeIndex, int nodeOffset) {
+        return (nodeIndex * nodeSize) + nodeOffset;
     }
 }
