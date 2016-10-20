@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.distbc</groupId>
+        <artifactId>dist-bc</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>dist-bc-service</artifactId>
+    <packaging>jar</packaging>
+    <name>dist-bc-service</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.distbc</groupId>
+            <artifactId>dist-bc-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>co.paralleluniverse</groupId>
+            <artifactId>galaxy</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <!-- this dependency resolves a conflict between dropwizard and galaxy - keep it in!!! -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+    </dependencies>
+
+</project>
