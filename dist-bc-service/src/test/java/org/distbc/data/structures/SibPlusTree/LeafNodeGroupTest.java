@@ -10,9 +10,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by mhelmich on 10/12/16.
- */
 public class LeafNodeGroupTest {
 
     @Test
