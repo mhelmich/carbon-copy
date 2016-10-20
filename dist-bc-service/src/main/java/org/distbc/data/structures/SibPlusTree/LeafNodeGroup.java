@@ -56,7 +56,7 @@ class LeafNodeGroup extends NodeGroup {
     }
 
     private void shiftRight(int emptyNodeIndex, int emptyOffset, int toFillNodeIndex, int toFillOffset) {
-        markFull(absolutePosition(toFillNodeIndex, toFillOffset));
+        markFull(toFillNodeIndex, toFillOffset);
 
         Pair<Integer, String> spillOver;
         if (emptyNodeIndex == toFillNodeIndex) {
@@ -86,16 +86,12 @@ class LeafNodeGroup extends NodeGroup {
         }
         nodes.get(nodeIndex).put(nodeOffset, key, value);
         // FIXME: unroll this code to avoid setting the bit again
-        markFull(absolutePosition(nodeIndex, nodeOffset));
+        markFull(nodeIndex, nodeOffset);
     }
 
     void delete(int nodeIndex, int nodeOffset) {
         nodes.get(nodeIndex).put(nodeOffset, null, null);
-        markEmpty(absolutePosition(nodeIndex, nodeOffset));
-    }
-
-    protected int absolutePosition(int nodeIndex, int nodeOffset) {
-        return (nodeIndex * nodeSize) + nodeOffset;
+        markEmpty(nodeIndex, nodeOffset);
     }
 
     void merge() {}
