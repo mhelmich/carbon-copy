@@ -64,7 +64,7 @@ public class LeafNodeGroupTest {
 
         for (int i = 2; i < 11; i++) {
             assertTrue(lng.isFull(i));
-            assertEquals(keyToValue.get(i + 9), lng.get(i / nodeSize, i % nodeSize));
+            assertEquals(keyToValue.get(i + 9), lng.getValue(i / nodeSize, i % nodeSize));
         }
 
         for (int i = 11; i <= 12; i++) {
@@ -97,7 +97,7 @@ public class LeafNodeGroupTest {
 
         for (int i = 2; i < 11; i++) {
             assertTrue(lng.isFull(i));
-            assertEquals(keyToValue.get(i + 9), lng.get(i / nodeSize, i % nodeSize));
+            assertEquals(keyToValue.get(i + 9), lng.getValue(i / nodeSize, i % nodeSize));
         }
 
         for (int i = 11; i <= 12; i++) {
@@ -112,8 +112,8 @@ public class LeafNodeGroupTest {
         String value = UUID.randomUUID().toString();
         lng.put(0, offset, key, value);
         assertTrue(lng.isFull(lng.absolutePosition(2, 2)));
-        assertEquals(value, lng.get(0, offset));
-        assertEquals(keyToValue.get(16), lng.get(2, 2));
+        assertEquals(value, lng.getValue(0, offset));
+        assertEquals(keyToValue.get(16), lng.getValue(2, 2));
     }
 
     @Test
@@ -159,7 +159,7 @@ public class LeafNodeGroupTest {
         lng.put(0, offset, key1, value1);
         assertOnValueAtPosition(lng, 0, offset, key1, value1);
 
-        assertEquals(value1, lng.get(0, offset));
+        assertEquals(value1, lng.getValue(0, offset));
         assertTrue(lng.isFull(lng.absolutePosition(0, offset)));
 
         lng.delete(0, offset);
@@ -202,10 +202,10 @@ public class LeafNodeGroupTest {
         int lowestKey = 19 - (nodeSize * numNodes) + 1;
         for (int i = 0; i < nodeSize * numNodes; i++) {
             if (i < nodeSize) {
-                assertEquals(keysToValue.get(lowestKey + i), oldNode.get(0, i));
+                assertEquals(keysToValue.get(lowestKey + i), oldNode.getValue(0, i));
             } else {
                 int absoluteOffset = i - nodeSize;
-                assertEquals(keysToValue.get(lowestKey + i), newNode.get(absoluteOffset / nodeSize, absoluteOffset % nodeSize));
+                assertEquals(keysToValue.get(lowestKey + i), newNode.getValue(absoluteOffset / nodeSize, absoluteOffset % nodeSize));
             }
         }
 

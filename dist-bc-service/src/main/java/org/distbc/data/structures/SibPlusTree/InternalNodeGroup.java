@@ -46,9 +46,4 @@ class InternalNodeGroup extends NodeGroup {
     Integer getKey(int nodeIndex, int nodeOffset) {
         return nodes.get(nodeIndex).keys.get(nodeOffset);
     }
-
-    InternalNodeGroup split() {
-        InternalNodeGroup newNode = new InternalNodeGroup(level, numberOfNodes, nodeSize);
-        return newNode;
-    }
 }

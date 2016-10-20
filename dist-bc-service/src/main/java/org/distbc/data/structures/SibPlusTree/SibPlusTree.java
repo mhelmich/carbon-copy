@@ -3,9 +3,6 @@ package org.distbc.data.structures.SibPlusTree;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-/**
- * Created by mhelmich on 10/12/16.
- */
 public class SibPlusTree {
     private static final int MAX_BYTE_SIZE = 32768;
 
@@ -36,8 +33,27 @@ public class SibPlusTree {
         root.setChild(0, lng);
     }
 
-    public void insert(Integer key, String value) {}
-    public void put(Integer key, String value) {}
+    public void put(Integer key, String value) {
+//        List<InternalNodeGroup> treeTrace = new ArrayList<>();
+        NodeGroup ng = root;
+        int offset = 0;
+        while (!(ng instanceof LeafNodeGroup)) {
+            Pair<NodeGroup, Integer> newNGAndOffset = searchThroughInternalNodes(key, (InternalNodeGroup) ng, offset);
+            ng = newNGAndOffset.getLeft();
+            offset = newNGAndOffset.getRight();
+        }
+
+        LeafNodeGroup leafNG = (LeafNodeGroup) ng;
+        int withinNodeOffset = searchInLeafNodeGroup(key, leafNG, offset);
+
+        if (leafNG.hasSpace()) {
+            leafNG.put(offset, withinNodeOffset, key, value);
+        } else {
+            // split happens..!
+            // and that will likely turn into a recurse affair
+            // since internal node groups must be split as well
+        }
+    }
 
     public String search(Integer key) {
         // iterative search instead of recursive
@@ -51,7 +67,7 @@ public class SibPlusTree {
 
         LeafNodeGroup leafNG = (LeafNodeGroup) ng;
         int withinNodeOffset = searchInLeafNodeGroup(key, leafNG, offset);
-        return leafNG.nodes.get(offset).values.get(withinNodeOffset);
+        return leafNG.getValue(offset, withinNodeOffset);
     }
 
     private Pair<NodeGroup, Integer> searchThroughInternalNodes(Integer key, InternalNodeGroup n, int offset) {
@@ -78,11 +94,11 @@ public class SibPlusTree {
     private int searchInLeafNodeGroup(Integer key, LeafNodeGroup n, int offset) {
         for (int i = offset; i < numberOfNodesInLeafNodeGroup; i++) {
             for (int j = 0; j < leafNodeSize; j++) {
-                if (n.nodes.get(i).keys.get(j) == null) {
+                if (n.getKey(i, j) == null) {
                     return j;
                 }
 
-                int cmp = key.compareTo(n.nodes.get(i).keys.get(j));
+                int cmp = key.compareTo(n.getKey(i, j));
                 if (cmp < 0) {
                     continue;
                 } else if (cmp == 0) {
