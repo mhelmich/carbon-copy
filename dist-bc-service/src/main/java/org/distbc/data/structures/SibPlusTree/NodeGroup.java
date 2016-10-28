@@ -111,4 +111,6 @@ abstract class NodeGroup {
     }
 
     abstract short getLevel();
+
+    abstract Integer getKey(int nodeIndex, int nodeOffset);
 }

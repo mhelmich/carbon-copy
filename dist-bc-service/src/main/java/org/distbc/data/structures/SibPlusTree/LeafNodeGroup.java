@@ -3,6 +3,7 @@ package org.distbc.data.structures.SibPlusTree;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
@@ -95,6 +96,10 @@ class LeafNodeGroup extends NodeGroup {
 
     void merge() {}
 
+    /**
+     * TODO: in a later version I could experiment with different spacing algorithms
+     *       - not packing everything to the left but distribute it sparsely
+     */
     LeafNodeGroup split() {
         // splitting works in a way that the right half of a node group
         // moves to the be left half of a node group in the new node
@@ -137,8 +142,9 @@ class LeafNodeGroup extends NodeGroup {
         return newLng;
     }
 
+    @Override
     Integer getKey(int nodeIndex, int nodeOffset) {
-        return nodes.get(nodeIndex).keys.get(nodeOffset);
+        return nodes.get(nodeIndex).getKey(nodeOffset);
     }
 
     String getValue(int nodeIndex, int nodeOffset) {
@@ -148,5 +154,13 @@ class LeafNodeGroup extends NodeGroup {
     @Override
     short getLevel() {
         return 0;
+    }
+
+    List<Integer> getHighestKeys() {
+        List<Integer> l = new LinkedList<>();
+        // this might be more complicated
+        // assuming there will be nulls in the
+        nodes.forEach(n -> l.add(n.getKey(n.keys.size() - 1)));
+        return l;
     }
 }
