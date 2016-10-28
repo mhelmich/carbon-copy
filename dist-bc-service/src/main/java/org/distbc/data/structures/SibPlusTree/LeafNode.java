@@ -37,7 +37,11 @@ class LeafNode extends Node {
         put(offset, null, null);
     }
 
-    String get(Integer key) {
+    Integer getKey(int nodeOffset) {
+        return keys.get(nodeOffset);
+    }
+
+    String getValue(Integer key) {
         int index = keys.indexOf(key);
         if (index > 0) {
             return values.get(index);
