@@ -20,6 +20,13 @@
             <groupId>co.paralleluniverse</groupId>
             <artifactId>galaxy</artifactId>
             <version>1.4</version>
+            <exclusions>
+                <!-- I'm going with logback and exclude the log4j bridge -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>log4j-over-slf4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- this dependency resolves a conflict between dropwizard and galaxy - keep it in!!! -->
         <dependency>
