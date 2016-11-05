@@ -44,21 +44,21 @@ class LeafNodeGroup extends NodeGroup {
         // TODO: actually make this work and test this
         Pair<Integer, String> spillOver;
         if (emptyNodeIndex == toFillNodeIndex) {
-            spillOver = nodes.get(emptyNodeIndex).shiftLeft(emptyOffset, toFillOffset, null, null);
+            spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, toFillOffset, null, null);
         } else {
-            spillOver = nodes.get(emptyNodeIndex).shiftLeft(emptyOffset, 0, null, null);
+            spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, 0, null, null);
         }
 
         Integer spillOverKey = spillOver.getLeft();
         String spillOverValue = spillOver.getRight();
         for (int i = emptyNodeIndex -1; i > toFillNodeIndex && i > 0; i--) {
-            spillOver = nodes.get(i).shiftLeft(nodes.get(i).keys.size() -1, 0, spillOverKey, spillOverValue);
+            spillOver = nodes.get(i).shift(nodes.get(i).keys.size() -1, 0, spillOverKey, spillOverValue);
             spillOverKey = spillOver.getLeft();
             spillOverValue = spillOver.getRight();
         }
 
         if (emptyNodeIndex != toFillNodeIndex) {
-            nodes.get(toFillNodeIndex).shiftLeft(emptyOffset, 0, spillOverKey, spillOverValue);
+            nodes.get(toFillNodeIndex).shift(emptyOffset, 0, spillOverKey, spillOverValue);
         }
     }
 
@@ -67,21 +67,21 @@ class LeafNodeGroup extends NodeGroup {
 
         Pair<Integer, String> spillOver;
         if (emptyNodeIndex == toFillNodeIndex) {
-            spillOver = nodes.get(emptyNodeIndex).shiftRight(emptyOffset, toFillOffset, null, null);
+            spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, toFillOffset, null, null);
         } else {
-            spillOver = nodes.get(emptyNodeIndex).shiftRight(emptyOffset, nodes.get(emptyNodeIndex).keys.size() -1, null, null);
+            spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, nodes.get(emptyNodeIndex).keys.size() -1, null, null);
         }
 
         Integer spillOverKey = spillOver.getLeft();
         String spillOverValue = spillOver.getRight();
         for (int i = emptyNodeIndex +1; i < toFillNodeIndex && i < nodes.size(); i++) {
-            spillOver = nodes.get(i).shiftRight(0, nodes.get(i).keys.size() -1, spillOverKey, spillOverValue);
+            spillOver = nodes.get(i).shift(0, nodes.get(i).keys.size() -1, spillOverKey, spillOverValue);
             spillOverKey = spillOver.getLeft();
             spillOverValue = spillOver.getRight();
         }
 
         if (emptyNodeIndex != toFillNodeIndex) {
-            nodes.get(toFillNodeIndex).shiftRight(0, toFillOffset, spillOverKey, spillOverValue);
+            nodes.get(toFillNodeIndex).shift(0, toFillOffset, spillOverKey, spillOverValue);
         }
     }
 

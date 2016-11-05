@@ -50,19 +50,11 @@ class LeafNode extends Node {
         return null;
     }
 
-    Pair<Integer, String> shiftLeft(int from, int to, Integer fillInKey, String fillInValue) {
-        Integer firstKey = keys.remove(to);
-        String firstValue = values.remove(to);
+    Pair<Integer, String> shift(int from, int to, Integer fillInKey, String fillInValue) {
+        Integer carryOverKey = keys.remove(to);
+        String carryOverValue = values.remove(to);
         keys.add(from, fillInKey);
         values.add(from, fillInValue);
-        return new ImmutablePair<>(firstKey, firstValue);
-    }
-
-    Pair<Integer, String> shiftRight(int from, int to, Integer fillInKey, String fillInValue) {
-        Integer lastKey = keys.remove(to);
-        String lastValue = values.remove(to);
-        keys.add(from, fillInKey);
-        values.add(from, fillInValue);
-        return new ImmutablePair<>(lastKey, lastValue);
+        return new ImmutablePair<>(carryOverKey, carryOverValue);
     }
 }
