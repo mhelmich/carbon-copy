@@ -3,7 +3,6 @@ package org.distbc.data.structures.SibPlusTree;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
@@ -41,17 +40,25 @@ class LeafNodeGroup extends NodeGroup {
     }
 
     private void shiftLeft(int emptyNodeIndex, int emptyOffset, int toFillNodeIndex, int toFillOffset) {
+        markFull(toFillNodeIndex, toFillOffset);
         // TODO: actually make this work and test this
-        Pair<Integer, String> spillOver = nodes.get(emptyNodeIndex).shiftLeft(emptyOffset, nodes.get(emptyNodeIndex).keys.size() -1, null, null);
+        Pair<Integer, String> spillOver;
+        if (emptyNodeIndex == toFillNodeIndex) {
+            spillOver = nodes.get(emptyNodeIndex).shiftLeft(emptyOffset, toFillOffset, null, null);
+        } else {
+            spillOver = nodes.get(emptyNodeIndex).shiftLeft(emptyOffset, 0, null, null);
+        }
+
         Integer spillOverKey = spillOver.getLeft();
         String spillOverValue = spillOver.getRight();
-        for (int i = emptyNodeIndex +1; i < toFillNodeIndex && i < nodes.size(); i++) {
-            spillOver = nodes.get(i).shiftLeft(0, nodes.get(i).keys.size() -1, spillOverKey, spillOverValue);
+        for (int i = emptyNodeIndex -1; i > toFillNodeIndex && i > 0; i--) {
+            spillOver = nodes.get(i).shiftLeft(nodes.get(i).keys.size() -1, 0, spillOverKey, spillOverValue);
             spillOverKey = spillOver.getLeft();
             spillOverValue = spillOver.getRight();
         }
+
         if (emptyNodeIndex != toFillNodeIndex) {
-            nodes.get(toFillNodeIndex).shiftLeft(0, toFillOffset, spillOverKey, spillOverValue);
+            nodes.get(toFillNodeIndex).shiftLeft(emptyOffset, 0, spillOverKey, spillOverValue);
         }
     }
 
@@ -156,8 +163,11 @@ class LeafNodeGroup extends NodeGroup {
         return 0;
     }
 
+    @Override
     List<Integer> getHighestKeys() {
-        List<Integer> l = new LinkedList<>();
+        // array lists can contain nulls
+        // linked lists can't -- thanks java
+        List<Integer> l = new ArrayList<>(nodes.size());
         // this might be more complicated
         // assuming there will be nulls in the
         nodes.forEach(n -> l.add(n.getKey(n.keys.size() - 1)));

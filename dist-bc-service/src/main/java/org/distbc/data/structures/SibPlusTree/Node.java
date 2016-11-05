@@ -28,4 +28,6 @@ abstract class Node {
         bites[pos / 8] = newBite;
         return bites;
     }
+
+    abstract Integer getKey(int nodeOffset);
 }

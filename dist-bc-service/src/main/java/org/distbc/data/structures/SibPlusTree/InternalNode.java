@@ -13,4 +13,9 @@ class InternalNode extends Node {
         v.setSize(size);
         keys = new ArrayList<>(v);
     }
+
+    @Override
+    Integer getKey(int nodeOffset) {
+        return keys.get(nodeOffset);
+    }
 }
