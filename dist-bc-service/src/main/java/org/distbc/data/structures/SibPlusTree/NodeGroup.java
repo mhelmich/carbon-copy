@@ -1,5 +1,7 @@
 package org.distbc.data.structures.SibPlusTree;
 
+import java.util.List;
+
 abstract class NodeGroup {
     // bit array for full spots in the node group
     private byte[] full;
@@ -84,18 +86,15 @@ abstract class NodeGroup {
         if (!getBit(full, position)) return position;
 
         int offsetFromPosition = 1;
-        while ((position + offsetFromPosition) < (full.length * 8)
+        while ((position + offsetFromPosition) < (numberOfNodes * nodeSize)
                 || (position - offsetFromPosition) >= 0) {
-            if ((position + offsetFromPosition) < (full.length * 8) && !getBit(full, (position + offsetFromPosition))) {
+            if ((position + offsetFromPosition) < (numberOfNodes * nodeSize) && !getBit(full, (position + offsetFromPosition))) {
                 return position + offsetFromPosition;
             }
 
-            // TODO
-            // this would enable search in both directions
-            // right now code is not written for this so I commented it out
-//            if ((position - offsetFromPosition >= 0) && !getBit(full, (position - offsetFromPosition))) {
-//                return position - offsetFromPosition;
-//            }
+            if ((position - offsetFromPosition >= 0) && !getBit(full, (position - offsetFromPosition))) {
+                return position - offsetFromPosition;
+            }
             offsetFromPosition++;
         }
 
@@ -113,4 +112,6 @@ abstract class NodeGroup {
     abstract short getLevel();
 
     abstract Integer getKey(int nodeIndex, int nodeOffset);
+
+    abstract List<Integer> getHighestKeys();
 }

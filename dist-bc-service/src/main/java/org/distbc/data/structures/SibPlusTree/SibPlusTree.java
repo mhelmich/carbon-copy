@@ -51,11 +51,13 @@ public class SibPlusTree {
         }
 
         LeafNodeGroup leafNG = (LeafNodeGroup) ng;
-        int withinNodeOffset = searchInLeafNodeGroup(key, leafNG, offset);
 
         if (leafNG.hasSpace()) {
+            Pair<Integer, Integer> nodeIndexAndOffset = searchInLeafNodeGroup(key, leafNG, offset);
+            int nodeIndex = nodeIndexAndOffset.getLeft();
+            int nodeOffset = nodeIndexAndOffset.getRight();
             // the easy case, we just drop the new key into the leaf node group
-            leafNG.put(offset, withinNodeOffset, key, value);
+            leafNG.put(nodeIndex, nodeOffset, key, value);
             List<Integer> highestKeysLeaf = leafNG.getHighestKeys();
             // there will always be a parent...always
             InternalNodeGroup parent = treeTrace.get(treeTrace.size() - 1).getLeft();
@@ -64,7 +66,7 @@ public class SibPlusTree {
             if (treeTrace.size() > 1) {
                 InternalNodeGroup grandParent = treeTrace.get(treeTrace.size() - 2).getLeft();
                 int grandParentOffset = treeTrace.get(treeTrace.size() - 2).getRight();
-                Integer highestKey = highestKeysLeaf.get(highestKeysLeaf.size());
+                Integer highestKey = highestKeysLeaf.get(highestKeysLeaf.size() - 1);
                 applyHighestKeysToGrandParent(grandParent, grandParentOffset, highestKey);
             }
         } else {
@@ -109,12 +111,13 @@ public class SibPlusTree {
         }
     }
 
-    private void applyHighestKeysToParent(InternalNodeGroup ng, int nodeIndex, List<Integer> highestKeys) {
-
+    private void applyHighestKeysToParent(InternalNodeGroup parent, int nodeIndex, List<Integer> highestKeys) {
+        for (int i = 0; i < highestKeys.size() - 1; i++) {
+            parent.setKey(nodeIndex, i, highestKeys.get(i));
+        }
     }
 
     private void applyHighestKeysToGrandParent(InternalNodeGroup ng, int nodeIndex, Integer highestKey) {
-
     }
 
     private Integer searchInsertPosition(Integer key, InternalNodeGroup n, int offset) {
@@ -147,7 +150,8 @@ public class SibPlusTree {
         // we arrive at the bottom and have a safe cast
         // yes, this better be safe!
         LeafNodeGroup leafNG = (LeafNodeGroup) ng;
-        int withinNodeOffset = searchInLeafNodeGroup(key, leafNG, offset);
+        Pair<Integer, Integer> nodeIndexAndOffset = searchInLeafNodeGroup(key, leafNG, offset);
+        int withinNodeOffset = nodeIndexAndOffset.getRight();
         return leafNG.getValue(offset, withinNodeOffset);
     }
 
@@ -155,7 +159,18 @@ public class SibPlusTree {
         for (int i = offset; i < numberOfNodesInInternalNodeGroup; i++) {
             for (int j = 0; j < internalNodeSize; j++) {
                 if (n.getKey(i, j) == null) {
-                    return new ImmutablePair<>(n.getChild(i), j);
+                    // in case this happens, I need the previous key
+                    if (i == 0 && j == 0) {
+                        // if we're at the very beginning, just return inception
+                        return new ImmutablePair<>(n.getChild(i), j);
+                    } else if (j == 0) {
+                        // if i != 0 && j == 0
+                        // that means the previous key is the last key in the previous node
+                        return new ImmutablePair<>(n.getChild(i - 1), internalNodeSize);
+                    } else {
+                        // in any other cases the previous key is just the previous key :)
+                        return new ImmutablePair<>(n.getChild(i), j - 1);
+                    }
                 }
                 int cmp = key.compareTo(n.getKey(i, j));
                 if (cmp <= 0) {
@@ -168,16 +183,16 @@ public class SibPlusTree {
         throw new IllegalStateException("Can't do anything with the key you gave me");
     }
 
-    private int searchInLeafNodeGroup(Integer key, LeafNodeGroup n, int offset) {
+    private Pair<Integer, Integer> searchInLeafNodeGroup(Integer key, LeafNodeGroup n, int offset) {
         for (int i = offset; i < numberOfNodesInLeafNodeGroup; i++) {
             for (int j = 0; j < leafNodeSize; j++) {
                 if (n.getKey(i, j) == null) {
-                    return j;
+                    return Pair.of(i, j);
                 }
 
                 int cmp = key.compareTo(n.getKey(i, j));
                 if (cmp <= 0) {
-                    return j;
+                    return Pair.of(i, j);
                 }
             }
         }

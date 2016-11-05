@@ -48,8 +48,21 @@ class InternalNodeGroup extends NodeGroup {
         return nodes.get(nodeIndex).keys.get(nodeOffset);
     }
 
+    void setKey(int nodeIndex, int nodeOffset, Integer key) {
+        nodes.get(nodeIndex).keys.set(nodeOffset, key);
+    }
+
     @Override
     short getLevel() {
         return level;
+    }
+
+    @Override
+    List<Integer> getHighestKeys() {
+        List<Integer> l = new ArrayList<>(nodes.size());
+        // this might be more complicated
+        // assuming there will be nulls in the
+        nodes.forEach(n -> l.add(n.getKey(n.keys.size() - 1)));
+        return l;
     }
 }
