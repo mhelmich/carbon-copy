@@ -1,7 +1,8 @@
 package org.distbc.data.structures.SibPlusTree;
 
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -13,6 +14,12 @@ import static org.junit.Assert.assertEquals;
 public class SibPlusTreeTest {
 
     private static final Logger logger = Logger.getLogger(SibPlusTreeTest.class);
+
+    @Before
+    public void before() {
+        // FIXME: configure a proper log4j.properties
+        BasicConfigurator.configure();
+    }
 
     @Test
     public void testBasic() throws Exception {
@@ -43,17 +50,16 @@ public class SibPlusTreeTest {
     }
 
     @Test
-    @Ignore
     public void testSplit() throws Exception {
         SibPlusTree tree = new SibPlusTree();
         int count = 2000;
         List<String> values = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            String value = UUID.randomUUID().toString();
+            String value = String.valueOf(i);
             values.add(value);
             logger.info("inserting object #" + i);
             tree.put(i, value);
-//            assertEquals(value, tree.search(i));
+            assertEquals(value, tree.search(i));
         }
 
         assertEquals(count, values.size());

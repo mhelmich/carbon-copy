@@ -159,7 +159,8 @@ public class SibPlusTree {
         for (int i = offset; i < numberOfNodesInInternalNodeGroup; i++) {
             for (int j = 0; j < internalNodeSize; j++) {
                 if (n.getKey(i, j) == null) {
-                    // in case this happens, I need the previous key
+                    // in case this happens, we verified all previous keys
+                    // but all of them were smaller than what we're looking for
                     if (i == 0 && j == 0) {
                         // if we're at the very beginning, just return inception
                         return new ImmutablePair<>(n.getChild(i), j);
@@ -169,7 +170,7 @@ public class SibPlusTree {
                         return new ImmutablePair<>(n.getChild(i - 1), internalNodeSize);
                     } else {
                         // in any other cases the previous key is just the previous key :)
-                        return new ImmutablePair<>(n.getChild(i), j - 1);
+                        return new ImmutablePair<>(n.getChild(i), j);
                     }
                 }
                 int cmp = key.compareTo(n.getKey(i, j));
