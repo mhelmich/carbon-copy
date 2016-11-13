@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class LeafNodeGroupTest {
@@ -301,6 +302,9 @@ public class LeafNodeGroupTest {
             } else {
                 assertFalse(oldNode.isFull(i));
             }
+            // this insured indirectly that the keys array
+            // has enough entries and none of them are null
+            assertNotNull(oldNode.getHighestKeys());
         }
         // verify the new node
         for (int i = 0; i < numNodes * nodeSize; i++) {
@@ -309,6 +313,7 @@ public class LeafNodeGroupTest {
             } else {
                 assertFalse(newNode.isFull(i));
             }
+            assertNotNull(newNode.getHighestKeys());
         }
     }
 

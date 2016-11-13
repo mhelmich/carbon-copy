@@ -24,14 +24,20 @@ class LeafNodeGroup extends NodeGroup {
     private LeafNodeGroup next;
     private LeafNodeGroup previous;
     LeafNodeGroup(int numberOfNodes, int nodeSize) {
+        this(numberOfNodes, nodeSize, true);
+    }
+
+    private LeafNodeGroup(int numberOfNodes, int nodeSize, boolean init) {
         super(numberOfNodes, nodeSize);
-        // the vector allows to extend the underlying array
-        // ArrayLists don't do that for me
-        Vector<LeafNode> v = new Vector<>(numberOfNodes);
-        v.setSize(numberOfNodes);
-        this.nodes = new ArrayList<>(v);
-        for (int i = 0; i < numberOfNodes; i++) {
-            nodes.set(i, new LeafNode(nodeSize));
+        if (init) {
+            // the vector allows to extend the underlying array
+            // ArrayLists don't do that for me
+            Vector<LeafNode> v = new Vector<>(numberOfNodes);
+            v.setSize(numberOfNodes);
+            this.nodes = new ArrayList<>(v);
+            for (int i = 0; i < numberOfNodes; i++) {
+                nodes.set(i, new LeafNode(nodeSize));
+            }
         }
     }
 
@@ -132,16 +138,22 @@ class LeafNodeGroup extends NodeGroup {
         // that might work well because we generally shift values to the right
 
         // we always split to the right
-        LeafNodeGroup newLng = new LeafNodeGroup(numberOfNodes, nodeSize);
+        LeafNodeGroup newLng = new LeafNodeGroup(numberOfNodes, nodeSize, false);
         // number of nodes could be odd as well
         // in that case the right split node group has one more node
         int splitNodeIndex = numberOfNodes / 2;
         int numNodesMovedToTheNewNode = nodes.size() - splitNodeIndex;
 
         // create node data structure
-        Vector<LeafNode> v = new Vector<>(nodes.subList(splitNodeIndex, nodes.size()));
-        v.setSize(numberOfNodes);
-        newLng.nodes = new ArrayList<>(v);
+        List<LeafNode> oldNodesList = nodes.subList(0, splitNodeIndex);
+        List<LeafNode> newNodesList = nodes.subList(splitNodeIndex, nodes.size());
+
+        oldNodesList = createNodeList(oldNodesList, numberOfNodes);
+        newNodesList = createNodeList(newNodesList, numberOfNodes);
+
+        this.nodes = oldNodesList;
+        newLng.nodes = newNodesList;
+
         // set full bits
         for (int i = 0; i < numNodesMovedToTheNewNode * nodeSize; i++) {
             newLng.markFull(i);
@@ -168,6 +180,16 @@ class LeafNodeGroup extends NodeGroup {
         return newLng;
     }
 
+    private List<LeafNode> createNodeList(List<LeafNode> nodesList, int numberOfNodes) {
+        Vector<LeafNode> v = new Vector<>(nodesList);
+        v.setSize(numberOfNodes);
+        // fill all fields with leaf nodes
+        for (int i = nodesList.size(); i < numberOfNodes; i++) {
+            v.set(i, new LeafNode(nodeSize));
+        }
+        return new ArrayList<>(v);
+    }
+
     @Override
     Integer getKey(int nodeIndex, int nodeOffset) {
         return nodes.get(nodeIndex).getKey(nodeOffset);
@@ -188,7 +210,7 @@ class LeafNodeGroup extends NodeGroup {
         // linked lists can't -- thanks java
         List<Integer> l = new ArrayList<>(nodes.size());
         // this might be more complicated
-        // assuming there will be nulls in the
+        // assuming there will be nulls in the list
         nodes.forEach(n -> l.add(n.getKey(n.keys.size() - 1)));
         return l;
     }
