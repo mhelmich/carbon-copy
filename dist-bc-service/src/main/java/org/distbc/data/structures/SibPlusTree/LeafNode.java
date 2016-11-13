@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Vector;
 
 /**
- * Created by mhelmich on 10/12/16.
+ * Leaf node of the sib tree.
+ * This contains all keys and values and pointers to the siblings.
+ * When traversing value comparison might spill into sibling nodes due to
+ * concurrent update or inserts.
  */
 class LeafNode extends Node {
     // array of key value
@@ -17,8 +20,9 @@ class LeafNode extends Node {
     LeafNode next;
     LeafNode previous;
 
-    @SuppressWarnings("unchecked")
     LeafNode(int size) {
+        // a vector is synchronized array
+        // but for a vector you can specify a size
         Vector<Integer> v1 = new Vector<>(size);
         v1.setSize(size);
         keys = new ArrayList<>(v1);

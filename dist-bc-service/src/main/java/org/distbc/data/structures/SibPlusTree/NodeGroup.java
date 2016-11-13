@@ -14,17 +14,28 @@ abstract class NodeGroup {
     transient int nodeSize;
 
     NodeGroup(int numberOfNodes, int nodeSize) {
-        int bitArraySize = numberOfNodes * nodeSize;
-        numEmptySlots = (short) Math.min(bitArraySize, Short.MAX_VALUE);
+        int numBitsNecessary = numberOfNodes * nodeSize;
+        numEmptySlots = (short) Math.min(numBitsNecessary, Short.MAX_VALUE);
+        // one byte is eight bits (yes, just like in your CS101)
+        // if numBitsNecessary mod 8 has no remainder, we just need as many bytes
+        // and the division results in zero
+        // if there is a remainder, we need one more byte
+        // this might result in empty bits at the end but a byte is the smallest data type
         full = new byte[
-                (bitArraySize % 8 == 0)
-                        ? bitArraySize / 8
-                        : (bitArraySize / 8) + 1
+                (numBitsNecessary % 8 == 0)
+                        ? numBitsNecessary / 8
+                        : (numBitsNecessary / 8) + 1
                 ];
         this.numberOfNodes = numberOfNodes;
         this.nodeSize = nodeSize;
     }
 
+    ///////////////////////////////////////////////
+    ////////////////////////////////////
+    //// This family of methods does black magic on byte arrays.
+    // They interpret the byte array as a series of bits and flip each bit
+    // separately to mark a particular slot in the node group as occupied or not.
+    // These methods are the basis for all methods
     private boolean getBit(byte bite, int pos) {
         return (bite & (1 << (pos % 8))) != 0;
     }
@@ -72,16 +83,17 @@ abstract class NodeGroup {
         return getBit(full, pos);
     }
 
-    // TODO: convince Marco to finally toss this code away
-//        protected int getNextEmptyAfterPosInSameNode(int numNode, int positionInNode) {
-//            int ceiling = (numNode + 1) * nodeSize;
-//            int floor = (numNode * nodeSize) + positionInNode;
-//            for (int i = ceiling; i > floor; i--) {
-//                if (!getBit(full, i)) return Math.max(i - 1, 0);
-//            }
-//            return -1;
-//        }
-
+    /**
+     * Returns the index of the closest empty slot in this node group.
+     * "Closest" can be either on the left or right side of position (which is meant
+     * to say "desired position" really).
+     *
+     * If there are two empty slots with the same distance to position,
+     * it will return the empty slot with the greater index (aka to the right of position).
+     *
+     * @param position
+     * @return
+     */
     int findClosestEmptySlotFrom(int position) {
         if (!getBit(full, position)) return position;
 

@@ -312,11 +312,13 @@ public class LeafNodeGroupTest {
         }
     }
 
+    // this includes filling the index/offset you specify
     private void fillRightFrom(LeafNodeGroup lng, int nodeIndex, int nodeOffset) {
         // -1 converts from sizes to indexes
         fill(lng, nodeIndex, nodeOffset, lng.numberOfNodes -1, lng.nodeSize -1);
     }
 
+    // this includes filling the index/offset you specify
     private void fillLeftFrom(LeafNodeGroup lng, int nodeIndex, int nodeOffset) {
         fill(lng, 0, 0, nodeIndex, nodeOffset);
     }
