@@ -7,17 +7,26 @@ import java.util.List;
 import java.util.Vector;
 
 /**
+ * An entire leaf node group identified by being on level zero of the tree.
+ * This is merely a container for several LeafNodes providing surrounding
+ * logic for shifting (and hence packing) data into nodes and node groups.
+ *
+ * They also implement splits on their level. Much of the black magic related to
+ * tree house-keeping happens in this class.
+ *
  * TODO: make this thread-safe / multi thread it
  * - you could conceive of CAS operations and optimistic locking happening
  * - beware of the order in which you do things: everything needs to be searchable by concurrent threads
- *
+ * - CAS operations might only operate on the "full array" - that could be the source of truth
  */
 class LeafNodeGroup extends NodeGroup {
     List<LeafNode> nodes;
-    LeafNodeGroup next;
-    LeafNodeGroup previous;
+    private LeafNodeGroup next;
+    private LeafNodeGroup previous;
     LeafNodeGroup(int numberOfNodes, int nodeSize) {
         super(numberOfNodes, nodeSize);
+        // the vector allows to extend the underlying array
+        // ArrayLists don't do that for me
         Vector<LeafNode> v = new Vector<>(numberOfNodes);
         v.setSize(numberOfNodes);
         this.nodes = new ArrayList<>(v);
@@ -26,6 +35,8 @@ class LeafNodeGroup extends NodeGroup {
         }
     }
 
+    // entry point for all shifting
+    // the only thing we do is deciding which way we have to shift
     private void shift(int absoluteOffsetToShiftFrom, int absoluteOffsetToShiftTo) {
         int fromNodeIndex = absoluteOffsetToShiftFrom / nodeSize;
         int fromNodeOffset = (absoluteOffsetToShiftFrom % nodeSize);
@@ -41,14 +52,19 @@ class LeafNodeGroup extends NodeGroup {
 
     private void shiftLeft(int emptyNodeIndex, int emptyOffset, int toFillNodeIndex, int toFillOffset) {
         markFull(toFillNodeIndex, toFillOffset);
-        // TODO: actually make this work and test this
         Pair<Integer, String> spillOver;
         if (emptyNodeIndex == toFillNodeIndex) {
+            // if indexes are the same we just need to shift within a node
+            // only the offsets matter in this case
             spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, toFillOffset, null, null);
         } else {
+            // we shift between nodes and to the left
+            // that means we go from the offset and carry over from the left end (zero)
             spillOver = nodes.get(emptyNodeIndex).shift(emptyOffset, 0, null, null);
         }
 
+        // all nodes in between from and to
+        // just shift from one end to the other
         Integer spillOverKey = spillOver.getLeft();
         String spillOverValue = spillOver.getRight();
         for (int i = emptyNodeIndex -1; i > toFillNodeIndex && i > 0; i--) {
@@ -57,8 +73,11 @@ class LeafNodeGroup extends NodeGroup {
             spillOverValue = spillOver.getRight();
         }
 
+        // in case there were more than one node to shift across
+        // we shift from the very right until "toFillIndex"
+        // TODO: this needs better testing
         if (emptyNodeIndex != toFillNodeIndex) {
-            nodes.get(toFillNodeIndex).shift(emptyOffset, 0, spillOverKey, spillOverValue);
+            nodes.get(toFillNodeIndex).shift(nodes.get(toFillNodeIndex).keys.size() -1, toFillOffset, spillOverKey, spillOverValue);
         }
     }
 
@@ -91,9 +110,9 @@ class LeafNodeGroup extends NodeGroup {
             int closestEmptyPosition = findClosestEmptySlotFrom(desiredPosition);
             shift(desiredPosition, closestEmptyPosition);
         }
-        nodes.get(nodeIndex).put(nodeOffset, key, value);
         // FIXME: unroll this code to avoid setting the bit again
         markFull(nodeIndex, nodeOffset);
+        nodes.get(nodeIndex).put(nodeOffset, key, value);
     }
 
     void delete(int nodeIndex, int nodeOffset) {
