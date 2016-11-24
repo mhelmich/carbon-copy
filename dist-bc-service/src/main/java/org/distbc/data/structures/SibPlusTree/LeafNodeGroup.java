@@ -126,8 +126,6 @@ class LeafNodeGroup extends NodeGroup {
         markEmpty(nodeIndex, nodeOffset);
     }
 
-    void merge() {}
-
     /**
      * TODO: in a later version I could experiment with different spacing algorithms
      *       - not packing everything to the left but distribute it sparsely

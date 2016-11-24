@@ -14,15 +14,15 @@ public class SibPlusTree {
 
     private InternalNodeGroup root;
 
-    private final int keySizeInBytes;
-    private final int valueSizeInBytes;
-    private final int pointerSizeInBytes;
+    private int keySizeInBytes;
+    private int valueSizeInBytes;
+    private int pointerSizeInBytes;
     private final int numberOfNodesInInternalNodeGroup;
     private final int numberOfNodesInLeafNodeGroup;
     private final int internalNodeSize;
     private final int leafNodeSize;
 
-    SibPlusTree() {
+    public SibPlusTree() {
         // TODO : find a way to plug in real sizes of types
         keySizeInBytes = 4;
         pointerSizeInBytes = 8;
@@ -34,6 +34,18 @@ public class SibPlusTree {
         numberOfNodesInInternalNodeGroup = ((MAX_BYTE_SIZE * 8) - (pointerSizeInBytes * 8)) / (internalNodeSize * ((keySizeInBytes * 8) + 1));
 
         // allocate memory greedily
+        root = new InternalNodeGroup((short)1, numberOfNodesInInternalNodeGroup, internalNodeSize);
+        LeafNodeGroup lng = new LeafNodeGroup(numberOfNodesInLeafNodeGroup, leafNodeSize);
+        root.setChild(0, lng);
+    }
+
+    // this is for testing purposes only
+    SibPlusTree(int numberOfNodesInLeafNodeGroup, int leafNodeSize) {
+        this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
+        this.numberOfNodesInInternalNodeGroup = leafNodeSize - 1;
+        this.internalNodeSize = numberOfNodesInLeafNodeGroup - 1;
+        this.leafNodeSize = leafNodeSize;
+
         root = new InternalNodeGroup((short)1, numberOfNodesInInternalNodeGroup, internalNodeSize);
         LeafNodeGroup lng = new LeafNodeGroup(numberOfNodesInLeafNodeGroup, leafNodeSize);
         root.setChild(0, lng);
@@ -71,7 +83,7 @@ public class SibPlusTree {
             }
         } else {
             // split happens..!
-            // and that will likely turn into a recurse affair
+            // and that will likely turn into a recursive affair
             // where recursive means all the way up to the root
             // since internal node groups must be split as well
             logger.info(treeTrace);
@@ -91,21 +103,34 @@ public class SibPlusTree {
             List<Integer> highestKeysOldLeaf = oldLeafNG.getHighestKeys();
             List<Integer> highestKeysNewLeaf = newLeafNG.getHighestKeys();
 
-            // 3. figure out whether parent has space
+            // 3. figure out whether parent (an internal node) has enough space
+            // where "enough space" means we need an entire free node
+            // if we find one, we rearrange the nodes inside the node group and plug in the highest values
+            //
+            // if the parent doesn't have an empty node, then the internal node group needs to split
+            // a split of internal node groups is always the same
             int lastIndexInTreeTrace = treeTrace.size() - 1;
             Pair<InternalNodeGroup, Integer> parentNodeGroupAndOffset = treeTrace.get(lastIndexInTreeTrace);
             InternalNodeGroup parentNodeGroup = parentNodeGroupAndOffset.getLeft();
             Integer nodeIndex = parentNodeGroupAndOffset.getRight();
-            if (parentNodeGroup.hasSpace()) {
-                // we make space for the new key (shift) in the two corresponding parent nodes
-                // for my new child nodes
-                int nodeOffset = searchInsertPosition(key, parentNodeGroup, nodeIndex);
-                parentNodeGroup.put(nodeIndex, nodeOffset, key);
+            int indexOfFirstEmptyNode = parentNodeGroup.indexOfFirstEmptyNodeFromNode(nodeIndex);
+            if (indexOfFirstEmptyNode >= 0) {
+                // great this node group has enough space to accommodate the new node
+                // let's shuffle the order to nodes, plug in the new node, and be done
             } else {
-                // we need to split the parent as well
-                // TODO: build me in an iterative manner -- this might need some whiteboarding
-                // key is to only always with three different levels at once
+                // this node group doesn't have enough space
+                // we gotta split it too
             }
+//            if (parentNodeGroup.hasSpace()) {
+//                // we make space for the new key (shift) in the two corresponding parent nodes
+//                // for my new child nodes
+//                int nodeOffset = searchInsertPosition(key, parentNodeGroup, nodeIndex);
+//                parentNodeGroup.put(nodeIndex, nodeOffset, key);
+//            } else {
+//                // we need to split the parent as well
+//                // TODO: build me in an iterative manner -- this might need some whiteboarding
+//                // key is to only always with three different levels at once
+//            }
             
             throw new NotImplementedException("splits");
         }
@@ -117,7 +142,7 @@ public class SibPlusTree {
         }
     }
 
-    private void applyHighestKeysToGrandParent(InternalNodeGroup ng, int nodeIndex, Integer highestKey) {
+    private void applyHighestKeysToGrandParent(InternalNodeGroup grandParent, int nodeIndex, Integer highestKey) {
     }
 
     private Integer searchInsertPosition(Integer key, InternalNodeGroup n, int offset) {

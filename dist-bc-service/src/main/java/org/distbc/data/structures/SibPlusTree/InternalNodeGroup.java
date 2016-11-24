@@ -65,4 +65,27 @@ class InternalNodeGroup extends NodeGroup {
         nodes.forEach(n -> l.add(n.getKey(n.keys.size() - 1)));
         return l;
     }
+
+    void swapNodes(int fromIndex, int toIndex) {
+
+    }
+
+    int indexOfFirstEmptyNodeFromNode(int fromNodeIndex) {
+        // TODO : search on both sides
+        for (int i = fromNodeIndex * nodeSize; i < numberOfNodes; i++) {
+            if (isNodeEmpty(i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean isNodeEmpty(int nodeIndex) {
+        int offset = nodeSize * nodeIndex;
+        boolean isEmpty = true;
+        for (int i = 0; i < nodeSize && isEmpty; i++) {
+            isEmpty &= isEmpty(offset + i);
+        }
+        return isEmpty;
+    }
 }
