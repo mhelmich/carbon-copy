@@ -15,4 +15,12 @@ public class InternalNodeGroupTest {
         ing.delete(1, 0);
         assertNull(ing.getKey(1, 0));
     }
+
+    @Test
+    public void testIndexOfEmptyNode() throws Exception {
+        InternalNodeGroup ing = new InternalNodeGroup(1, 3, 2);
+        assertEquals(0, ing.indexOfFirstEmptyNodeFromNode(0));
+        ing.put(0, 1, 19);
+        assertEquals(1, ing.indexOfFirstEmptyNodeFromNode(0));
+    }
 }

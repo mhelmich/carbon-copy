@@ -79,6 +79,10 @@ abstract class NodeGroup {
         setBit(full, pos, false);
     }
 
+    boolean isEmpty(int pos) {
+        return !getBit(full, pos);
+    }
+
     boolean isFull(int pos) {
         return getBit(full, pos);
     }
