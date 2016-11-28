@@ -54,15 +54,6 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         this.children.set(nodeIdx, child);
     }
 
-    // this is meant for changes in child nodes
-    // this is supposed to reset highest keys and child nodes after a split???
-    void renameMe(int nodeIdx, NodeGroup<K> child, ArrayList<K> keysToSet) {
-        setChildNode(nodeIdx, child);
-        for (int i = 0; i < keysToSet.size(); i++) {
-            putKey(nodeIdx, i, keysToSet.get(i));
-        }
-    }
-
     int findIndexOfEmptyNodeFrom(int idx) {
         int beginningOfNodeAfterIdx = (idx / nodeSize) * nodeSize;
 
