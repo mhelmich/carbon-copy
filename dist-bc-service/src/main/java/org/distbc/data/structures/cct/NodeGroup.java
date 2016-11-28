@@ -10,9 +10,9 @@ import java.util.Vector;
 
 abstract class NodeGroup<K extends Comparable<K>> {
     private BitSet full;
+    private int numEmptySlots;
     int nodeSize;
     int numNodes;
-    int numEmptySlots;
 
     NodeGroup(int nodeSize, int numNodes) {
         full = new BitSet(nodeSize * numNodes);
@@ -46,11 +46,11 @@ abstract class NodeGroup<K extends Comparable<K>> {
         return getEmptySlots() > 0;
     }
 
-    void markEmpty(int idx) {
+    private void markEmpty(int idx) {
         full.clear(idx);
     }
 
-    void markFull(int idx) {
+    private void markFull(int idx) {
         full.set(idx);
     }
 
@@ -85,4 +85,24 @@ abstract class NodeGroup<K extends Comparable<K>> {
     }
 
     abstract void shiftOneRight(int from, int to);
+
+    void doBookKeepingForPut(int idx, boolean isKeyAndValueNull, boolean isShifting) {
+        // a put with nulls is a delete
+        // delete and shift might transport null values
+        if (isKeyAndValueNull) {
+            markEmpty(idx);
+            // when we shift we don't want to modify the empty slots
+            // because we...yeah...only shift
+            if (!isShifting) {
+                this.numEmptySlots++;
+            }
+        } else {
+            markFull(idx);
+            if (!isShifting) {
+                // when we shift we don't want to modify the empty slots
+                // because we...yeah...only shift
+                this.numEmptySlots--;
+            }
+        }
+    }
 }

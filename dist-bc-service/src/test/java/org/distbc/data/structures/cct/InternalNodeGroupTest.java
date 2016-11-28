@@ -40,6 +40,7 @@ public class InternalNodeGroupTest {
         InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, nodeSize, numNodes);
         ing.put(1, 17);
         assertTrue(ing.isFull(1));
+        assertEquals((nodeSize * numNodes) - 1, ing.getEmptySlots());
 
         ing.shiftOneRight(1, 2);
         assertFalse(ing.isFull(1));
@@ -54,6 +55,7 @@ public class InternalNodeGroupTest {
         InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, nodeSize, numNodes);
         ing.put(2, 17);
         assertTrue(ing.isFull(2));
+        assertEquals((nodeSize * numNodes) - 1, ing.getEmptySlots());
 
         ing.shiftOneRight(2, 3);
         assertFalse(ing.isFull(2));
@@ -96,7 +98,7 @@ public class InternalNodeGroupTest {
             assertTrue(ing.isFull(idx));
         }
 
-        assertEquals(6, ing.findIndexOfEmptyNodeFrom(1));
+        assertEquals(6, ing.findIndexOfEmptyNodeFrom(nodeSize + 1));
 
         for (int i = 3 * nodeSize; i < nodeSize * numNodes; i++) {
             assertTrue(ing.hasEmptySlots());
