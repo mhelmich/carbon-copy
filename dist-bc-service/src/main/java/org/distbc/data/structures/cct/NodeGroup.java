@@ -83,4 +83,6 @@ abstract class NodeGroup<K extends Comparable<K>> {
         }
         return l;
     }
+
+    abstract void shiftOneRight(int from, int to);
 }
