@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
@@ -36,22 +37,34 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
 
         for (int i = (this.numNodes / 2) * this.nodeSize; i < this.numNodes * this.nodeSize; i++) {
             delete(i);
-            setChildNode(i, null);
+            if (i % this.nodeSize == 0) {
+                setChildNodeOnNode(i / this.nodeSize, null);
+            }
         }
 
         return newLng;
     }
 
+    NodeGroup<K> getChildForNode(int nodeIdx) {
+        return this.children.get(nodeIdx);
+    }
+
     NodeGroup<K> getChild(int idx) {
-        return this.children.get(idx / nodeSize);
+        return getChildForNode(idx / nodeSize);
     }
 
     void setChildNode(int idx, NodeGroup<K> child) {
+        assert idx % nodeSize == 0;
         setChildNodeOnNode(idx / nodeSize, child);
     }
 
-    private void setChildNodeOnNode(int nodeIdx, NodeGroup<K> child) {
+    void setChildNodeOnNode(int nodeIdx, NodeGroup<K> child) {
+        assert nodeIdx <= numNodes;
         this.children.set(nodeIdx, child);
+    }
+
+    int findNodeIndexOfEmptyNodeFrom(int idx) {
+        return findIndexOfEmptyNodeFrom(idx) / this.nodeSize;
     }
 
     int findIndexOfEmptyNodeFrom(int idx) {
@@ -68,9 +81,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     private boolean isNodeEmpty(int idx) {
-        if (idx % nodeSize != 0) {
-            return false;
-        }
+        assert idx % nodeSize == 0;
 
         int foundIdx = findClosestEmptySlotFrom(idx);
         if (foundIdx == idx) {
@@ -92,28 +103,37 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
      * If you shift a range and there's an empty field in there
      * the resulting node group will be wrong.
      */
+
+    void shiftNodesOneRight(int from, int to) {
+        int fromIdx = from * this.nodeSize;
+        // this is an inclusive node index
+        // and the node includes all fields until nodeSize - 1
+        int toIdx = (to * this.nodeSize) + (this.nodeSize - 1);
+        for (int i = 0; i < this.nodeSize; i++) {
+            shiftOneRight(fromIdx, toIdx);
+        }
+        // "to" should be empty
+        // hence a swap should have the same effect as shifting
+        Collections.swap(this.children, from, to);
+    }
+
     @Override
     void shiftOneRight(int from, int to) {
         for (int i = to; i > from; i--) {
             K key = getKey(i - 1);
-            put(i, key);
+            put(i, key, true);
         }
 
-        delete(from);
+        // unrolling the delete method
+        put(from, null, true);
     }
 
     void put(int idx, K key) {
-        if (key == null && isFull(idx)) {
-            if (isFull(idx)) {
-                markEmpty(idx);
-                this.numEmptySlots++;
-            }
-        } else {
-            if (isEmpty(idx)) {
-                markFull(idx);
-                this.numEmptySlots--;
-            }
-        }
+        put(idx, key, false);
+    }
+
+    private void put(int idx, K key, boolean isShifting) {
+        doBookKeepingForPut(idx, key == null, isShifting);
         Pair<Integer, Integer> p = relativeAddress(idx);
         putKey(p.getLeft(), p.getRight(), key);
     }

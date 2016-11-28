@@ -72,10 +72,11 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         for (int i = to; i > from; i--) {
             K key = getKey(i - 1);
             V value = getValue(i - 1);
-            put(i, key, value);
+            put(i, key, value, true);
         }
 
-        delete(from);
+        // unrolling the delete method
+        put(from, null, null, true);
     }
 
     private void delete(int idx) {
@@ -108,19 +109,11 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
 
     @VisibleForTesting
     void put(int idx, K key, V value) {
-        // a put with nulls is a delete
-        // delete and shift might transport null values
-        if (key == null && value == null) {
-            if (isFull(idx)) {
-                markEmpty(idx);
-                this.numEmptySlots++;
-            }
-        } else {
-            if (isEmpty(idx)) {
-                markFull(idx);
-                this.numEmptySlots--;
-            }
-        }
+        put(idx, key, value, false);
+    }
+
+    private void put(int idx, K key, V value, boolean isShifting) {
+        doBookKeepingForPut(idx, key == null && value == null, isShifting);
         putKey(idx, key);
         putValue(idx, value);
     }

@@ -17,6 +17,7 @@ public class LeafNodeGroupTest {
         LeafNodeGroup<Integer, String> lng = new LeafNodeGroup<>(nodeSize, numNodes);
         lng.put(1, 17, prefix + 17);
         assertTrue(lng.isFull(1));
+        assertEquals((nodeSize * numNodes) - 1, lng.getEmptySlots());
 
         lng.shiftOneRight(1, 2);
         assertFalse(lng.isFull(1));
@@ -32,6 +33,7 @@ public class LeafNodeGroupTest {
         LeafNodeGroup<Integer, String> lng = new LeafNodeGroup<>(nodeSize, numNodes);
         lng.put(2, 17, prefix + 17);
         assertTrue(lng.isFull(2));
+        assertEquals((nodeSize * numNodes) - 1, lng.getEmptySlots());
 
         lng.shiftOneRight(1, 4);
         assertFalse(lng.isFull(2));
