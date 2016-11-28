@@ -36,36 +36,6 @@ public class InternalNodeGroupTest {
     }
 
     @Test
-    public void testSplitWithChildNodes() {
-        LeafNodeGroup<Integer, String> lng = getFullLeafNodeGroup();
-        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, nodeSize, numNodes);
-        ing.setChildNode(0, lng);
-
-        if(!lng.hasEmptySlots()) {
-            LeafNodeGroup<Integer, String> newLng = lng.split();
-            // the index is coming from the search
-            int nodeIdx = ing.findIndexOfEmptyNodeFrom(3);
-            ing.setChildNode(nodeIdx, newLng);
-        }
-
-        int idx = lng.findClosestEmptySlotFrom(0);
-        assertTrue(lng.isFull(0));
-        lng.shiftOneRight(0, idx);
-        assertFalse(lng.isFull(0));
-        lng.put(0, -1, "prefix_-1");
-    }
-
-    private LeafNodeGroup<Integer, String> getFullLeafNodeGroup() {
-        LeafNodeGroup<Integer, String> lng = new LeafNodeGroup<>(nodeSize, numNodes);
-        for (int i = 0; i < numNodes * nodeSize; i++) {
-            assertTrue(lng.hasEmptySlots());
-            lng.put(i, i, "prefix_" + i);
-            assertTrue(lng.isFull(i));
-        }
-        return lng;
-    }
-
-    @Test
     public void testShiftWithinNode() {
         InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, nodeSize, numNodes);
         ing.put(1, 17);

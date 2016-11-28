@@ -67,7 +67,6 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
      * If you shift a range and there's an empty field in there
      * the resulting node group will be wrong.
      */
-    @VisibleForTesting
     void shiftOneRight(int from, int to) {
         for (int i = to; i > from; i--) {
             K key = getKey(i - 1);
