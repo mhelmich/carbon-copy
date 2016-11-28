@@ -1,6 +1,7 @@
 package org.distbc.data.structures.SibPlusTree;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
@@ -66,12 +67,12 @@ class InternalNodeGroup extends NodeGroup {
         return l;
     }
 
-    void swapNodes(int fromIndex, int toIndex) {
-
+    void swapNodes(int i1, int i2) {
+        // TODO: set the bits as well
+        Collections.swap(nodes, i1, i2);
     }
 
     int indexOfFirstEmptyNodeFromNode(int fromNodeIndex) {
-        // TODO : search on both sides
         for (int i = fromNodeIndex * nodeSize; i < numberOfNodes; i++) {
             if (isNodeEmpty(i)) {
                 return i;
