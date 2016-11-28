@@ -42,6 +42,10 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return newLng;
     }
 
+    NodeGroup<K> getChild(int idx) {
+        return this.children.get(idx / nodeSize);
+    }
+
     void setChildNode(int idx, NodeGroup<K> child) {
         setChildNodeOnNode(idx / nodeSize, child);
     }
@@ -60,7 +64,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     int findIndexOfEmptyNodeFrom(int idx) {
-        int beginningOfNodeAfterIdx = ((idx / nodeSize) + 1) * nodeSize;
+        int beginningOfNodeAfterIdx = (idx / nodeSize) * nodeSize;
 
         while (beginningOfNodeAfterIdx < nodeSize * numNodes) {
             if (isNodeEmpty(beginningOfNodeAfterIdx)) {
@@ -97,7 +101,6 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
      * If you shift a range and there's an empty field in there
      * the resulting node group will be wrong.
      */
-    @VisibleForTesting
     void shiftOneRight(int from, int to) {
         for (int i = to; i > from; i--) {
             K key = getKey(i - 1);
