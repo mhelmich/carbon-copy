@@ -91,6 +91,12 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return false;
     }
 
+    /**
+     * The spec for this is very narrow!
+     * You can only shift a continuous block of values.
+     * If you shift a range and there's an empty field in there
+     * the resulting node group will be wrong.
+     */
     @VisibleForTesting
     void shiftOneRight(int from, int to) {
         for (int i = to; i > from; i--) {
@@ -103,11 +109,15 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
 
     void put(int idx, K key) {
         if (key == null && isFull(idx)) {
-            markEmpty(idx);
-            this.numEmptySlots++;
+            if (isFull(idx)) {
+                markEmpty(idx);
+                this.numEmptySlots++;
+            }
         } else {
-            markFull(idx);
-            this.numEmptySlots--;
+            if (isEmpty(idx)) {
+                markFull(idx);
+                this.numEmptySlots--;
+            }
         }
         Pair<Integer, Integer> p = relativeAddress(idx);
         putKey(p.getLeft(), p.getRight(), key);

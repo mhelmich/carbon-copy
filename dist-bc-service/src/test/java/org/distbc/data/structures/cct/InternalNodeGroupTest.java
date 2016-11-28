@@ -71,7 +71,7 @@ public class InternalNodeGroupTest {
         ing.put(1, 17);
         assertTrue(ing.isFull(1));
 
-        ing.shiftOneRight(1, 4);
+        ing.shiftOneRight(1, 2);
         assertFalse(ing.isFull(1));
         assertTrue(ing.isFull(2));
 
@@ -85,7 +85,7 @@ public class InternalNodeGroupTest {
         ing.put(2, 17);
         assertTrue(ing.isFull(2));
 
-        ing.shiftOneRight(1, 4);
+        ing.shiftOneRight(2, 3);
         assertFalse(ing.isFull(2));
         assertTrue(ing.isFull(3));
 
@@ -130,9 +130,8 @@ public class InternalNodeGroupTest {
 
         for (int i = 3 * nodeSize; i < nodeSize * numNodes; i++) {
             assertTrue(ing.hasEmptySlots());
-            int idx = (3 * nodeSize) + i;
-            ing.put(idx, i * 3);
-            assertTrue(ing.isFull(idx));
+            ing.put(i, i * 3);
+            assertTrue(ing.isFull(i));
         }
 
         assertEquals(-1, ing.findIndexOfEmptyNodeFrom(10));
