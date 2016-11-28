@@ -61,6 +61,12 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         return newLng;
     }
 
+    /**
+     * The spec for this is very narrow!
+     * You can only shift a continuous block of values.
+     * If you shift a range and there's an empty field in there
+     * the resulting node group will be wrong.
+     */
     @VisibleForTesting
     void shiftOneRight(int from, int to) {
         for (int i = to; i > from; i--) {
@@ -104,12 +110,16 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     void put(int idx, K key, V value) {
         // a put with nulls is a delete
         // delete and shift might transport null values
-        if (key == null && value == null && isFull(idx)) {
-            markEmpty(idx);
-            this.numEmptySlots++;
+        if (key == null && value == null) {
+            if (isFull(idx)) {
+                markEmpty(idx);
+                this.numEmptySlots++;
+            }
         } else {
-            markFull(idx);
-            this.numEmptySlots--;
+            if (isEmpty(idx)) {
+                markFull(idx);
+                this.numEmptySlots--;
+            }
         }
         putKey(idx, key);
         putValue(idx, value);

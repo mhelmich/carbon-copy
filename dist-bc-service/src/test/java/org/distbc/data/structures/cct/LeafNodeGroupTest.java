@@ -18,7 +18,7 @@ public class LeafNodeGroupTest {
         lng.put(1, 17, prefix + 17);
         assertTrue(lng.isFull(1));
 
-        lng.shiftOneRight(1, 4);
+        lng.shiftOneRight(1, 2);
         assertFalse(lng.isFull(1));
         assertTrue(lng.isFull(2));
 
@@ -39,6 +39,7 @@ public class LeafNodeGroupTest {
 
         assertEquals(Integer.valueOf(17), lng.getKey(3));
         assertEquals(prefix + 17, lng.getValue(3));
+        assertEquals((nodeSize * numNodes) - 1, lng.getEmptySlots());
     }
 
     @Test
