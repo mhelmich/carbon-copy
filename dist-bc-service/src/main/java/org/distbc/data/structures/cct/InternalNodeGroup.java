@@ -159,4 +159,8 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         Pair<Integer, Integer> p = relativeAddress(idx);
         return getKey(p.getLeft(), p.getRight());
     }
+
+    int getLevel() {
+        return this.level;
+    }
 }
