@@ -3,6 +3,7 @@ package org.distbc.data.structures.cct;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,14 +54,22 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return getChildForNode(idx / nodeSize);
     }
 
-    void setChildNode(int idx, NodeGroup<K> child) {
+    void setChildNode(int idx, @Nullable NodeGroup<K> child) {
         assert idx % nodeSize == 0;
         setChildNodeOnNode(idx / nodeSize, child);
     }
 
-    void setChildNodeOnNode(int nodeIdx, NodeGroup<K> child) {
+    void setChildNodeOnNode(int nodeIdx, @Nullable NodeGroup<K> child) {
         assert nodeIdx <= numNodes;
         this.children.set(nodeIdx, child);
+        if (child != null) {
+            // now set the keys automagically for this
+            List<K> keysToSet = child.getHighestKeys();
+            int baseIdx = nodeIdx * nodeSize;
+            for (int i = 0; i < keysToSet.size() - 1; i++) {
+                put(baseIdx + i, keysToSet.get(i));
+            }
+        }
     }
 
     int findNodeIndexOfEmptyNodeFrom(int idx) {
@@ -103,7 +112,6 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
      * If you shift a range and there's an empty field in there
      * the resulting node group will be wrong.
      */
-
     void shiftNodesOneRight(int from, int to) {
         int fromIdx = from * this.nodeSize;
         // this is an inclusive node index
@@ -128,11 +136,11 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         put(from, null, true);
     }
 
-    void put(int idx, K key) {
+    void put(int idx, @Nullable K key) {
         put(idx, key, false);
     }
 
-    private void put(int idx, K key, boolean isShifting) {
+    private void put(int idx, @Nullable K key, boolean isShifting) {
         doBookKeepingForPut(idx, key == null, isShifting);
         Pair<Integer, Integer> p = relativeAddress(idx);
         putKey(p.getLeft(), p.getRight(), key);
