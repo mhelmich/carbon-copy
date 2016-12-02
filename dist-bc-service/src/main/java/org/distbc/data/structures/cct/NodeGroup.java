@@ -84,6 +84,7 @@ abstract class NodeGroup<K extends Comparable<K>> {
         return l;
     }
 
+    @VisibleForTesting
     abstract void shiftOneRight(int from, int to);
 
     void doBookKeepingForPut(int idx, boolean isKeyAndValueNull, boolean isShifting) {
