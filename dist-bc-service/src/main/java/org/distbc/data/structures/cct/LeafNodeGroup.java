@@ -62,6 +62,20 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     }
 
     /**
+     * We want to always shift to the right anyways.
+     * We also always want to close a gap.
+     * What's the point of writing all this code every time,
+     * we call this method.
+     * @param from
+     */
+    void maybeShiftOneRight(int from) {
+        int to =findClosestEmptySlotFrom(from);
+        if (from < to) {
+            shiftOneRight(from, to);
+        }
+    }
+
+    /**
      * The spec for this is very narrow!
      * You can only shift a continuous block of values.
      * If you shift a range and there's an empty field in there
