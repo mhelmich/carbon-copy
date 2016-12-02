@@ -3,6 +3,7 @@ package org.distbc.data.structures.cct;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -122,31 +123,31 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     }
 
     @VisibleForTesting
-    void put(int idx, K key, V value) {
+    void put(int idx, @Nullable K key, @Nullable V value) {
         put(idx, key, value, false);
     }
 
-    private void put(int idx, K key, V value, boolean isShifting) {
+    private void put(int idx, @Nullable K key, @Nullable V value, boolean isShifting) {
         doBookKeepingForPut(idx, key == null && value == null, isShifting);
         putKey(idx, key);
         putValue(idx, value);
     }
 
-    private void putKey(int idx, K key) {
+    private void putKey(int idx, @Nullable K key) {
         Pair<Integer, Integer> p = relativeAddress(idx);
         putKey(p.getLeft(), p.getRight(), key);
     }
 
-    private void putValue(int idx, V value) {
+    private void putValue(int idx, @Nullable V value) {
         Pair<Integer, Integer> p = relativeAddress(idx);
         putValue(p.getLeft(), p.getRight(), value);
     }
 
-    private void putKey(int index, int offset, K key) {
+    private void putKey(int index, int offset, @Nullable K key) {
         this.keys.get(index).set(offset, key);
     }
 
-    private void putValue(int index, int offset, V value) {
+    private void putValue(int index, int offset, @Nullable V value) {
         this.values.get(index).set(offset, value);
     }
 }
