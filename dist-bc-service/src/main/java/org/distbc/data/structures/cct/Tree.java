@@ -3,6 +3,7 @@ package org.distbc.data.structures.cct;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     public synchronized void put(K key, V value) {
-        List<InternalNodeGroup<K>> nodeTrace = new LinkedList<>();
+        List<InternalNodeGroup<K>> nodeTrace = new ArrayList<>();
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int insertionIdx = findInsertionIndex(key, lng);
         lng.maybeShiftOneRight(insertionIdx);
