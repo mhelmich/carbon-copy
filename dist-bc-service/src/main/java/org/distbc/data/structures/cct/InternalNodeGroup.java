@@ -26,14 +26,14 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     InternalNodeGroup<K> split() {
-        InternalNodeGroup<K> newLng = new InternalNodeGroup<>(this.level, this.nodeSize, this.numNodes);
+        InternalNodeGroup<K> newIng = new InternalNodeGroup<>(this.level, this.nodeSize, this.numNodes);
         List<ArrayList<K>> subListOldLngKeys = this.keys.subList(this.numNodes / 2, this.numNodes);
 
         for (int i = 0; i < subListOldLngKeys.size(); i++) {
             for (int j = 0; j <subListOldLngKeys.get(i).size(); j++) {
-                newLng.put((i * nodeSize) + j, subListOldLngKeys.get(i).get(j));
+                newIng.put((i * nodeSize) + j, subListOldLngKeys.get(i).get(j));
             }
-            newLng.setChildNodeOnNode(i, this.children.get((this.numNodes / 2) + i));
+            newIng.setChildNodeOnNode(i, this.children.get((this.numNodes / 2) + i));
         }
 
         for (int i = (this.numNodes / 2) * this.nodeSize; i < this.numNodes * this.nodeSize; i++) {
@@ -43,7 +43,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
             }
         }
 
-        return newLng;
+        return newIng;
     }
 
     NodeGroup<K> getChildForNode(int nodeIdx) {
