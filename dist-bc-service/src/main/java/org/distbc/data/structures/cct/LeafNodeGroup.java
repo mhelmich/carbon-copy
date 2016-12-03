@@ -70,7 +70,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
      * @param from
      */
     void maybeShiftOneRight(int from) {
-        int to =findClosestEmptySlotFrom(from);
+        int to = findClosestEmptySlotFrom(from);
         if (from < to) {
             shiftOneRight(from, to);
         }

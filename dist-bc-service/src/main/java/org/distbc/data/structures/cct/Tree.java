@@ -52,7 +52,9 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int idx = findIndexOfFirstKey(key, lng);
         Set<V> resultSet = new HashSet<>();
-        while (lng.getKey(idx) != null && lng.getKey(idx).equals(key)) {
+        while (idx < lng.getTotalNodeSize()
+                && lng.getKey(idx) != null
+                && lng.getKey(idx).equals(key)) {
             resultSet.add(lng.getValue(idx));
             idx++;
         }
@@ -102,27 +104,44 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private int findInsertionIndex(K key, LeafNodeGroup<K, V> lng) {
-        return findIndexOfFirstKey(key, lng);
-    }
-
-    private int findIndexOfFirstKey(K key, LeafNodeGroup<K, V> lng) {
         // if ing#getKey returns null, we want to return
         // hence null greater needs to be true
-        if (ObjectUtils.compare(key, lng.getKey(0), true) < 0) {
+        K firstKeyInLeafNodeGroup = lng.getKey(0);
+        if (firstKeyInLeafNodeGroup == null || compareTo(key, firstKeyInLeafNodeGroup) < 0) {
             return 0;
         }
 
         // the order in which the arguments are passed in seems to flip the semantic
         // of the boolean parameter "nullGreater"
-        if (ObjectUtils.compare(lng.getKey(this.leafNodeSize - 1), key) > 0) {
-            return this.leafNodeSize - 1;
+        int lastIdxInLeafGroup = (numberOfNodesInLeafNodeGroup * leafNodeSize) - 1;
+        K lastKeyInLeafNodeGroup = lng.getKey(lastIdxInLeafGroup);
+        if (lastKeyInLeafNodeGroup != null
+                && compareTo(key, lastKeyInLeafNodeGroup) < 0) {
+            return lastIdxInLeafGroup;
         }
 
+        return findIndexOfFirstKey(key, lng);
+    }
+
+    private int findIndexOfFirstKey(K key, LeafNodeGroup<K, V> lng) {
         int i = 0;
-        while (ObjectUtils.compare(key, lng.getKey(i)) > 0) {
+        while (compareTo(key, lng.getKey(i)) > 0) {
             i++;
+            if (i >= leafNodeSize * numberOfNodesInLeafNodeGroup) {
+                return -1;
+            }
         }
 
         return i;
+    }
+
+    private int compareTo(K k1, K k2) {
+        if (k2 == null) {
+            return -1;
+        } else if (k1 == null) {
+            return 1;
+        } else {
+            return k1.compareTo(k2);
+        }
     }
 }
