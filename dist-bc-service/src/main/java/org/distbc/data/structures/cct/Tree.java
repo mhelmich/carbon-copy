@@ -41,7 +41,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     public synchronized void put(K key, V value) {
-        List<InternalNodeGroup<K>> nodeTrace = new ArrayList<>();
+        List<NodeAndIndex> nodeTrace = new ArrayList<>();
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int insertionIdx = findInsertionIndex(key, lng);
         lng.maybeShiftOneRight(insertionIdx);
@@ -49,7 +49,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     public Set<V> get(K key) {
-        List<InternalNodeGroup<K>> nodeTrace = new LinkedList<>();
+        List<NodeAndIndex> nodeTrace = new LinkedList<>();
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int idx = findIndexOfFirstKey(key, lng);
         Set<V> resultSet = new HashSet<>();
@@ -67,21 +67,21 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     @VisibleForTesting
-    LeafNodeGroup<K, V> searchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<InternalNodeGroup<K>> nodeTrace) {
+    LeafNodeGroup<K, V> searchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<NodeAndIndex> nodeTrace) {
         int idx;
         InternalNodeGroup<K> ng = ing;
 
         while (ng.getLevel() > 1) {
             idx = findIndexOfNextNodeGroup(key, ng);
+            nodeTrace.add(newNodeAndIndex(ng, idx));
             // I can do that because I know better
             // level > 1 :)
-            nodeTrace.add(ng);
             ng = (InternalNodeGroup<K>) ng.getChild(idx);
         }
 
-        nodeTrace.add(ng);
         // ng has now a level 1 (aka the next child pointer will be the leaf)
         idx = findIndexOfNextNodeGroup(key, ng);
+        nodeTrace.add(newNodeAndIndex(ng, idx));
         return (LeafNodeGroup<K, V>) ng.getChild(idx);
     }
 
@@ -143,6 +143,25 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
             return 1;
         } else {
             return k1.compareTo(k2);
+        }
+    }
+
+    private NodeAndIndex newNodeAndIndex(InternalNodeGroup<K> ing, int nodeIdxIntoIng) {
+        return new NodeAndIndex(ing, nodeIdxIntoIng);
+    }
+
+    /**
+     * This class is a container for the node trace.
+     * It keeps track of node groups and the index into the node group,
+     * which was used to descend to the next lower level.
+     */
+    @VisibleForTesting
+    class NodeAndIndex {
+        final InternalNodeGroup<K> ing;
+        final int nodeIdxIntoIng;
+        private NodeAndIndex(InternalNodeGroup<K> ing, int nodeIdxIntoIng) {
+            this.ing = ing;
+            this.nodeIdxIntoIng = nodeIdxIntoIng;
         }
     }
 }
