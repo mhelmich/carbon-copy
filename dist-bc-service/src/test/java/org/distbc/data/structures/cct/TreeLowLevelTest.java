@@ -21,7 +21,7 @@ public class TreeLowLevelTest {
     public void testSearch() {
         int internalNodeSize = 2;
         int numberOfNodesInInternalNodeGroup = 2;
-        List<InternalNodeGroup<Integer>> nodeTrace = new LinkedList<>();
+        List<Tree<Integer, String>.NodeAndIndex> nodeTrace = new LinkedList<>();
         InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, internalNodeSize, numberOfNodesInInternalNodeGroup);
 
         LeafNodeGroup<Integer, String> lng1 = getFullLeafNodeGroup(1);
