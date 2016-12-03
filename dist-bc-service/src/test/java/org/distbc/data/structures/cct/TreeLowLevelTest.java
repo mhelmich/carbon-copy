@@ -3,6 +3,10 @@ package org.distbc.data.structures.cct;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -12,6 +16,28 @@ import static org.junit.Assert.fail;
 public class TreeLowLevelTest {
     private final int nodeSize = 3;
     private final int numNodes = 4;
+
+    @Test
+    public void testSearch() {
+        int internalNodeSize = 2;
+        int numberOfNodesInInternalNodeGroup = 2;
+        List<InternalNodeGroup<Integer>> nodeTrace = new LinkedList<>();
+        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, internalNodeSize, numberOfNodesInInternalNodeGroup);
+
+        LeafNodeGroup<Integer, String> lng1 = getFullLeafNodeGroup(1);
+        LeafNodeGroup<Integer, String> lng2 = getFullLeafNodeGroup(10);
+
+        ing.setChildNodeOnNode(0, lng1);
+        ing.setChildNodeOnNode(1, lng2);
+
+        Tree<Integer, String> t = new Tree<>(internalNodeSize, numberOfNodesInInternalNodeGroup, ing);
+        LeafNodeGroup<Integer, String> lng = t.searchLeafNodeGroup(9, ing, nodeTrace);
+        assertEquals(lng1, lng);
+
+        Set<String> rs = t.get(9);
+        assertEquals(1, rs.size());
+        assertTrue(rs.contains("prefix_9"));
+    }
 
     @Test
     public void testSplitWithChildNodes() {
@@ -113,5 +139,18 @@ public class TreeLowLevelTest {
             ing.setChildNode(i * nodeSize, Mockito.mock(InternalNodeGroup.class));
         }
         return ing;
+    }
+
+    private LeafNodeGroup<Integer, String> getFullLeafNodeGroup(int seed) {
+        int leafNodeSize = 3;
+        int numberOfNodesInLeafNodeGroup = 3;
+        LeafNodeGroup<Integer, String> lng = new LeafNodeGroup<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        for (int i = 0; i < leafNodeSize * numberOfNodesInLeafNodeGroup; i++) {
+            assertTrue(lng.hasEmptySlots());
+            int n = (seed + i) * 3;
+            lng.put(i, n, "prefix_" + n);
+            assertTrue(lng.isFull(i));
+        }
+        return lng;
     }
 }
