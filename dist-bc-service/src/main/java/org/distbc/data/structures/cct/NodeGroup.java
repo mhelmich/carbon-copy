@@ -108,7 +108,7 @@ abstract class NodeGroup<K extends Comparable<K>> {
         }
     }
 
-    int getTotalNodeSize() {
+    int getTotalNodeGroupSize() {
         return nodeSize * numNodes;
     }
 }
