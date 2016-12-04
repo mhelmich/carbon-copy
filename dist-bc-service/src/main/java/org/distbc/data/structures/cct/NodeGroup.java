@@ -70,6 +70,7 @@ abstract class NodeGroup<K extends Comparable<K>> {
         return Pair.of(idx / nodeSize, idx % nodeSize);
     }
 
+    abstract K getKey(int idx);
     abstract K getKey(int index, int offset);
 
     List<K> getHighestKeys() {

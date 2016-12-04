@@ -67,7 +67,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
             List<K> keysToSet = child.getHighestKeys();
             int baseIdx = nodeIdx * nodeSize;
             for (int i = 0; i < keysToSet.size() - 1; i++) {
-                put(baseIdx + i, keysToSet.get(i));
+                put(baseIdx + i, keysToSet.get(i), true);
             }
         }
     }
@@ -148,8 +148,8 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         put(idx, key, false);
     }
 
-    private void put(int idx, @Nullable K key, boolean isShifting) {
-        doBookKeepingForPut(idx, key == null, isShifting);
+    private void put(int idx, @Nullable K key, boolean dontDoBookkeeping) {
+        doBookKeepingForPut(idx, key == null, dontDoBookkeeping);
         Pair<Integer, Integer> p = relativeAddress(idx);
         putKey(p.getLeft(), p.getRight(), key);
     }
@@ -170,6 +170,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return this.keys.get(index).get(offset);
     }
 
+    @Override
     @VisibleForTesting
     K getKey(int idx) {
         Pair<Integer, Integer> p = relativeAddress(idx);
