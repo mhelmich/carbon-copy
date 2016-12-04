@@ -67,7 +67,6 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
      * We also always want to close a gap.
      * What's the point of writing all this code every time,
      * we call this method.
-     * @param from
      */
     void maybeShiftOneRight(int from) {
         int to = findClosestEmptySlotFrom(from);
@@ -110,6 +109,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         return this.values.get(index).get(offset);
     }
 
+    @Override
     @VisibleForTesting
     K getKey(int idx) {
         Pair<Integer, Integer> p = relativeAddress(idx);
