@@ -1,7 +1,6 @@
 package org.distbc.data.structures.cct;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -86,29 +85,15 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private int findIndexOfNextNodeGroup(K key, InternalNodeGroup<K> ing) {
-        // if ing#getKey returns null, we want to return
-        // hence null greater needs to be true
-        if (ObjectUtils.compare(key, ing.getKey(0), true) < 0) {
-            return 0;
-        }
-
-        if (ObjectUtils.compare(key, ing.getKey(this.internalNodeSize - 1)) > 0) {
-            return this.internalNodeSize;
-        }
-
-        int i = 0;
-        while (ObjectUtils.compare(key, ing.getKey(i)) > 0) {
-            i++;
-        }
-
-        return i;
+        return findInsertionIndex(key, ing);
     }
 
     private int findInsertionIndex(K key, NodeGroup<K> ng) {
         // if ing#getKey returns null, we want to return
         // hence null greater needs to be true
         K firstKeyInLeafNodeGroup = ng.getKey(0);
-        if (firstKeyInLeafNodeGroup == null || compareTo(key, firstKeyInLeafNodeGroup) < 0) {
+        if (firstKeyInLeafNodeGroup == null
+                || compareTo(key, firstKeyInLeafNodeGroup) < 0) {
             return 0;
         }
 
@@ -117,7 +102,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         int lastIdxInLeafGroup = ng.getTotalNodeGroupSize() - 1;
         K lastKeyInLeafNodeGroup = ng.getKey(lastIdxInLeafGroup);
         if (lastKeyInLeafNodeGroup != null
-                && compareTo(key, lastKeyInLeafNodeGroup) < 0) {
+                && compareTo(key, lastKeyInLeafNodeGroup) > 0) {
             return lastIdxInLeafGroup;
         }
 
