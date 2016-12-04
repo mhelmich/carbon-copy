@@ -72,6 +72,14 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         }
     }
 
+    void setGrandChildNodeOnNode(int nodeIdx, @Nullable NodeGroup<K> grandChild) {
+        if (grandChild != null) {
+            List<K> hks = grandChild.getHighestKeys();
+            K hk = hks.get(hks.size() - 1);
+            put((nodeIdx * nodeSize) + (nodeSize - 1), hk);
+        }
+    }
+
     int findNodeIndexOfEmptyNodeFrom(int idx) {
         return findIndexOfEmptyNodeFrom(idx) / this.nodeSize;
     }
