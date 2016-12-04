@@ -53,7 +53,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int idx = findIndexOfFirstKey(key, lng);
         Set<V> resultSet = new HashSet<>();
-        while (idx < lng.getTotalNodeSize()
+        while (idx < lng.getTotalNodeGroupSize()
                 && lng.getKey(idx) != null
                 && lng.getKey(idx).equals(key)) {
             resultSet.add(lng.getValue(idx));
@@ -104,31 +104,31 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         return i;
     }
 
-    private int findInsertionIndex(K key, LeafNodeGroup<K, V> lng) {
+    private int findInsertionIndex(K key, NodeGroup<K> ng) {
         // if ing#getKey returns null, we want to return
         // hence null greater needs to be true
-        K firstKeyInLeafNodeGroup = lng.getKey(0);
+        K firstKeyInLeafNodeGroup = ng.getKey(0);
         if (firstKeyInLeafNodeGroup == null || compareTo(key, firstKeyInLeafNodeGroup) < 0) {
             return 0;
         }
 
         // the order in which the arguments are passed in seems to flip the semantic
         // of the boolean parameter "nullGreater"
-        int lastIdxInLeafGroup = (numberOfNodesInLeafNodeGroup * leafNodeSize) - 1;
-        K lastKeyInLeafNodeGroup = lng.getKey(lastIdxInLeafGroup);
+        int lastIdxInLeafGroup = ng.getTotalNodeGroupSize() - 1;
+        K lastKeyInLeafNodeGroup = ng.getKey(lastIdxInLeafGroup);
         if (lastKeyInLeafNodeGroup != null
                 && compareTo(key, lastKeyInLeafNodeGroup) < 0) {
             return lastIdxInLeafGroup;
         }
 
-        return findIndexOfFirstKey(key, lng);
+        return findIndexOfFirstKey(key, ng);
     }
 
-    private int findIndexOfFirstKey(K key, LeafNodeGroup<K, V> lng) {
+    private int findIndexOfFirstKey(K key, NodeGroup<K> ng) {
         int i = 0;
-        while (compareTo(key, lng.getKey(i)) > 0) {
+        while (compareTo(key, ng.getKey(i)) > 0) {
             i++;
-            if (i >= leafNodeSize * numberOfNodesInLeafNodeGroup) {
+            if (i >= ng.getTotalNodeGroupSize()) {
                 return -1;
             }
         }
