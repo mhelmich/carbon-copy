@@ -43,8 +43,28 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         List<NodeAndIndex> nodeTrace = new ArrayList<>();
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int insertionIdx = findInsertionIndex(key, lng);
-        lng.maybeShiftOneRight(insertionIdx);
-        lng.put(insertionIdx, key, value);
+        if (insertionIdx < 0) {
+            // there's no space in lng anymore, let's make a new one
+        } else {
+            // there's still space in lng
+            lng.maybeShiftOneRight(insertionIdx);
+            lng.put(insertionIdx, key, value);
+            // do the highest keys business
+            NodeAndIndex parent = nodeTrace.get(nodeTrace.size() - 1);
+            setHighestKeysParent(parent, lng);
+            if (nodeTrace.size() > 1) {
+                NodeAndIndex grandParent = nodeTrace.get(nodeTrace.size() - 2);
+                setHighestKeysGrandParent(grandParent, parent.ing);
+            }
+        }
+    }
+
+    private void setHighestKeysParent(NodeAndIndex nai, NodeGroup<K> ng) {
+        nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, ng);
+    }
+
+    private void setHighestKeysGrandParent(NodeAndIndex nai, NodeGroup<K> ng) {
+        nai.ing.setGrandChildNodeOnNode(nai.nodeIdxIntoIng, ng);
     }
 
     public Set<V> get(K key) {
@@ -85,7 +105,9 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private int findIndexOfNextNodeGroup(K key, InternalNodeGroup<K> ing) {
-        return findInsertionIndex(key, ing);
+        int idx = findInsertionIndex(key, ing);
+        // convert from absolute index to node index
+        return idx / internalNodeSize;
     }
 
     private int findInsertionIndex(K key, NodeGroup<K> ng) {
