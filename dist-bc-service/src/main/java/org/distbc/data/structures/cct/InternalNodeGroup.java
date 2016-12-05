@@ -85,9 +85,10 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     int findIndexOfEmptyNodeFrom(int idx) {
+        // this is the absolute index at the start of a node
         int beginningOfNodeAfterIdx = (idx / nodeSize) * nodeSize;
 
-        while (beginningOfNodeAfterIdx < nodeSize * numNodes) {
+        while (beginningOfNodeAfterIdx < getTotalNodeGroupSize()) {
             if (isNodeEmpty(beginningOfNodeAfterIdx)) {
                 return beginningOfNodeAfterIdx;
             }
@@ -121,16 +122,18 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
      * the resulting node group will be wrong.
      */
     void shiftNodesOneRight(int from, int to) {
-        int fromIdx = from * this.nodeSize;
-        // this is an inclusive node index
-        // and the node includes all fields until nodeSize - 1
-        int toIdx = (to * this.nodeSize) + (this.nodeSize - 1);
-        for (int i = 0; i < this.nodeSize; i++) {
-            shiftOneRight(fromIdx, toIdx);
+        if (from < to) {
+            int fromIdx = from * this.nodeSize;
+            // this is an inclusive node index
+            // and the node includes all fields until nodeSize - 1
+            int toIdx = (to * this.nodeSize) + (this.nodeSize - 1);
+            for (int i = 0; i < this.nodeSize; i++) {
+                shiftOneRight(fromIdx, toIdx);
+            }
+            // "to" should be empty
+            // hence a swap should have the same effect as shifting
+            Collections.swap(this.children, from, to);
         }
-        // "to" should be empty
-        // hence a swap should have the same effect as shifting
-        Collections.swap(this.children, from, to);
     }
 
     @Override
