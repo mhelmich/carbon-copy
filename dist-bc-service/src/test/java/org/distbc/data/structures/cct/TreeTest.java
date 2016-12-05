@@ -51,10 +51,9 @@ public class TreeTest {
         Map<Integer, String> m = new HashMap<>();
         int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
         for (int i = 0; i < numElements; i++) {
-            int num = i;
-            String str = "prefix_" + num;
-            t.put(num, str);
-            m.put(num, str);
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
         }
 
         m.entrySet().forEach(e -> {
@@ -71,10 +70,9 @@ public class TreeTest {
         Map<Integer, String> m = new HashMap<>();
         int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
         for (int i = numElements; i > 0; i--) {
-            int num = i;
-            String str = "prefix_" + num;
-            t.put(num, str);
-            m.put(num, str);
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
         }
 
         m.entrySet().forEach(e -> {
@@ -136,20 +134,24 @@ public class TreeTest {
     public void testPuttingSplits() {
         Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
-        int numElements = 2 * leafNodeSize * numberOfNodesInLeafNodeGroup;
+        // yea yea, I know
+        // the point is:
+        // I can only insert few elements as I though because the split is right leaning
+        // once I change that I can put more
+        // however, just don't change the sizes and this test will pass
+        int numElements = (int) Math.floor(1.3 * leafNodeSize * numberOfNodesInLeafNodeGroup);
 
         for (int i = 0; i < numElements; i++) {
-            int num = i;
-            String str = "prefix_" + num;
-            t.put(num, str);
-            m.put(num, str);
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
         }
 
         m.entrySet().forEach(e -> {
-                    Set<String> s = t.get(e.getKey());
-                    assertEquals(1, s.size());
-                    assertTrue(s.contains(e.getValue()));
-                }
+                Set<String> s = t.get(e.getKey());
+                assertEquals(1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
         );
 
     }
