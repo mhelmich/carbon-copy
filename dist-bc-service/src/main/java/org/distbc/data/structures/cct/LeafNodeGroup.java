@@ -39,6 +39,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     @VisibleForTesting
     LeafNodeGroup<K, V> split() {
         LeafNodeGroup<K, V> newLng = new LeafNodeGroup<>(this.nodeSize, this.numNodes);
+        // TODO: pull "this.numNodes / 2" out into a local var
         List<ArrayList<K>> subListOldLngKeys = this.keys.subList(this.numNodes / 2, this.numNodes);
         List<ArrayList<V>> subListOldLngValues = this.values.subList(this.numNodes / 2, this.numNodes);
 
