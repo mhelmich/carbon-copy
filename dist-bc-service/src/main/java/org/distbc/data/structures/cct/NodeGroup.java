@@ -63,7 +63,8 @@ abstract class NodeGroup<K extends Comparable<K>> {
     }
 
     int findClosestEmptySlotFrom(int idx) {
-        return full.nextClearBit(idx);
+        int emptySlotIdx = full.nextClearBit(idx);
+        return (emptySlotIdx < getTotalNodeGroupSize()) ? emptySlotIdx : -1;
     }
 
     Pair<Integer, Integer> relativeAddress(int idx) {
