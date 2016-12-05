@@ -43,8 +43,15 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         List<NodeAndIndex> nodeTrace = new ArrayList<>();
         LeafNodeGroup<K, V> lng = searchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int insertionIdx = findInsertionIndex(key, lng);
-        if (insertionIdx < 0) {
+        int emptyIdx = lng.findClosestEmptySlotFrom(insertionIdx);
+        if (emptyIdx < 0) {
             // there's no space in lng anymore, let's make a new one
+            splitNodes(lng, nodeTrace);
+            // the magic of recursive calls
+            // we still need at the current key
+            // I don't see a reason why this should run dead
+            // at the very least as long as put is single-threaded
+            put(key, value);
         } else {
             // there's still space in lng
             lng.maybeShiftOneRight(insertionIdx);
@@ -65,6 +72,26 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private void setHighestKeysGrandParent(NodeAndIndex nai, NodeGroup<K> ng) {
         nai.ing.setGrandChildNodeOnNode(nai.nodeIdxIntoIng, ng);
+    }
+
+    private void splitNodes(LeafNodeGroup<K, V> lng, List<NodeAndIndex> nodeTrace) {
+        LeafNodeGroup<K, V> newLng = lng.split();
+        // see whether the parent has an empty slot
+        int i = nodeTrace.size() - 1;
+        NodeAndIndex nai = nodeTrace.get(i);
+        int nodeToVacate = nai.nodeIdxIntoIng + 1;
+        int emptyNodeIdx = nai.ing.findNodeIndexOfEmptyNodeFrom(nodeToVacate);
+        // maybe we're lucky and find an empty slot in the node
+        if (emptyNodeIdx > 0) {
+            nai.ing.shiftNodesOneRight(nodeToVacate, emptyNodeIdx);
+            nai.ing.setChildNodeOnNode(nodeToVacate, newLng);
+            nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, lng);
+        } else {
+            // TODO
+            // split again :/
+            // this can be either recursive or iterative
+            // I gotta wrap my head around this some time
+        }
     }
 
     public Set<V> get(K key) {
@@ -101,16 +128,32 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         // ng has now a level 1 (aka the next child pointer will be the leaf)
         idx = findIndexOfNextNodeGroup(key, ng);
         nodeTrace.add(newNodeAndIndex(ng, idx));
-        return (LeafNodeGroup<K, V>) ng.getChild(idx);
+        return (LeafNodeGroup<K, V>) ng.getChildForNode(idx);
     }
 
     private int findIndexOfNextNodeGroup(K key, InternalNodeGroup<K> ing) {
-        int idx = findInsertionIndex(key, ing);
+        // the findInsertionIndex method is built for LeafNodeGroups
+        // LeafNodeGroups are one field longer
+        // keep that in mind
+        int idx = checkHighLow(key, ing);
+        idx = (idx < 0) ? findIndexOfFirstKeySkippingNull(key, ing) : idx;
         // convert from absolute index to node index
         return idx / internalNodeSize;
     }
 
     private int findInsertionIndex(K key, NodeGroup<K> ng) {
+        int insideBounds = checkHighLow(key, ng);
+        return (insideBounds < 0) ? findIndexOfFirstKey(key, ng) : insideBounds;
+    }
+
+    /**
+     * This method checks to see whether key is smaller than the smallest
+     * or larger than the largest value in ng.
+     * This structure is a little bit odd. We return -1 to signal the caller
+     * to proceed searching. It's the C way of doing things since lambdas and
+     * passing function pointers down, rip the code apart and are messy too.
+     */
+    private int checkHighLow(K key, NodeGroup<K> ng) {
         // if ing#getKey returns null, we want to return
         // hence null greater needs to be true
         K firstKeyInLeafNodeGroup = ng.getKey(0);
@@ -128,12 +171,38 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
             return lastIdxInLeafGroup;
         }
 
-        return findIndexOfFirstKey(key, ng);
+        return -1;
     }
 
+    /**
+     * This method finds the first key in the ng.
+     * It returns immediately when it finds null though.
+     */
     private int findIndexOfFirstKey(K key, NodeGroup<K> ng) {
         int i = 0;
         while (compareTo(key, ng.getKey(i)) > 0) {
+            i++;
+            if (i >= ng.getTotalNodeGroupSize()) {
+                return -1;
+            }
+        }
+
+        return i;
+    }
+
+    /**
+     * This method finds the first key in the ng.
+     * It skips null and proceeds searching.
+     * The story is this:
+     * There are different requirements for put and get.
+     * For get we want to skip null because NodeGroups can be sparse.
+     * And even though there are all these fancy tools and mechanisms
+     * (like lambdas and interfaces and whatnot), it's also pretty simple
+     * to unroll your code a little bit and do things the good'ol C way.
+     */
+    private int findIndexOfFirstKeySkippingNull(K key, NodeGroup<K> ng) {
+        int i = 0;
+        while (ng.getKey(i) == null || compareTo(key, ng.getKey(i)) > 0) {
             i++;
             if (i >= ng.getTotalNodeGroupSize()) {
                 return -1;
