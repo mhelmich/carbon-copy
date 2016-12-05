@@ -39,9 +39,11 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     @VisibleForTesting
     LeafNodeGroup<K, V> split() {
         LeafNodeGroup<K, V> newLng = new LeafNodeGroup<>(this.nodeSize, this.numNodes);
-        // TODO: pull "this.numNodes / 2" out into a local var
-        List<ArrayList<K>> subListOldLngKeys = this.keys.subList(this.numNodes / 2, this.numNodes);
-        List<ArrayList<V>> subListOldLngValues = this.values.subList(this.numNodes / 2, this.numNodes);
+        // a left leaning split
+        // that means the left NodeGroup is slightly fuller than the resulting right NodeGroup
+        int divider = (int) Math.ceil((this.numNodes) / 2.0);
+        List<ArrayList<K>> subListOldLngKeys = this.keys.subList(divider, this.numNodes);
+        List<ArrayList<V>> subListOldLngValues = this.values.subList(divider, this.numNodes);
 
         for (int i = 0; i < subListOldLngKeys.size(); i++) {
             for (int j = 0; j <subListOldLngKeys.get(i).size(); j++) {
@@ -56,7 +58,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         }
         this.next = newLng;
 
-        for (int i = (this.numNodes / 2) * this.nodeSize; i < this.numNodes * this.nodeSize; i++) {
+        for (int i = divider * this.nodeSize; i < this.numNodes * this.nodeSize; i++) {
             delete(i);
         }
 
