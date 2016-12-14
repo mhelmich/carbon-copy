@@ -77,20 +77,41 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     private void splitNodes(LeafNodeGroup<K, V> lng, List<NodeAndIndex> nodeTrace) {
         LeafNodeGroup<K, V> newLng = lng.split();
         // see whether the parent has an empty slot
-        int i = nodeTrace.size() - 1;
-        NodeAndIndex nai = nodeTrace.get(i);
+        NodeAndIndex nai = nodeTrace.remove(nodeTrace.size() - 1);
         int nodeToVacate = nai.nodeIdxIntoIng + 1;
         int emptyNodeIdx = nai.ing.findNodeIndexOfEmptyNodeFrom(nodeToVacate);
         // maybe we're lucky and find an empty slot in the node
-        if (emptyNodeIdx > 0) {
+        if (emptyNodeIdx < 0) {
+            splitNodes(nai.ing, nodeTrace);
+        } else {
             nai.ing.shiftNodesOneRight(nodeToVacate, emptyNodeIdx);
             nai.ing.setChildNodeOnNode(nodeToVacate, newLng);
             nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, lng);
+        }
+    }
+
+    // recursive for now
+    private void splitNodes(InternalNodeGroup<K> ing, List<NodeAndIndex> nodeTrace) {
+        if (!nodeTrace.isEmpty()) {
+            InternalNodeGroup<K> newIng = ing.split();
+            NodeAndIndex nai = nodeTrace.remove(nodeTrace.size() - 1);
+            int nodeToVacate = nai.nodeIdxIntoIng + 1;
+            int emptyNodeIdx = nai.ing.findNodeIndexOfEmptyNodeFrom(nodeToVacate);
+            if (emptyNodeIdx < 0) {
+                splitNodes(nai.ing, nodeTrace);
+            } else {
+                nai.ing.shiftNodesOneRight(nodeToVacate, emptyNodeIdx);
+                nai.ing.setChildNodeOnNode(nodeToVacate, newIng);
+                nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, ing);
+            }
         } else {
             // TODO
-            // split again :/
-            // this can be either recursive or iterative
-            // I gotta wrap my head around this some time
+            // handle the case where we also need to split the root node
+            InternalNodeGroup<K> newRoot = new InternalNodeGroup<>(ing.getLevel() + 1, internalNodeSize, numberOfNodesInInternalNodeGroup);
+            InternalNodeGroup<K> newIng = ing.split();
+            newRoot.setChildNodeOnNode(0, ing);
+            newRoot.setChildNodeOnNode(1, newIng);
+            this.root = newRoot;
         }
     }
 
@@ -114,31 +135,42 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
 
     @VisibleForTesting
     LeafNodeGroup<K, V> searchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<NodeAndIndex> nodeTrace) {
-        int idx;
+        int nodeIdx;
         InternalNodeGroup<K> ng = ing;
 
         while (ng.getLevel() > 1) {
-            idx = findIndexOfNextNodeGroup(key, ng);
-            nodeTrace.add(newNodeAndIndex(ng, idx));
+            nodeIdx = findIndexOfNextNodeGroup(key, ng);
+            nodeTrace.add(newNodeAndIndex(ng, nodeIdx));
             // I can do that because I know better
             // level > 1 :)
-            ng = (InternalNodeGroup<K>) ng.getChild(idx);
+            ng = (InternalNodeGroup<K>) ng.getChild(nodeIdx);
         }
 
         // ng has now a level 1 (aka the next child pointer will be the leaf)
-        idx = findIndexOfNextNodeGroup(key, ng);
-        nodeTrace.add(newNodeAndIndex(ng, idx));
-        return (LeafNodeGroup<K, V>) ng.getChildForNode(idx);
+        nodeIdx = findIndexOfNextNodeGroup(key, ng);
+        nodeTrace.add(newNodeAndIndex(ng, nodeIdx));
+        assert ng.getChildForNode(nodeIdx) != null;
+        return (LeafNodeGroup<K, V>) ng.getChildForNode(nodeIdx);
     }
 
+    /**
+     * This is a very delicate method.
+     * It needs to find the right node index in various different situations.
+     * The different use cases are:
+     * 1. while traversing the nodes for search
+     * 2. while traversing the nodes for put
+     * 3.
+     */
     private int findIndexOfNextNodeGroup(K key, InternalNodeGroup<K> ing) {
         // the findInsertionIndex method is built for LeafNodeGroups
         // LeafNodeGroups are one field longer
         // keep that in mind
         int idx = checkHighLow(key, ing);
         idx = (idx < 0) ? findIndexOfFirstKeySkippingNull(key, ing) : idx;
+        idx = (idx < 0) ? (ing.findFirstNonNullChild() - 1) * internalNodeSize : idx;
+        idx = (idx < 0) ? findIndexOfFirstKey(key, ing) : idx;
         // convert from absolute index to node index
-        return idx / internalNodeSize;
+        return (idx < 0) ? -1 : idx / internalNodeSize;
     }
 
     private int findInsertionIndex(K key, NodeGroup<K> ng) {
@@ -162,8 +194,6 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
             return 0;
         }
 
-        // the order in which the arguments are passed in seems to flip the semantic
-        // of the boolean parameter "nullGreater"
         int lastIdxInLeafGroup = ng.getTotalNodeGroupSize() - 1;
         K lastKeyInLeafNodeGroup = ng.getKey(lastIdxInLeafGroup);
         if (lastKeyInLeafNodeGroup != null

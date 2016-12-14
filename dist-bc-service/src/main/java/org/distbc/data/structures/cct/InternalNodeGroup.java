@@ -50,6 +50,10 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return this.children.get(nodeIdx);
     }
 
+    int findFirstNonNullChild() {
+        return this.children.indexOf(null);
+    }
+
     NodeGroup<K> getChild(int idx) {
         return getChildForNode(idx / nodeSize);
     }
@@ -81,7 +85,8 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     int findNodeIndexOfEmptyNodeFrom(int idx) {
-        return findIndexOfEmptyNodeFrom(idx) / this.nodeSize;
+        int resIdx = findIndexOfEmptyNodeFrom(idx);
+        return (resIdx < 0) ? -1 : resIdx / this.nodeSize;
     }
 
     int findIndexOfEmptyNodeFrom(int idx) {
