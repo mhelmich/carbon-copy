@@ -153,6 +153,30 @@ public class TreeTest {
                 assertTrue(s.contains(e.getValue()));
             }
         );
+    }
 
+    @Test
+    public void testSplittingSplits() {
+        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        // yea yea, I know
+        // the point is:
+        // I can only insert few elements as I though because the split is right leaning
+        // once I change that I can put more
+        // however, just don't change the sizes and this test will pass
+        int numElements = (int) Math.floor(10 * leafNodeSize * numberOfNodesInLeafNodeGroup);
+
+        for (int i = 0; i < numElements; i++) {
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
+        }
+
+        m.entrySet().forEach(e -> {
+                    Set<String> s = t.get(e.getKey());
+                    assertEquals(1, s.size());
+                    assertTrue(s.contains(e.getValue()));
+                }
+        );
     }
 }
