@@ -1,6 +1,7 @@
 package org.distbc.data.structures.cct;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -152,5 +153,10 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
 
     private void putValue(int index, int offset, @Nullable V value) {
         this.values.get(index).set(offset, value);
+    }
+
+    @Override
+    public String toString() {
+        return StringUtils.join(keys, ", ");
     }
 }

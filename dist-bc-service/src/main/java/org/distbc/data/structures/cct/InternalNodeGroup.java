@@ -1,6 +1,7 @@
 package org.distbc.data.structures.cct;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -187,5 +188,10 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
 
     int getLevel() {
         return this.level;
+    }
+
+    @Override
+    public String toString() {
+        return StringUtils.join(keys, ", ");
     }
 }
