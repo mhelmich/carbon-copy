@@ -76,10 +76,10 @@ public class TreeTest {
         }
 
         m.entrySet().forEach(e -> {
-                    Set<String> s = t.get(e.getKey());
-                    assertEquals(1, s.size());
-                    assertTrue(s.contains(e.getValue()));
-                }
+                Set<String> s = t.get(e.getKey());
+                assertEquals(1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
         );
     }
 
@@ -173,10 +173,10 @@ public class TreeTest {
         }
 
         m.entrySet().forEach(e -> {
-                    Set<String> s = t.get(e.getKey());
-                    assertEquals(1, s.size());
-                    assertTrue(s.contains(e.getValue()));
-                }
+                Set<String> s = t.get(e.getKey());
+                assertEquals(1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
         );
     }
 }
