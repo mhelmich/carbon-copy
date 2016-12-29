@@ -81,7 +81,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         if (grandChild != null) {
             List<K> hks = grandChild.getHighestKeys();
             K hk = hks.get(hks.size() - 1);
-            put((nodeIdx * nodeSize) + (nodeSize - 1), hk);
+            put(nodeIdx , hk);
         }
     }
 
