@@ -218,7 +218,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
 
     public Set<V> get(K key) {
         List<Breadcrumb> nodeTrace = new LinkedList<>();
-        LeafNodeGroup<K, V> lng = putSearchLeafNodeGroup(key, root, /* inout */ nodeTrace);
+        LeafNodeGroup<K, V> lng = getSearchLeafNodeGroup(key, root, /* inout */ nodeTrace);
         int idx = findInsertionIndex(key, lng);
         Set<V> resultSet = new HashSet<>();
         while (idx < lng.getTotalNodeGroupSize()
@@ -228,6 +228,53 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
             idx++;
         }
         return resultSet;
+    }
+
+    private LeafNodeGroup<K, V> getSearchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<Breadcrumb> nodeTrace) {
+        InternalNodeGroup<K> ng = ing;
+
+        while (ng.getLevel() > 1) {
+            Breadcrumb parentBC = (nodeTrace.size() > 0) ? nodeTrace.get(nodeTrace.size() - 1) : null;
+            Breadcrumb bc = putFindIndexOfNextInternalNodeGroup(key, ng, parentBC);
+            nodeTrace.add(bc);
+            // I can do that because I know better
+            // level > 1 :)
+            ng = (InternalNodeGroup<K>) ng.getChild(bc.idxIntoIng);
+        }
+
+        // ng has now a level 1 (aka the next child pointer will be the leaf)
+        Breadcrumb parentBC = (nodeTrace.size() > 0) ? nodeTrace.get(nodeTrace.size() - 1) : null;
+        Breadcrumb bc = getFindIndexOfNextLeafNodeGroup(key, ng, parentBC);
+        nodeTrace.add(bc);
+
+        return (LeafNodeGroup<K, V>) ng.getChildForNode(bc.idxIntoIng / leafNodeSize);
+    }
+
+    private Breadcrumb getFindIndexOfNextLeafNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
+        int idx = 0;
+        boolean keyedOfNonNull = false;
+        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.keyedOffNonNull);
+
+        while (idx < ing.getTotalNodeGroupSize() && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
+            if (ing.getKey(idx) == null) {
+                int nextFullIdx = ing.findClosestFullSlotFrom(idx);
+                if (nextFullIdx < 0) {
+                    int returnValue = (shouldBranchIntoThisNode) ? idx - 1 : idx;
+                    idx = Math.max(0, returnValue);
+                    break;
+                } else {
+                    idx = nextFullIdx;
+                }
+            } else {
+                idx++;
+                keyedOfNonNull = true;
+            }
+        }
+
+        idx = (shouldBranchIntoThisNode) ? idx : idx + 1;
+        idx = Math.min(ing.getTotalNodeGroupSize() - 1, idx);
+        // convert from absolute index to node index
+        return newBreadcrumb(ing, idx, keyedOfNonNull);
     }
 
     public void delete(K key) {
