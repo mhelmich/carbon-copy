@@ -75,9 +75,11 @@ public class TreeTest {
             m.put(i, str);
         }
 
+        System.err.println(t.toString());
+
         m.entrySet().forEach(e -> {
                 Set<String> s = t.get(e.getKey());
-                assertEquals(1, s.size());
+                assertEquals("at " + e.toString(), 1, s.size());
                 assertTrue(s.contains(e.getValue()));
             }
         );
@@ -100,11 +102,13 @@ public class TreeTest {
             m.put(num, str);
         }
 
+        System.err.println(t.toString());
+
         m.entrySet().forEach(e -> {
-                    Set<String> s = t.get(e.getKey());
-                    assertEquals(1, s.size());
-                    assertTrue(s.contains(e.getValue()));
-                }
+                Set<String> s = t.get(e.getKey());
+                assertEquals("at " + e.toString(), 1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
         );
     }
 

@@ -31,7 +31,7 @@ public class TreeLowLevelTest {
         ing.setChildNodeOnNode(1, lng2);
 
         Tree<Integer, String> t = new Tree<>(internalNodeSize, numberOfNodesInInternalNodeGroup, ing);
-        LeafNodeGroup<Integer, String> lng = t.searchLeafNodeGroup(9, ing, nodeTrace);
+        LeafNodeGroup<Integer, String> lng = t.searchLeafNodeGroupForPuts(9, ing, nodeTrace);
         assertEquals(lng1, lng);
 
         Set<String> rs = t.get(9);
