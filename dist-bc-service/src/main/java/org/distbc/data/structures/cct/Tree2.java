@@ -235,6 +235,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
 
         while (ng.getLevel() > 1) {
             Breadcrumb parentBC = (nodeTrace.size() > 0) ? nodeTrace.get(nodeTrace.size() - 1) : null;
+            // we might get away with calling the put flavor here
             Breadcrumb bc = putFindIndexOfNextInternalNodeGroup(key, ng, parentBC);
             nodeTrace.add(bc);
             // I can do that because I know better
@@ -247,6 +248,9 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         Breadcrumb bc = getFindIndexOfNextLeafNodeGroup(key, ng, parentBC);
         nodeTrace.add(bc);
 
+        // leaf nodes have one element more than internal nodes
+        // the conversion doesn't work here because ng is an InternalNodeGroup
+        // pointing to a LeafNodeGroup
         return (LeafNodeGroup<K, V>) ng.getChildForNode(bc.idxIntoIng / leafNodeSize);
     }
 
