@@ -15,9 +15,9 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     private final ArrayList<ArrayList<V>> values;
 
     @VisibleForTesting
-    LeafNodeGroup next;
+    LeafNodeGroup<K, V> next;
     @VisibleForTesting
-    LeafNodeGroup previous;
+    LeafNodeGroup<K, V> previous;
 
     LeafNodeGroup(int nodeSize, int numNodes) {
         super(nodeSize, numNodes);
