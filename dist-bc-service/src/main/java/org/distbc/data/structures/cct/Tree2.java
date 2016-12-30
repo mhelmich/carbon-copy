@@ -154,7 +154,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         Breadcrumb bc = putFindIndexOfNextLeafNodeGroup(key, ng, parentBC);
         nodeTrace.add(bc);
 
-        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) ng.getChild(bc.idxIntoIng);
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) ng.getChildForNode(bc.idxIntoIng / numberOfNodesInLeafNodeGroup);
         if (lng == null) {
             lng = newLeafNodeGroup();
             ng.setChildNode(bc.idxIntoIng, lng);
@@ -162,58 +162,59 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
             // link up previous and next
         }
 
-        return (LeafNodeGroup<K, V>) ng.getChild(bc.idxIntoIng);
+        return (LeafNodeGroup<K, V>) ng.getChild(bc.idxIntoIng / numberOfNodesInLeafNodeGroup);
     }
 
     private Breadcrumb putFindIndexOfNextInternalNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
-        int idx = 0;
-        boolean keyedOfNonNull = false;
-        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.keyedOffNonNull);
+        int idx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
+        boolean nextParentValueIsNull = true;
+        boolean shouldBranchIntoThisNode = parentBC != null && parentBC.ing.getKey(parentBC.idxIntoIng) == null;
 
         while (idx < ing.getTotalNodeGroupSize()
                 && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
             if (ing.getKey(idx) == null) {
                 int nextFullIdx = ing.findClosestFullSlotFrom(idx);
                 if (nextFullIdx < 0) {
-                    int returnValue = (shouldBranchIntoThisNode) ? idx : idx - 1;
-                    idx = Math.max(0, returnValue);
+                    idx = (shouldBranchIntoThisNode) ? idx - 1: idx;
+                    idx = Math.max(0, idx);
+                    nextParentValueIsNull = true;
                     break;
                 } else {
                     idx = nextFullIdx;
                 }
             } else {
                 idx++;
-                keyedOfNonNull = true;
+                nextParentValueIsNull = false;
             }
         }
 
-        return newBreadcrumb(ing, idx, keyedOfNonNull);
+        return newBreadcrumb(ing, idx, nextParentValueIsNull);
     }
 
     private Breadcrumb putFindIndexOfNextLeafNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
-        int idx = 0;
-        boolean keyedOfNonNull = false;
-        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.keyedOffNonNull);
+        int idx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
+        boolean nextParentValueIsNull = true;
+//        boolean shouldBranchIntoThisNode = parentBC != null && parentBC.parentValueIsNull;
 
         while (idx < ing.getTotalNodeGroupSize() && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
             if (ing.getKey(idx) == null) {
                 int nextFullIdx = ing.findClosestFullSlotFrom(idx);
                 if (nextFullIdx < 0) {
-                    int returnValue = (shouldBranchIntoThisNode) ? idx - 1 : idx;
-                    idx = Math.max(0, returnValue);
+//                    idx = (shouldBranchIntoThisNode) ? idx - 1 : idx;
+                    idx = Math.max(0, idx);
                     break;
                 } else {
                     idx = nextFullIdx;
                 }
             } else {
                 idx++;
-                keyedOfNonNull = true;
+                nextParentValueIsNull = false;
             }
         }
 
         idx = Math.min(ing.getTotalNodeGroupSize() - 1, idx);
         // convert from absolute index to node index
-        return newBreadcrumb(ing, idx, keyedOfNonNull);
+        return newBreadcrumb(ing, idx, nextParentValueIsNull);
     }
 
     public Set<V> get(K key) {
@@ -257,14 +258,14 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
     private Breadcrumb getFindIndexOfNextLeafNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
         int idx = 0;
         boolean keyedOfNonNull = false;
-        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.keyedOffNonNull);
+        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.parentValueIsNull);
 
         while (idx < ing.getTotalNodeGroupSize() && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
             if (ing.getKey(idx) == null) {
                 int nextFullIdx = ing.findClosestFullSlotFrom(idx);
                 if (nextFullIdx < 0) {
-                    int returnValue = (shouldBranchIntoThisNode) ? idx - 1 : idx;
-                    idx = Math.max(0, returnValue);
+                    idx = (shouldBranchIntoThisNode) ? idx - 1 : idx;
+                    idx = Math.max(0, idx);
                     break;
                 } else {
                     idx = nextFullIdx;
@@ -275,7 +276,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
             }
         }
 
-        idx = (shouldBranchIntoThisNode) ? idx : idx + 1;
+        idx = (shouldBranchIntoThisNode) ? idx + 1 : idx;
         idx = Math.min(ing.getTotalNodeGroupSize() - 1, idx);
         // convert from absolute index to node index
         return newBreadcrumb(ing, idx, keyedOfNonNull);
@@ -308,16 +309,16 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
     class Breadcrumb {
         final InternalNodeGroup<K> ing;
         final int idxIntoIng;
-        final boolean keyedOffNonNull;
-        private Breadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean keyedOffNonNull) {
+        final boolean parentValueIsNull;
+        private Breadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean parentValueIsNull) {
             this.ing = ing;
             this.idxIntoIng = idxIntoIng;
-            this.keyedOffNonNull = keyedOffNonNull;
+            this.parentValueIsNull = parentValueIsNull;
         }
 
         @Override
         public String toString() {
-            return ing.toString() + "_" + idxIntoIng + "_" + keyedOffNonNull;
+            return ing.toString() + "_" + idxIntoIng + "_" + parentValueIsNull;
         }
     }
 
