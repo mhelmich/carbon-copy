@@ -66,7 +66,7 @@ public class TreeTest2 {
 
     @Test
     public void testPutGetSameKey() {
-        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Tree2<Integer, String> t = new Tree2<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         t.put(19, "prefix_19");
         t.put(19, "prefix_20");
         t.put(19, "prefix_21");
@@ -79,7 +79,7 @@ public class TreeTest2 {
 
     @Test
     public void testPutGetDecreasingOrder() {
-        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Tree2<Integer, String> t = new Tree2<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
         int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
         for (int i = numElements; i > 0; i--) {
@@ -100,7 +100,7 @@ public class TreeTest2 {
 
     @Test
     public void testPutGetAlternatingOrder() {
-        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Tree2<Integer, String> t = new Tree2<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
         int numElements = (leafNodeSize * numberOfNodesInLeafNodeGroup) / 2;
         for (int i = 0; i < numElements; i++) {
@@ -127,7 +127,7 @@ public class TreeTest2 {
 
     @Test
     public void testPutGetRandomKeys() {
-        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Tree2<Integer, String> t = new Tree2<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
         int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
         Random random = new Random();
@@ -149,7 +149,7 @@ public class TreeTest2 {
 
     @Test
     public void testSplittingSplits() {
-        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Tree2<Integer, String> t = new Tree2<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
         // yea yea, I know
         // the point is:
@@ -160,8 +160,13 @@ public class TreeTest2 {
 
         for (int i = 0; i < numElements; i++) {
             String str = "prefix_" + i;
-            t.put(i, str);
-            m.put(i, str);
+            try {
+                t.put(i, str);
+                m.put(i, str);
+            } catch (Exception xcp) {
+                System.err.println(i + "_" + str);
+                throw xcp;
+            }
         }
 
         m.entrySet().forEach(e -> {
