@@ -21,8 +21,8 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         this.keys = initKeyLists();
         this.level = level;
 
-        Vector<NodeGroup<K>> vc = new Vector<>(numNodes);
-        vc.setSize(numNodes);
+        Vector<NodeGroup<K>> vc = new Vector<>(nodeSize + 1);
+        vc.setSize(nodeSize + 1);
         this.children = new ArrayList<>(vc);
     }
 
@@ -56,7 +56,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     }
 
     NodeGroup<K> getChild(int idx) {
-        return getChildForNode(idx / nodeSize);
+        return getChildForNode(idx / (nodeSize + 1));
     }
 
     void setChildNode(int idx, @Nullable NodeGroup<K> child) {
@@ -64,24 +64,26 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         setChildNodeOnNode(idx / nodeSize, child);
     }
 
-    void setChildNodeOnNode(int nodeIdx, @Nullable NodeGroup<K> child) {
-        assert nodeIdx <= numNodes;
-        this.children.set(nodeIdx, child);
+    void setChildNodeOnNode(int idx, @Nullable NodeGroup<K> child) {
+        assert idx <= numNodes * nodeSize;
+        this.children.set(idx / nodeSize, child);
         if (child != null) {
             // now set the keys automagically for this
             List<K> keysToSet = child.getHighestKeys();
-            int baseIdx = nodeIdx * nodeSize;
+            // this looks weird and it is too
+            // it just uses the fact that Java floors all these values
+            int baseIdx = (idx / nodeSize) * nodeSize;
             for (int i = 0; i < keysToSet.size() - 1; i++) {
                 put(baseIdx + i, keysToSet.get(i), true);
             }
         }
     }
 
-    void setGrandChildNodeOnNode(int nodeIdx, @Nullable NodeGroup<K> grandChild) {
+    void setGrandChildNodeOnNode(int idx, @Nullable NodeGroup<K> grandChild) {
         if (grandChild != null) {
             List<K> hks = grandChild.getHighestKeys();
             K hk = hks.get(hks.size() - 1);
-            put(nodeIdx , hk);
+            put(idx , hk);
         }
     }
 
