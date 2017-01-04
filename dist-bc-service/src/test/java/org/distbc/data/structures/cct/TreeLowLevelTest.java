@@ -3,10 +3,6 @@ package org.distbc.data.structures.cct;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -17,27 +13,27 @@ public class TreeLowLevelTest {
     private final int nodeSize = 3;
     private final int numNodes = 4;
 
-    @Test
-    public void testSearch() {
-        int internalNodeSize = 2;
-        int numberOfNodesInInternalNodeGroup = 2;
-        List<Tree<Integer, String>.NodeAndIndex> nodeTrace = new LinkedList<>();
-        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, internalNodeSize, numberOfNodesInInternalNodeGroup);
-
-        LeafNodeGroup<Integer, String> lng1 = getFullLeafNodeGroup(1);
-        LeafNodeGroup<Integer, String> lng2 = getFullLeafNodeGroup(10);
-
-        ing.setChildNodeOnNode(0, lng1);
-        ing.setChildNodeOnNode(1, lng2);
-
-        Tree<Integer, String> t = new Tree<>(internalNodeSize, numberOfNodesInInternalNodeGroup, ing);
-        LeafNodeGroup<Integer, String> lng = t.searchLeafNodeGroupForPuts(9, ing, nodeTrace);
-        assertEquals(lng1, lng);
-
-        Set<String> rs = t.get(9);
-        assertEquals(1, rs.size());
-        assertTrue(rs.contains("prefix_9"));
-    }
+//    @Test
+//    public void testSearch() {
+//        int internalNodeSize = 2;
+//        int numberOfNodesInInternalNodeGroup = 2;
+//        List<Tree<Integer, String>.NodeAndIndex> nodeTrace = new LinkedList<>();
+//        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, internalNodeSize, numberOfNodesInInternalNodeGroup);
+//
+//        LeafNodeGroup<Integer, String> lng1 = getFullLeafNodeGroup(1);
+//        LeafNodeGroup<Integer, String> lng2 = getFullLeafNodeGroup(10);
+//
+//        ing.setChildNodeOnNode(0, lng1);
+//        ing.setChildNodeOnNode(1, lng2);
+//
+//        Tree<Integer, String> t = new Tree<>(internalNodeSize, numberOfNodesInInternalNodeGroup, ing);
+//        LeafNodeGroup<Integer, String> lng = t.searchLeafNodeGroupForPuts(9, ing, nodeTrace);
+//        assertEquals(lng1, lng);
+//
+//        Set<String> rs = t.get(9);
+//        assertEquals(1, rs.size());
+//        assertTrue(rs.contains("prefix_9"));
+//    }
 
     @Test
     public void testSplitWithChildNodes() {
