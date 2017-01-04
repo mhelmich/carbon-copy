@@ -51,15 +51,15 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         return this.children.get(nodeIdx);
     }
 
-    int findFirstNonNullChild() {
-        return this.children.indexOf(null);
-    }
+//    int findFirstNonNullChild() {
+//        return this.children.indexOf(null);
+//    }
 
     NodeGroup<K> getChild(int idx) {
-        return getChildForNode(idx / (nodeSize + 1));
+        return getChildForNode(idx / nodeSize);
     }
 
-    void setChildNode(int idx, @Nullable NodeGroup<K> child) {
+    void setChildNode(int idx, NodeGroup<K> child) {
         assert idx % nodeSize == 0;
         setChildNodeOnNode(idx / nodeSize, child);
     }
@@ -79,13 +79,13 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
         }
     }
 
-    void setGrandChildNodeOnNode(int idx, @Nullable NodeGroup<K> grandChild) {
-        if (grandChild != null) {
-            List<K> hks = grandChild.getHighestKeys();
-            K hk = hks.get(hks.size() - 1);
-            put(idx , hk);
-        }
-    }
+//    void setGrandChildNodeOnNode(int idx, @Nullable NodeGroup<K> grandChild) {
+//        if (grandChild != null) {
+//            List<K> hks = grandChild.getHighestKeys();
+//            K hk = hks.get(hks.size() - 1);
+//            put(idx , hk);
+//        }
+//    }
 
     int findNodeIndexOfEmptyNodeFrom(int idx) {
         int resIdx = findIndexOfEmptyNodeFrom(idx);

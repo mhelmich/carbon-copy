@@ -1,7 +1,5 @@
 package org.distbc.data.structures.cct;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -18,19 +16,22 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private InternalNodeGroup<K> root;
 
-    @VisibleForTesting
     Tree(int leafNodeSize, int numberOfNodesInLeafNodeGroup) {
         this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
         this.numberOfNodesInInternalNodeGroup = leafNodeSize - 1;
         this.internalNodeSize = numberOfNodesInLeafNodeGroup - 1;
         this.leafNodeSize = leafNodeSize;
 
-        root = newInternalNodeGroup(1);
+        // we need at least a tree with depth 3
+        // in order to get basic routing right
+        root = newInternalNodeGroup(2);
+        InternalNodeGroup<K> intermediate = newInternalNodeGroup(1);
+        root.setChildNodeOnNode(0, intermediate);
         LeafNodeGroup<K, V> lng = newLeafNodeGroup();
-        root.setChildNodeOnNode(0, lng);
+        intermediate.setChildNodeOnNode(0, lng);
+        System.err.println(toString());
     }
 
-    @VisibleForTesting
     Tree(int leafNodeSize, int numberOfNodesInLeafNodeGroup, InternalNodeGroup<K> root) {
         this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
         this.numberOfNodesInInternalNodeGroup = leafNodeSize - 1;
@@ -41,80 +42,55 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     public synchronized void put(K key, V value) {
-        List<NodeAndIndex> nodeTrace = new ArrayList<>();
-        LeafNodeGroup<K, V> lng = searchLeafNodeGroupForPuts(key, root, /* inout */ nodeTrace);
-        int insertionIdx = findInsertionIndex(key, lng);
-        int emptyIdx = lng.findClosestEmptySlotFrom(insertionIdx);
-        if (emptyIdx < 0) {
-            System.err.println(toString());
-            // there's no space in lng anymore, let's make a new one
-            splitNodes(lng, nodeTrace);
-            System.err.println(toString());
-            // the magic of recursive calls
-            // we still need at the current key
-            // I don't see a reason why this should run dead
-            // at the very least as long as put is single-threaded
-            put(key, value);
-            System.err.println(toString());
-        } else {
-            // there's still space in lng
-            lng.maybeShiftOneRight(insertionIdx);
-            lng.put(insertionIdx, key, value);
-            // do the highest keys business
-            NodeAndIndex parent = nodeTrace.get(nodeTrace.size() - 1);
-            setHighestKeysParent(parent, lng);
-            if (nodeTrace.size() > 1) {
-                NodeAndIndex grandParent = nodeTrace.get(nodeTrace.size() - 2);
-                setHighestKeysGrandParent(grandParent, parent.ing);
+        List<Breadcrumb> breadcrumbs = searchTree(key, root);
+        Breadcrumb bc = breadcrumbs.get(breadcrumbs.size() - 1);
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) bc.ing.getChild(bc.idxIntoIng);
+        int startIdx = (bc.idxIntoIng % internalNodeSize) * leafNodeSize;
+        int insertionIdx = findInsertionIndex(key, lng, startIdx);
+    }
+
+    private List<Breadcrumb> searchTree(K key, InternalNodeGroup<K> ing) {
+        NodeGroup<K> ng = ing;
+        Breadcrumb parentBC = null;
+        List<Breadcrumb> breadcrumbs = new ArrayList<>(ing.getLevel());
+
+        do {
+            InternalNodeGroup<K> tmp = (InternalNodeGroup<K>) ng;
+            Breadcrumb bc = findIndexOfNextInternalNodeGroup(key, tmp, parentBC);
+            breadcrumbs.add(bc);
+            // I can do that because I know better
+            // level > 1 :)
+            ng = tmp.getChild(bc.idxIntoIng);
+            parentBC = bc;
+        } while (ng != null && ng.getLevel() > 0);
+
+        return breadcrumbs;
+    }
+
+    private Breadcrumb findIndexOfNextInternalNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
+        int nodeIdx = (parentBC != null) ? parentBC.idxIntoIng : 0;
+        int startIdx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
+        int idx = startIdx;
+
+        while (ing.getKey(idx) != null && compareTo(key, ing.getKey(idx)) > 0) {
+            idx++;
+        }
+
+        idx = Math.max(startIdx, idx);
+        idx = Math.min(ing.getTotalNodeGroupSize(), idx);
+        return newBreadcrumb(ing, idx);
+    }
+
+    private int findInsertionIndex(K key, NodeGroup<K> ng, int startIdx) {
+        int i = startIdx;
+        while (compareTo(key, ng.getKey(i)) > 0) {
+            i++;
+            if (i >= ng.getTotalNodeGroupSize()) {
+                return -1;
             }
         }
-    }
 
-    private void setHighestKeysParent(NodeAndIndex nai, NodeGroup<K> ng) {
-        nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, ng);
-    }
-
-    private void setHighestKeysGrandParent(NodeAndIndex nai, NodeGroup<K> ng) {
-        nai.ing.setGrandChildNodeOnNode(nai.nodeIdxIntoIng, ng);
-    }
-
-    private void splitNodes(LeafNodeGroup<K, V> lng, List<NodeAndIndex> nodeTrace) {
-        LeafNodeGroup<K, V> newLng = lng.split();
-        // see whether the parent has an empty slot
-        NodeAndIndex nai = nodeTrace.remove(nodeTrace.size() - 1);
-        int nodeToVacate = nai.nodeIdxIntoIng + 1;
-        int emptyNodeIdx = nai.ing.findNodeIndexOfEmptyNodeFrom(nodeToVacate);
-        // maybe we're lucky and find an empty slot in the node
-        if (emptyNodeIdx < 0) {
-            splitNodes(nai.ing, nodeTrace);
-        } else {
-            nai.ing.shiftNodesOneRight(nodeToVacate, emptyNodeIdx);
-            nai.ing.setChildNodeOnNode(nodeToVacate, newLng);
-            nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, lng);
-        }
-    }
-
-    // recursive for now
-    private void splitNodes(InternalNodeGroup<K> ing, List<NodeAndIndex> nodeTrace) {
-        if (!nodeTrace.isEmpty()) {
-            InternalNodeGroup<K> newIng = ing.split();
-            NodeAndIndex nai = nodeTrace.remove(nodeTrace.size() - 1);
-            int nodeToVacate = nai.nodeIdxIntoIng + 1;
-            int emptyNodeIdx = nai.ing.findNodeIndexOfEmptyNodeFrom(nodeToVacate);
-            if (emptyNodeIdx < 0) {
-                splitNodes(nai.ing, nodeTrace);
-            } else {
-                nai.ing.shiftNodesOneRight(nodeToVacate, emptyNodeIdx);
-                nai.ing.setChildNodeOnNode(nodeToVacate, newIng);
-                nai.ing.setChildNodeOnNode(nai.nodeIdxIntoIng, ing);
-            }
-        } else {
-            InternalNodeGroup<K> newRoot = newInternalNodeGroup(ing.getLevel() + 1);
-            InternalNodeGroup<K> newIng = ing.split();
-            newRoot.setChildNodeOnNode(0, ing);
-            newRoot.setChildNodeOnNode(1, newIng);
-            this.root = newRoot;
-        }
+        return i;
     }
 
     public Set<V> get(K key) {
@@ -157,31 +133,6 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         return (LeafNodeGroup<K, V>) ng.getChildForNode(nodeIdx);
     }
 
-    @VisibleForTesting
-    LeafNodeGroup<K, V> searchLeafNodeGroupForPuts(K key, InternalNodeGroup<K> ing, /* inout */ List<NodeAndIndex> nodeTrace) {
-        int nodeIdx;
-        InternalNodeGroup<K> ng = ing;
-
-        while (ng.getLevel() > 1) {
-            nodeIdx = findIndexOfNextNodeGroupForPuts(key, ng);
-            nodeTrace.add(newNodeAndIndex(ng, nodeIdx));
-            // I can do that because I know better
-            // level > 1 :)
-            ng = (InternalNodeGroup<K>) ng.getChildForNode(nodeIdx);
-        }
-
-        // ng has now a level 1 (aka the next child pointer will be the leaf)
-        nodeIdx = findIndexOfNextNodeGroupForPuts(key, ng);
-        nodeTrace.add(newNodeAndIndex(ng, nodeIdx));
-
-        if (ng.getChildForNode(nodeIdx) == null) {
-            LeafNodeGroup<K, V> newLng = newLeafNodeGroup();
-            ng.setChildNodeOnNode(nodeIdx, newLng);
-        }
-
-        return (LeafNodeGroup<K, V>) ng.getChildForNode(nodeIdx);
-    }
-
     private int findIndexOfNextNodeGroupForGets(K key, InternalNodeGroup<K> ing) {
         // the findInsertionIndex method is built for LeafNodeGroups
         // LeafNodeGroups are one field longer
@@ -193,62 +144,6 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
         return (idx < 0) ? -1 : idx / internalNodeSize;
     }
 
-    /**
-     * This is a very delicate method.
-     * It needs to find the right node index in various different situations.
-     * The different use cases are:
-     * 1. while traversing the nodes for search
-     * 2. while traversing the nodes for put
-     */
-    private int findIndexOfNextNodeGroupForPuts(K key, InternalNodeGroup<K> ing) {
-        // the findInsertionIndex method is built for LeafNodeGroups
-        // LeafNodeGroups are one field longer
-        // keep that in mind
-//        int idx = checkHighLow(key, ing);
-//        idx = (idx < 0) ? findIndexOfFirstKeySkippingNullForPuts(key, ing) : idx;
-        int idx = findIndexOfFirstKeySkippingNullForPuts(key, ing);
-        // convert from absolute index to node index
-        return (idx < 0) ? -1 : idx / internalNodeSize;
-    }
-
-    private int findInsertionIndex(K key, NodeGroup<K> ng) {
-//        int insideBounds = checkHighLow(key, ng);
-//        return (insideBounds < 0) ? findIndexOfFirstKey(key, ng) : insideBounds;
-        return findIndexOfFirstKey(key, ng);
-    }
-
-    /**
-     * This method checks to see whether key is smaller than the smallest
-     * or larger than the largest value in ng.
-     * This structure is a little bit odd. We return -1 to signal the caller
-     * to proceed searching. It's the C way of doing things since lambdas and
-     * passing function pointers down, rip the code apart and are messy too.
-     */
-//    private int checkHighLow(K key, NodeGroup<K> ng) {
-//        // if ing#getKey returns null, we want to return
-//        // hence null greater needs to be true
-//        K firstKeyInLeafNodeGroup = ng.getKey(0);
-//        if (
-////                firstKeyInLeafNodeGroup == null
-////                ||
-//                        compareTo(key, firstKeyInLeafNodeGroup) < 0) {
-//            return 0;
-//        }
-//
-//        int lastIdxInLeafGroup = ng.getTotalNodeGroupSize() - 1;
-//        K lastKeyInLeafNodeGroup = ng.getKey(lastIdxInLeafGroup);
-//        if (lastKeyInLeafNodeGroup != null
-//                && compareTo(key, lastKeyInLeafNodeGroup) > 0) {
-//            return lastIdxInLeafGroup;
-//        }
-//
-//        return -1;
-//    }
-
-    /**
-     * This method finds the first key in the ng.
-     * It returns immediately when it finds null though.
-     */
     private int findIndexOfFirstKey(K key, NodeGroup<K> ng) {
         int i = 0;
         while (compareTo(key, ng.getKey(i)) > 0) {
@@ -271,45 +166,6 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
                 if (nextFullIdx < 0) {
                     // in case there is none, we found a winner
                     return (i > 0) ? i - 1 : 0;
-                } else {
-                    // if there is, let's proceed
-                    i = nextFullIdx;
-                }
-            } else {
-                i++;
-            }
-            if (i >= ng.getTotalNodeGroupSize()) {
-                return ng.getTotalNodeGroupSize() - 1;
-            }
-        }
-
-        return i;
-    }
-
-    /**
-     * This method finds the first key in the ng.
-     * It skips null and proceeds searching.
-     * The story is this:
-     * There are different requirements for put and get.
-     * For get we want to skip null because NodeGroups can be sparse.
-     * And even though there are all these fancy tools and mechanisms
-     * (like lambdas and interfaces and whatnot), it's also pretty simple
-     * to unroll your code a little bit and do things the good'ol C way.
-     *
-     * This relatively brittle code because it has specific semantics.
-     * It's supposed to return the index for the last (non-null) value
-     * that is smaller or equal than to the key I'm looking for
-     */
-    private int findIndexOfFirstKeySkippingNullForPuts(K key, NodeGroup<K> ng) {
-        int i = 0;
-        while (ng.getKey(i) == null || compareTo(key, ng.getKey(i)) > 0) {
-            if (ng.getKey(i) == null) {
-                // if the key at i is null, let's fast-forward to the next
-                // non-null key
-                int nextFullIdx = ng.findClosestFullSlotFrom(i);
-                if (nextFullIdx < 0) {
-                    // in case there is none, we found a winner
-                    return (ng.getLevel() > 1) ? i : (i > 0) ? i - 1 : 0;
                 } else {
                     // if there is, let's proceed
                     i = nextFullIdx;
@@ -353,13 +209,30 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
      * It keeps track of node groups and the index into the node group,
      * which was used to descend to the next lower level.
      */
-    @VisibleForTesting
     class NodeAndIndex {
         final InternalNodeGroup<K> ing;
         final int nodeIdxIntoIng;
         private NodeAndIndex(InternalNodeGroup<K> ing, int nodeIdxIntoIng) {
             this.ing = ing;
             this.nodeIdxIntoIng = nodeIdxIntoIng;
+        }
+    }
+
+    private Breadcrumb newBreadcrumb(InternalNodeGroup<K> ing, int idxIntoIng) {
+        return new Breadcrumb(ing, idxIntoIng);
+    }
+
+    class Breadcrumb {
+        final InternalNodeGroup<K> ing;
+        private final int idxIntoIng;
+        private Breadcrumb(InternalNodeGroup<K> ing, int idxIntoIng) {
+            this.ing = ing;
+            this.idxIntoIng = idxIntoIng;
+        }
+
+        @Override
+        public String toString() {
+            return idxIntoIng + "_" + ing.toString();
         }
     }
 
@@ -378,7 +251,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
                 sb.append(
                         (ng != null) ? ng.toString() : "NULL"
                 )
-                .append(" || ");
+                        .append(" || ");
             }
             sb.append("\n");
         }
@@ -398,7 +271,7 @@ public class Tree<K extends Comparable<K>, V extends Comparable<V>> {
                     if (nodeGroups.get(ng.getLevel() - 1) == null) {
                         nodeGroups.set(ng.getLevel() - 1, new ArrayList<>());
                     }
-                    nodeGroups.get(ng.getLevel() - 1).add(ing);
+                    nodeGroups.get(ng.getLevel() - 1).add(null);
                 } else {
                     traverseIng((InternalNodeGroup<K>)ng.getChildForNode(i), nodeGroups);
                 }

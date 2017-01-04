@@ -65,6 +65,27 @@ public class TreeTest {
     }
 
     @Test
+    public void testPutGetIncreasingOrderWithSplit() {
+        Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        int numElements = 2 * leafNodeSize * numberOfNodesInLeafNodeGroup;
+        for (int i = 0; i < numElements; i++) {
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
+        }
+
+        System.err.println(t.toString());
+
+        m.entrySet().forEach(e -> {
+                    Set<String> s = t.get(e.getKey());
+                    assertEquals("at " + e.toString(), 1, s.size());
+                    assertTrue(s.contains(e.getValue()));
+                }
+        );
+    }
+
+    @Test
     public void testPutGetDecreasingOrder() {
         Tree<Integer, String> t = new Tree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();

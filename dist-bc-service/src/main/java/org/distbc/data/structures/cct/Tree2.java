@@ -2,6 +2,8 @@ package org.distbc.data.structures.cct;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,8 +47,11 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
     public synchronized void put(K key, V value) {
         List<Breadcrumb> breadcrumbs = searchTree(key, root);
         Breadcrumb bc = breadcrumbs.get(breadcrumbs.size() - 1);
-        int insertionIdx = findInsertionIndex(key, bc);
-        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) bc.ing.getChild(bc.idxIntoIng);
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) getTheChildIWant(breadcrumbs);
+        // start at zero of each node
+        int startIdx = (bc.idxIntoIng % internalNodeSize) * leafNodeSize;
+        int insertionIdx = findInsertionIndex(key, lng, startIdx);
+        assert insertionIdx > -1;
         int emptyIdx = lng.findClosestEmptySlotFrom(insertionIdx);
         if (emptyIdx < 0) {
             splitNodes(lng, breadcrumbs);
@@ -86,7 +91,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
             parent.ing.put(parent.idxIntoIng, key);
         }
 
-        NodeGroup<K> ng = parent.ing.getChild(parent.idxIntoIng);
+        NodeGroup<K> ng = parent.ing.getChildForNode(parent.idxIntoIng / leafNodeSize);
         boolean shouldDoIt = (emptyIdx + 1) % ng.getTotalNodeGroupSize() == 0;
         for (int i = breadcrumbs.size() - 2; shouldDoIt && i >= 0; i--) {
             Breadcrumb gp = breadcrumbs.get(i);
@@ -134,9 +139,41 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         }
     }
 
-    private int findInsertionIndex(K key, Breadcrumb bc) {
-        NodeGroup<K> ng = bc.ing.getChild(bc.idxIntoIng);
-        int i = bc.idxIntoIng * leafNodeSize;
+    @NotNull
+    private NodeGroup<K> getTheChildIWant(List<Breadcrumb> breadcrumbs) {
+        int s = breadcrumbs.size();
+        if (s > 1) {
+            Breadcrumb p = breadcrumbs.get(s - 1);
+            Breadcrumb gp = breadcrumbs.get(s - 2);
+            return getTheChildIWant(p, gp);
+        } else {
+            throw new IllegalStateException("we should always have at least two breadcrumbs");
+        }
+    }
+
+    private int getTheIndexIWant(Breadcrumb parent, @Nullable Breadcrumb grandParent) {
+//        int idx = grandParent != null && grandParent.parentWasNull ? parent.idxIntoIng - 1 : parent.idxIntoIng;
+//        int minIdx = (grandParent.idxIntoIng / internalNodeSize) * internalNodeSize;
+//        int maxIdx = minIdx + internalNodeSize;
+//        idx = Math.max(idx, minIdx);
+//        idx = Math.min(idx, maxIdx);
+//        return idx;
+        return parent.idxIntoIng % (internalNodeSize + 1);
+    }
+
+    private NodeGroup<K> getTheChildIWant(Breadcrumb parent, @Nullable Breadcrumb grandParent) {
+        int nodeIdx = getTheIndexIWant(parent, grandParent);
+        NodeGroup<K> ng = parent.ing.getChildForNode(nodeIdx);
+        if (ng == null) {
+            ng = newLeafNodeGroup();
+            parent.ing.setChildNode(nodeIdx * leafNodeSize, ng);
+            System.err.println(toString());
+        }
+        return parent.ing.getChild(nodeIdx);
+    }
+
+    private int findInsertionIndex(K key, NodeGroup<K> ng, int startIdx) {
+        int i = startIdx;
         while (compareTo(key, ng.getKey(i)) > 0) {
             i++;
             if (i >= ng.getTotalNodeGroupSize()) {
@@ -147,52 +184,10 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         return i;
     }
 
-//    private int findInsertionIndex(K key, NodeGroup<K> ng) {
-//        int i = 0;
-//        while (compareTo(key, ng.getKey(i)) > 0) {
-//            i++;
-//            if (i >= ng.getTotalNodeGroupSize()) {
-//                return -1;
-//            }
-//        }
-//
-//        return i;
-//    }
-//
-//    private LeafNodeGroup<K, V> putSearchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<Breadcrumb> nodeTrace) {
-//        InternalNodeGroup<K> ng = ing;
-//        Breadcrumb parentBC = null;
-//
-//        do {
-////            Breadcrumb bc = putFindIndexOfNextInternalNodeGroup(key, ng, parentBC);
-//            Breadcrumb bc = findIndexOfNextInternalNodeGroup(key, ng, parentBC);
-//            nodeTrace.add(bc);
-//            // I can do that because I know better
-//            // level > 1 :)
-//            ng = (InternalNodeGroup<K>) ng.getChild(bc.idxIntoIng);
-//            parentBC = bc;
-//        } while (ng.getLevel() > 1);
-//
-//        // ng has now a level 1 (aka the next child pointer will be the leaf)
-////        Breadcrumb bc = putFindIndexOfNextLeafNodeGroup(key, ng, parentBC);
-//        Breadcrumb bc = findIndexOfNextInternalNodeGroup(key, ng, parentBC);
-//        nodeTrace.add(bc);
-//
-//        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) ng.getChild(bc.idxIntoIng);
-//        if (lng == null) {
-//            lng = newLeafNodeGroup();
-//            ng.setChildNode(bc.idxIntoIng, lng);
-//            // FIXME
-//            // link up previous and next
-//        }
-//
-//        return lng;
-//    }
-
     private List<Breadcrumb> searchTree(K key, InternalNodeGroup<K> ing) {
         NodeGroup<K> ng = ing;
         Breadcrumb parentBC = null;
-        List<Breadcrumb> breadcrumbs = new ArrayList<>();
+        List<Breadcrumb> breadcrumbs = new ArrayList<>(ing.getLevel());
 
         do {
             InternalNodeGroup<K> tmp = (InternalNodeGroup<K>) ng;
@@ -202,7 +197,7 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
             // level > 1 :)
             ng = tmp.getChild(bc.idxIntoIng);
             parentBC = bc;
-        } while (ng.getLevel() > 0);
+        } while (ng != null && ng.getLevel() > 0);
 
         return breadcrumbs;
     }
@@ -210,72 +205,23 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
     private Breadcrumb findIndexOfNextInternalNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
         int startIdx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
         int idx = startIdx;
-        boolean shouldBranchIntoThisNode = parentBC == null ? ing.getKey(0) == null : parentBC.ing.getKey(parentBC.idxIntoIng) == null;
 
         while (ing.getKey(idx) != null && compareTo(key, ing.getKey(idx)) > 0) {
             idx++;
         }
 
-        idx = Math.min(ing.getTotalNodeGroupSize(), Math.max(startIdx, (shouldBranchIntoThisNode) ? idx : idx + 1));
+        idx = Math.max(startIdx, idx);
+        idx = Math.min(ing.getTotalNodeGroupSize(), idx);
         return newBreadcrumb(ing, idx, ing.getKey(idx) == null);
     }
-
-//    private Breadcrumb putFindIndexOfNextInternalNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
-//        int startIdx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
-//        int idx = startIdx;
-//        boolean shouldBranchIntoThisNode = parentBC == null ? ing.getKey(0) == null : parentBC.ing.getKey(parentBC.idxIntoIng) == null;
-//
-//        while (idx < ing.getTotalNodeGroupSize()
-//                && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
-//            if (ing.getKey(idx) == null) {
-//                int nextFullIdx = ing.findClosestFullSlotFrom(idx);
-//                if (nextFullIdx < 0) {
-//                    idx = (shouldBranchIntoThisNode) ? idx - 1: idx;
-//                    idx = Math.max(startIdx, idx);
-//                    break;
-//                } else {
-//                    idx = nextFullIdx;
-//                }
-//            } else {
-//                idx++;
-//            }
-//        }
-//
-//        return newBreadcrumb(ing, idx, ing.getKey(idx) == null);
-//    }
-
-//    private Breadcrumb putFindIndexOfNextLeafNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
-//        int startIdx = (parentBC != null) ? parentBC.idxIntoIng * internalNodeSize : 0;
-//        int idx = startIdx;
-//        boolean nextParentValueIsNull = true;
-//        boolean shouldBranchIntoThisNode = parentBC == null || parentBC.ing.getKey(parentBC.idxIntoIng) == null;
-//
-//        while (idx < ing.getTotalNodeGroupSize() && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
-//            if (ing.getKey(idx) == null) {
-//                int nextFullIdx = ing.findClosestFullSlotFrom(idx);
-//                if (nextFullIdx < 0) {
-//                    idx = (shouldBranchIntoThisNode) ? idx - 1 : idx;
-//                    idx = Math.max(startIdx, idx);
-//                    break;
-//                } else {
-//                    idx = nextFullIdx;
-//                }
-//            } else {
-//                idx++;
-//                nextParentValueIsNull = false;
-//            }
-//        }
-//
-//        idx = Math.min(ing.getTotalNodeGroupSize() - 1, idx);
-//        // convert from absolute index to node index
-//        return newBreadcrumb(ing, idx, nextParentValueIsNull);
-//    }
 
     public Set<V> get(K key) {
         List<Breadcrumb> breadcrumbs = searchTree2(key, root);
         Breadcrumb bc = breadcrumbs.get(breadcrumbs.size() - 1);
-        int idx = findInsertionIndex(key, bc);
-        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) bc.ing.getChild(bc.idxIntoIng);
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) getTheChildIWant(breadcrumbs);
+        int idx = findInsertionIndex(key, lng, bc.idxIntoIng * leafNodeSize);
+//        int idx = findInsertionIndex(key, bc);
+//        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) bc.ing.getChild(bc.idxIntoIng);
         Set<V> resultSet = new HashSet<>();
         while (idx < lng.getTotalNodeGroupSize()
                 && lng.getKey(idx) != null
@@ -317,57 +263,6 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         return newBreadcrumb(ing, idx, ing.getKey(idx) == null);
     }
 
-//    private LeafNodeGroup<K, V> getSearchLeafNodeGroup(K key, InternalNodeGroup<K> ing, /* inout */ List<Breadcrumb> nodeTrace) {
-//        InternalNodeGroup<K> ng = ing;
-//
-//        while (ng.getLevel() > 1) {
-//            Breadcrumb parentBC = (nodeTrace.size() > 0) ? nodeTrace.get(nodeTrace.size() - 1) : null;
-//            // we might get away with calling the put flavor here
-//            Breadcrumb bc = putFindIndexOfNextInternalNodeGroup(key, ng, parentBC);
-//            nodeTrace.add(bc);
-//            // I can do that because I know better
-//            // level > 1 :)
-//            ng = (InternalNodeGroup<K>) ng.getChild(bc.idxIntoIng);
-//        }
-//
-//        // ng has now a level 1 (aka the next child pointer will be the leaf)
-//        Breadcrumb parentBC = (nodeTrace.size() > 0) ? nodeTrace.get(nodeTrace.size() - 1) : null;
-//        Breadcrumb bc = getFindIndexOfNextLeafNodeGroup(key, ng, parentBC);
-//        nodeTrace.add(bc);
-//
-//        // leaf nodes have one element more than internal nodes
-//        // the conversion doesn't work here because ng is an InternalNodeGroup
-//        // pointing to a LeafNodeGroup
-//        return (LeafNodeGroup<K, V>) ng.getChildForNode(bc.idxIntoIng / leafNodeSize);
-//    }
-
-//    private Breadcrumb getFindIndexOfNextLeafNodeGroup(K key, InternalNodeGroup<K> ing, Breadcrumb parentBC) {
-//        int idx = 0;
-//        boolean keyedOfNonNull = false;
-//        boolean shouldBranchIntoThisNode = !(parentBC != null && parentBC.parentValueIsNull);
-//
-//        while (idx < ing.getTotalNodeGroupSize() && (ing.getKey(idx) == null || compareTo(key, ing.getKey(idx)) > 0)) {
-//            if (ing.getKey(idx) == null) {
-//                int nextFullIdx = ing.findClosestFullSlotFrom(idx);
-//                if (nextFullIdx < 0) {
-//                    idx = (shouldBranchIntoThisNode) ? idx - 1 : idx;
-//                    idx = Math.max(0, idx);
-//                    break;
-//                } else {
-//                    idx = nextFullIdx;
-//                }
-//            } else {
-//                idx++;
-//                keyedOfNonNull = true;
-//            }
-//        }
-//
-//        idx = (shouldBranchIntoThisNode) ? idx + 1 : idx;
-//        idx = Math.min(ing.getTotalNodeGroupSize() - 1, idx);
-//        // convert from absolute index to node index
-//        return newBreadcrumb(ing, idx, keyedOfNonNull);
-//    }
-
     public void delete(K key) {
         put(key, null);
     }
@@ -382,8 +277,8 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
         }
     }
 
-    private Breadcrumb newBreadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean isFull) {
-        return new Breadcrumb(ing, idxIntoIng, isFull);
+    private Breadcrumb newBreadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean parentWasNull) {
+        return new Breadcrumb(ing, idxIntoIng, parentWasNull);
     }
 
     /**
@@ -394,17 +289,17 @@ public class Tree2<K extends Comparable<K>, V extends Comparable<V>> {
     @VisibleForTesting
     class Breadcrumb {
         final InternalNodeGroup<K> ing;
-        final int idxIntoIng;
-        final boolean parentValueIsNull;
-        private Breadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean parentValueIsNull) {
+        private final int idxIntoIng;
+        final boolean parentWasNull;
+        private Breadcrumb(InternalNodeGroup<K> ing, int idxIntoIng, boolean parentWasNull) {
             this.ing = ing;
             this.idxIntoIng = idxIntoIng;
-            this.parentValueIsNull = parentValueIsNull;
+            this.parentWasNull = parentWasNull;
         }
 
         @Override
         public String toString() {
-            return idxIntoIng + "_" + parentValueIsNull + "_" + ing.toString();
+            return idxIntoIng + "_" + parentWasNull + "_" + ing.toString();
         }
     }
 
