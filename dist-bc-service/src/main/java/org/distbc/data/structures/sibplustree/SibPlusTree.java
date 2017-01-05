@@ -2,7 +2,7 @@ package org.distbc.data.structures.sibplustree;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
@@ -89,7 +89,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private NodeIdxAndIdx searchInternalNodeGroup(K key, InternalNodeGroup<K> ing, int startIdx) {
         for (int j = 0; j < internalNodeSize; j++) {
-            if (ing.getKey(startIdx, j) == null || compareTo(key, ing.getKey(startIdx, j)) < 0) {
+            if (ing.getKey(startIdx, j) == null || compareTo(key, ing.getKey(startIdx, j)) <= 0) {
                 return NodeIdxAndIdx.of(startIdx, j);
             }
         }
@@ -97,8 +97,14 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         return NodeIdxAndIdx.of(startIdx, internalNodeSize);
     }
 
+    private NodeIdxAndIdx findSearchIndex(K key, LeafNodeGroup<K, V>  lng, NodeIdxAndIdx startIdx) {
+        NodeIdxAndIdx idx = searchLeafNodeGroup(key, lng, startIdx.nodeIdx);
+        idx = lng.minusOne(idx);
+        return idx;
+    }
+
     private NodeIdxAndIdx findInsertionIndex(K key, LeafNodeGroup<K, V>  lng, NodeIdxAndIdx startIdx) {
-        return searchLeafNodeGroup(key, lng, startIdx.nodeIdx);
+        return searchLeafNodeGroup(key, lng, startIdx.idx);
     }
 
     private NodeIdxAndIdx searchLeafNodeGroup(K key, LeafNodeGroup<K, V> ing, int startIdx) {
@@ -110,7 +116,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             }
         }
 
-        return NodeIdxAndIdx.of(startIdx, internalNodeSize);
+        return NodeIdxAndIdx.of(numberOfNodesInLeafNodeGroup, 0);
     }
 
     private void splitNodes(LeafNodeGroup<K, V> lng, List<Breadcrumb<K>> breadcrumbs) {
@@ -185,7 +191,22 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     public Set<V> get(K key) {
-        return Collections.emptySet();
+        List<Breadcrumb<K>> breadcrumbs = searchTree(key, root);
+        Breadcrumb<K> bc = breadcrumbs.get(breadcrumbs.size() - 1);
+        LeafNodeGroup<K, V> lng = getLeafNodeGroup(bc);
+        NodeIdxAndIdx idx = findSearchIndex(key, lng, bc.indexes);
+        Set<V> resultSet = new HashSet<>();
+        while (lng != null
+                && lng.getKey(idx) != null
+                && key.equals(lng.getKey(idx))) {
+            resultSet.add(lng.getValue(idx));
+            idx = lng.plusOne(idx);
+            if (NodeIdxAndIdx.INVALID.equals(idx)) {
+                lng = lng.next;
+                idx = NodeIdxAndIdx.of(0, 0);
+            }
+        }
+        return resultSet;
     }
 
     private int compareTo(K k1, K k2) {

@@ -12,7 +12,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     private final ArrayList<ArrayList<K>> keys;
     private final ArrayList<ArrayList<V>> values;
 
-    private LeafNodeGroup<K, V> next;
+    LeafNodeGroup<K, V> next;
     private LeafNodeGroup<K, V> previous;
 
     LeafNodeGroup(int nodeSize, int numNodes) {
@@ -40,6 +40,10 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
 
     private V getValue(int nodeIdx, int idx) {
         return this.values.get(nodeIdx).get(idx);
+    }
+
+    V getValue(NodeIdxAndIdx indexes) {
+        return getValue(indexes.nodeIdx, indexes.idx);
     }
 
     void maybeShiftOneRight(NodeIdxAndIdx from, NodeIdxAndIdx to) {
