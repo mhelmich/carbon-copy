@@ -88,8 +88,8 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
             for (int i = to.nodeIdx - 1; i > -1; i--) {
                 Collections.swap(this.keys, i, i + 1);
             }
-            // TODO
-            // deal with the bit set
+
+            swapBits(from.nodeIdx, to.nodeIdx);
 
             // "to" should be empty
             // hence a swap should have the same effect as shifting

@@ -48,6 +48,17 @@ abstract class NodeGroup<K extends Comparable<K>> {
         return full.get(nodeIdx * nodeSize, nodeIdx * nodeSize + nodeSize - 1).isEmpty();
     }
 
+    void swapBits(int nodeIdxFrom, int nodeIdxTo) {
+        int fromBaseIdx = nodeIdxFrom * nodeSize;
+        BitSet tmpFrom = full.get(fromBaseIdx, fromBaseIdx + nodeSize - 1);
+        int toBaseIdx = nodeIdxTo * nodeSize;
+        BitSet tmpTo = full.get(toBaseIdx, toBaseIdx + nodeSize - 1);
+        for (int i = 0; i < nodeSize; i++) {
+            full.set(fromBaseIdx + i, tmpTo.get(i));
+            full.set(toBaseIdx + i, tmpFrom.get(i));
+        }
+    }
+
     int getLevel() {
         return 0;
     }
