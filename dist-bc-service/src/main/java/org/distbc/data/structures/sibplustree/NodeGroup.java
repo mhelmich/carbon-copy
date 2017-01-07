@@ -111,7 +111,7 @@ abstract class NodeGroup<K extends Comparable<K>> {
 
     NodeIdxAndIdx minusOne(int nodeIdx, int idx) {
         int newIdx = nodeIdx * nodeSize + idx;
-        newIdx = newIdx - 1;
+        newIdx = (newIdx > 0) ? newIdx - 1 : 0;
         return NodeIdxAndIdx.of(newIdx / nodeSize, newIdx % nodeSize);
     }
 

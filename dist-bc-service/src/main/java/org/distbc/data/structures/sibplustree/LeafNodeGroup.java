@@ -35,7 +35,14 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
 
     @Override
     K getKey(int nodeIdx, int idx) {
-        return this.keys.get(nodeIdx).get(idx);
+        try {
+            return this.keys.get(nodeIdx).get(idx);
+        } catch (Exception xcp) {
+            // ArrayOutOfBounds might happen here
+            // may or may not happen when we're looking for a key bigger than
+            // the biggest key in the tree
+            return null;
+        }
     }
 
     private V getValue(int nodeIdx, int idx) {
