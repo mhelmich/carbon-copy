@@ -1,7 +1,6 @@
 package org.distbc.data.structures.sibplustree;
 
 import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SibPlusTreeTest {
-    private static final Logger logger = Logger.getLogger(SibPlusTreeTest.class);
+//    private static final Logger logger = Logger.getLogger(SibPlusTreeTest.class);
 
     private int leafNodeSize = 3;
     private int numberOfNodesInLeafNodeGroup = 3;
@@ -41,12 +40,30 @@ public class SibPlusTreeTest {
             m.put(i, str);
         }
 
+        System.err.println(t.toString());
+
         m.entrySet().forEach(e -> {
                 Set<String> s = t.get(e.getKey());
                 assertEquals(1, s.size());
                 assertTrue(s.contains(e.getValue()));
             }
         );
+    }
+
+    @Test
+    public void testPutGetSameKey() {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        t.put(19, "prefix_19");
+        t.put(19, "prefix_20");
+        t.put(19, "prefix_21");
+        Set<String> rs = t.get(19);
+        assertEquals(3, rs.size());
+        assertTrue(rs.contains("prefix_19"));
+        assertTrue(rs.contains("prefix_20"));
+        assertTrue(rs.contains("prefix_21"));
+
+        rs = t.get(20);
+        assertTrue(rs.isEmpty());
     }
 
 }

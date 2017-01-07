@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+/**
+ * It's instrumental to only move to the right!
+ * @param <K>
+ * @param <V>
+ */
 public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     private final int numberOfNodesInInternalNodeGroup;
     private final int numberOfNodesInLeafNodeGroup;
@@ -98,8 +103,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private NodeIdxAndIdx findSearchIndex(K key, LeafNodeGroup<K, V>  lng, NodeIdxAndIdx startIdx) {
-        NodeIdxAndIdx idx = searchLeafNodeGroup(key, lng, startIdx.nodeIdx);
-        idx = lng.minusOne(idx);
+        NodeIdxAndIdx idx = searchLeafNodeGroupForGets(key, lng, startIdx.nodeIdx);
         return idx;
     }
 
@@ -116,6 +120,20 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             }
         }
 
+        return NodeIdxAndIdx.of(numberOfNodesInLeafNodeGroup, 0);
+    }
+
+    private NodeIdxAndIdx searchLeafNodeGroupForGets(K key, LeafNodeGroup<K, V> ing, int startIdx) {
+        for (int i = startIdx; i < numberOfNodesInLeafNodeGroup; i++) {
+            for (int j = 0; j < leafNodeSize; j++) {
+                if (ing.getKey(i, j) == null || compareTo(key, ing.getKey(i, j)) <= 0) {
+                    return NodeIdxAndIdx.of(i, j);
+                }
+            }
+        }
+
+        // for all I can tell now this shouldn't really happen
+        // unless we want a key bigger than anything in the tree
         return NodeIdxAndIdx.of(numberOfNodesInLeafNodeGroup, 0);
     }
 
