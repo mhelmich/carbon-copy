@@ -66,4 +66,25 @@ public class SibPlusTreeTest {
         assertTrue(rs.isEmpty());
     }
 
+    @Test
+    public void testPutGetDecreasingOrder() {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
+        for (int i = numElements; i > 0; i--) {
+            String str = "prefix_" + i;
+            t.put(i, str);
+            m.put(i, str);
+        }
+
+        System.err.println(t.toString());
+
+        m.entrySet().forEach(e -> {
+                    Set<String> s = t.get(e.getKey());
+                    assertEquals("at " + e.toString(), 1, s.size());
+                    assertTrue(s.contains(e.getValue()));
+                }
+        );
+    }
+
 }

@@ -59,14 +59,17 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         }
     }
 
-    private void shiftOneRight(NodeIdxAndIdx from, NodeIdxAndIdx to) {
-        for (int i = to.nodeIdx; i > from.nodeIdx; i--) {
-            for (int j = to.idx; j > from.idx; j--) {
-                NodeIdxAndIdx indexes = minusOne(i, j);
-                K key = getKey(indexes.nodeIdx, indexes.idx);
-                V value = getValue(indexes.nodeIdx, indexes.idx);
-                put(indexes, key, value, true);
-            }
+    private void shiftOneRight(NodeIdxAndIdx fromIndexes, NodeIdxAndIdx toIndexes) {
+        int from = fromIndexes.nodeIdx * nodeSize + fromIndexes.idx;
+        int to = toIndexes.nodeIdx * nodeSize + toIndexes.idx;
+
+        for (int i = to; i > from; i--) {
+            NodeIdxAndIdx iIndexes = NodeIdxAndIdx.of(i / nodeSize, i % nodeSize);
+            int j = i - 1;
+            NodeIdxAndIdx jIndexes = NodeIdxAndIdx.of(j / nodeSize, j % nodeSize);
+            K key = getKey(jIndexes);
+            V value = getValue(jIndexes);
+            put(iIndexes, key, value, true);
         }
     }
 
