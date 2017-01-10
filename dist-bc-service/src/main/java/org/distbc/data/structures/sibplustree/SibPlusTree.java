@@ -3,6 +3,7 @@ package org.distbc.data.structures.sibplustree;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
@@ -103,8 +104,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private NodeIdxAndIdx findSearchIndex(K key, LeafNodeGroup<K, V>  lng, NodeIdxAndIdx startIdx) {
-        NodeIdxAndIdx idx = searchLeafNodeGroupForGets(key, lng, startIdx.nodeIdx);
-        return idx;
+        return searchLeafNodeGroupForGets(key, lng, startIdx.nodeIdx);
     }
 
     private NodeIdxAndIdx findInsertionIndex(K key, LeafNodeGroup<K, V>  lng, NodeIdxAndIdx startIdx) {
@@ -181,13 +181,22 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         // TODO
         // add code for when we shift high keys around
         // the code could look something like this
-        //boolean shiftedHighKey =
-        //        ((emptyIdx.nodeIdx * leafNodeSize + emptyIdx.idx) - (insertionIdx.nodeIdx * leafNodeSize + insertionIdx.idx)) / leafNodeSize > 0;
+        boolean shiftedHighKey =
+                ((emptyIdx.nodeIdx * leafNodeSize + emptyIdx.idx) - (insertionIdx.nodeIdx * leafNodeSize + insertionIdx.idx)) / leafNodeSize > 0;
 
         if (setHighKey) {
             LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) parent.ing.getChildForNode(parent.indexes.nodeIdx);
             K key = lng.getKey(emptyIdx);
             parent.ing.put(parent.indexes, key);
+        } else if (shiftedHighKey) {
+            // find all the high keys between the indexes
+            // move them up
+            LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) parent.ing.getChildForNode(parent.indexes.nodeIdx);
+            List<NodeIdxAndIdx> highKeys = getHighKeysBetweenInsertionAndEmpty(insertionIdx, emptyIdx);
+            for (NodeIdxAndIdx indexes : highKeys) {
+                K key = lng.getKey(indexes);
+                parent.ing.put(NodeIdxAndIdx.of(parent.indexes.nodeIdx, indexes.nodeIdx), key);
+            }
         }
 
         NodeGroup<K> current = parent.ing.getChildForNode(parent.indexes.nodeIdx);
@@ -206,6 +215,14 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             current = bc.ing;
         }
 
+    }
+
+    private List<NodeIdxAndIdx> getHighKeysBetweenInsertionAndEmpty(NodeIdxAndIdx insertionIdx, NodeIdxAndIdx emptyIdx) {
+        List<NodeIdxAndIdx> highKeys = new LinkedList<>();
+        for (int i = insertionIdx.nodeIdx; i < emptyIdx.nodeIdx; i++) {
+            highKeys.add(NodeIdxAndIdx.of(i, leafNodeSize - 1));
+        }
+        return highKeys;
     }
 
     public Set<V> get(K key) {
