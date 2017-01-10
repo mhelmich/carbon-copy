@@ -50,9 +50,9 @@ abstract class NodeGroup<K extends Comparable<K>> {
 
     void swapBits(int nodeIdxFrom, int nodeIdxTo) {
         int fromBaseIdx = nodeIdxFrom * nodeSize;
-        BitSet tmpFrom = full.get(fromBaseIdx, fromBaseIdx + nodeSize - 1);
+        BitSet tmpFrom = full.get(fromBaseIdx, fromBaseIdx + nodeSize);
         int toBaseIdx = nodeIdxTo * nodeSize;
-        BitSet tmpTo = full.get(toBaseIdx, toBaseIdx + nodeSize - 1);
+        BitSet tmpTo = full.get(toBaseIdx, toBaseIdx + nodeSize);
         for (int i = 0; i < nodeSize; i++) {
             full.set(fromBaseIdx + i, tmpTo.get(i));
             full.set(toBaseIdx + i, tmpFrom.get(i));
