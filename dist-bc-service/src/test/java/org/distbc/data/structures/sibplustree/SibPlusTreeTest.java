@@ -2,10 +2,12 @@ package org.distbc.data.structures.sibplustree;
 
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -87,4 +89,83 @@ public class SibPlusTreeTest {
         );
     }
 
+    @Test
+    public void testPutGetAlternatingOrder() {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        int numElements = (leafNodeSize * numberOfNodesInLeafNodeGroup) / 2;
+        for (int i = 0; i < numElements; i++) {
+            int num = i;
+            String str = "prefix_" + num;
+            t.put(num, str);
+            m.put(num, str);
+
+            num = -i;
+            str = "prefix_" + num;
+            t.put(num, str);
+            m.put(num, str);
+        }
+
+        System.err.println(t.toString());
+
+        m.entrySet().forEach(e -> {
+                Set<String> s = t.get(e.getKey());
+                assertEquals("at " + e.toString(), 1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
+        );
+    }
+
+    @Test
+    public void testPutGetRandomKeys() {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        int numElements = leafNodeSize * numberOfNodesInLeafNodeGroup;
+        Random random = new Random();
+
+        for (int i = 0; i < numElements; i++) {
+            int num = random.nextInt(1000);
+            String str = "prefix_" + num;
+            t.put(num, str);
+            m.put(num, str);
+        }
+
+        m.entrySet().forEach(e -> {
+                Set<String> s = t.get(e.getKey());
+                assertEquals(1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
+        );
+    }
+
+    @Test
+    @Ignore
+    public void testSplittingSplits() {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        Map<Integer, String> m = new HashMap<>();
+        // yea yea, I know
+        // the point is:
+        // I can only insert few elements as I though because the split is right leaning
+        // once I change that I can put more
+        // however, just don't change the sizes and this test will pass
+        int numElements = (int) Math.floor(10 * leafNodeSize * numberOfNodesInLeafNodeGroup);
+
+        for (int i = 0; i < numElements; i++) {
+            String str = "prefix_" + i;
+            try {
+                t.put(i, str);
+                m.put(i, str);
+            } catch (Exception xcp) {
+                System.err.println(i + "_" + str);
+                throw xcp;
+            }
+        }
+
+        m.entrySet().forEach(e -> {
+                Set<String> s = t.get(e.getKey());
+                assertEquals(1, s.size());
+                assertTrue(s.contains(e.getValue()));
+            }
+        );
+    }
 }
