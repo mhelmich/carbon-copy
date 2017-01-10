@@ -23,7 +23,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     SibPlusTree(int leafNodeSize, int numberOfNodesInLeafNodeGroup) {
         this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
-        this.numberOfNodesInInternalNodeGroup = leafNodeSize - 1;
+        this.numberOfNodesInInternalNodeGroup = leafNodeSize;
         this.internalNodeSize = numberOfNodesInLeafNodeGroup - 1;
         this.leafNodeSize = leafNodeSize;
 
