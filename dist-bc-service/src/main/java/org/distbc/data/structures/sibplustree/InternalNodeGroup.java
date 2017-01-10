@@ -62,20 +62,21 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
     InternalNodeGroup<K> split() {
         InternalNodeGroup<K> newIng = new InternalNodeGroup<>(this.level, this.nodeSize, this.numNodes);
         int divider = (int) Math.ceil(this.numNodes / 2.0);
-        List<ArrayList<K>> subListOldLngKeys = this.keys.subList(divider, this.numNodes);
+        List<ArrayList<K>> subListOldIngKeys = this.keys.subList(divider, this.numNodes);
 
-        for (int i = 0; i < subListOldLngKeys.size(); i++) {
-            for (int j = 0; j < subListOldLngKeys.get(i).size(); j++) {
-                newIng.put(NodeIdxAndIdx.of(i, j), subListOldLngKeys.get(i).get(j));
+        for (int i = 0; i < subListOldIngKeys.size(); i++) {
+            for (int j = 0; j < subListOldIngKeys.get(i).size(); j++) {
+                newIng.put(NodeIdxAndIdx.of(i, j), subListOldIngKeys.get(i).get(j));
             }
             newIng.setChildNodeOnNode(i, this.children.get(divider + i));
         }
 
-        for (int i = divider; i < subListOldLngKeys.size(); i++) {
-            for (int j = 0; j < subListOldLngKeys.get(i).size(); j++) {
-                put(NodeIdxAndIdx.of(i, j), null);
+        for (int i = 0; i < subListOldIngKeys.size(); i++) {
+            int nodeIdx = divider + i;
+            for (int j = 0; j < subListOldIngKeys.get(i).size(); j++) {
+                put(NodeIdxAndIdx.of(nodeIdx, j), null);
             }
-            setChildNodeOnNode(i, null);
+            setChildNodeOnNode(nodeIdx, null);
         }
 
         return newIng;
