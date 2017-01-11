@@ -106,8 +106,12 @@ abstract class NodeGroup<K extends Comparable<K>> {
     }
 
     NodeIdxAndIdx plusOne(NodeIdxAndIdx indexes) {
-        int newIdx = indexes.nodeIdx * nodeSize + indexes.idx;
-        newIdx = newIdx + 1;
-        return (newIdx < nodeSize * numNodes) ? NodeIdxAndIdx.of(newIdx / nodeSize, newIdx % nodeSize) : NodeIdxAndIdx.INVALID;
+        if (NodeIdxAndIdx.INVALID.equals(indexes)) {
+            return NodeIdxAndIdx.INVALID;
+        } else {
+            int newIdx = indexes.nodeIdx * nodeSize + indexes.idx;
+            newIdx = newIdx + 1;
+            return (newIdx < nodeSize * numNodes) ? NodeIdxAndIdx.of(newIdx / nodeSize, newIdx % nodeSize) : NodeIdxAndIdx.INVALID;
+        }
     }
 }

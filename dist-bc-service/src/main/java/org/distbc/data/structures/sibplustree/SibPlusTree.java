@@ -23,7 +23,9 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     SibPlusTree(int leafNodeSize, int numberOfNodesInLeafNodeGroup) {
         this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
-        this.numberOfNodesInInternalNodeGroup = leafNodeSize;
+        // this has to be leafNodeSize - 1
+        // otherwise pushing up high keys doesn't work...duh
+        this.numberOfNodesInInternalNodeGroup = leafNodeSize - 1;
         this.internalNodeSize = numberOfNodesInLeafNodeGroup - 1;
         this.leafNodeSize = leafNodeSize;
 
@@ -77,6 +79,10 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             Breadcrumb<K> bc = searchInternalNodeGroup(key, tmp, parentBC);
             breadcrumbs.add(bc);
             ng = tmp.getChildForNode(bc.indexes.nodeIdx);
+            if (ng == null && tmp.getLevel() > 1) {
+                ng = newInternalNodeGroup(tmp.getLevel() - 1);
+                tmp.setChildNodeOnNode(bc.indexes.nodeIdx, ng);
+            }
             parentBC = bc;
         } while (ng != null && ng.getLevel() > 0);
 
@@ -84,13 +90,28 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     private LeafNodeGroup<K, V> getLeafNodeGroup(Breadcrumb<K> bc) {
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) bc.ing.getChildForNode(bc.indexes.nodeIdx);
+        if (lng == null) {
+            lng = newLeafNodeGroup();
+            bc.ing.setChildNodeOnNode(bc.indexes.nodeIdx, lng);
+        }
         return (LeafNodeGroup<K, V>) bc.ing.getChildForNode(bc.indexes.nodeIdx);
     }
 
     private Breadcrumb<K> searchInternalNodeGroup(K key, InternalNodeGroup<K> ing, @Nullable Breadcrumb parentBC) {
-        int startIdx = (parentBC != null) ? parentBC.indexes.idx : 0;
+        int startIdx = (parentBC != null) ? parentBC.indexes.idx : searchStartIdx(key, ing);
         NodeIdxAndIdx iis = searchInternalNodeGroup(key, ing, startIdx);
         return Breadcrumb.of(ing, iis);
+    }
+
+    private int searchStartIdx(K key, InternalNodeGroup<K> ing) {
+        NodeIdxAndIdx p = NodeIdxAndIdx.of(0, 0);
+        while (!NodeIdxAndIdx.INVALID.equals(p)
+                && ing.getKey(p) != null
+                && compareTo(key, ing.getKey(p)) > 0) {
+                p = ing.plusOne(p);
+        }
+        return p.nodeIdx;
     }
 
     private NodeIdxAndIdx searchInternalNodeGroup(K key, InternalNodeGroup<K> ing, int startIdx) {
@@ -178,9 +199,6 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
                         && emptyIdx.idx > 0
                         && emptyIdx.idx % (leafNodeSize - 1) == 0;
 
-        // TODO
-        // add code for when we shift high keys around
-        // the code could look something like this
         boolean shiftedHighKey =
                 ((emptyIdx.nodeIdx * leafNodeSize + emptyIdx.idx) - (insertionIdx.nodeIdx * leafNodeSize + insertionIdx.idx)) / leafNodeSize > 0;
 
