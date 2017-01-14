@@ -2,6 +2,7 @@ package org.distbc.data.structures.sibplustree;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,19 +51,26 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     public synchronized void put(K key, V value) {
         List<Breadcrumb<K>> breadcrumbs = searchTree(key, root);
-        Breadcrumb<K> bc = breadcrumbs.get(breadcrumbs.size() - 1);
-        LeafNodeGroup<K, V> lng = getLeafNodeGroup(bc);
-        NodeIdxAndIdx insertionIdx = findInsertionIndex(key, lng, bc.indexes);
-        NodeIdxAndIdx emptyIdx = lng.findClosestEmptySlotFrom(insertionIdx);
-        if (NodeIdxAndIdx.INVALID.equals(emptyIdx)) {
-            splitNodes(lng, breadcrumbs);
+        // happens after a root node split for example
+        if (breadcrumbs.isEmpty()) {
+            splitNodes(root, Collections.emptyList());
+            System.err.println(toString());
             put(key, value);
         } else {
-            // there's still space in lng
-            lng.maybeShiftOneRight(insertionIdx, emptyIdx);
-            lng.put(insertionIdx, key, value);
-            // do the highest keys business
-            doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
+            Breadcrumb<K> bc = breadcrumbs.get(breadcrumbs.size() - 1);
+            LeafNodeGroup<K, V> lng = getLeafNodeGroup(bc);
+            NodeIdxAndIdx insertionIdx = findInsertionIndex(key, lng, bc.indexes);
+            NodeIdxAndIdx emptyIdx = lng.findClosestEmptySlotFrom(insertionIdx);
+            if (NodeIdxAndIdx.INVALID.equals(emptyIdx)) {
+                splitNodes(lng, breadcrumbs);
+                put(key, value);
+            } else {
+                // there's still space in lng
+                lng.maybeShiftOneRight(insertionIdx, emptyIdx);
+                lng.put(insertionIdx, key, value);
+                // do the highest keys business
+                doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
+            }
         }
         System.err.println(toString());
     }
@@ -78,6 +86,11 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             InternalNodeGroup<K> tmp = (InternalNodeGroup<K>) ng;
             Breadcrumb<K> bc = searchInternalNodeGroup(key, tmp, parentBC);
             breadcrumbs.add(bc);
+            // might happen when the tree is full
+            // we gotta split the root
+            if (NodeIdxAndIdx.INVALID.equals(bc.indexes)) {
+                return Collections.emptyList();
+            }
             ng = tmp.getChildForNode(bc.indexes.nodeIdx);
             if (ng == null && tmp.getLevel() > 1) {
                 ng = newInternalNodeGroup(tmp.getLevel() - 1);
@@ -100,7 +113,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private Breadcrumb<K> searchInternalNodeGroup(K key, InternalNodeGroup<K> ing, @Nullable Breadcrumb parentBC) {
         int startIdx = (parentBC != null) ? parentBC.indexes.idx : searchStartIdx(key, ing);
-        NodeIdxAndIdx iis = searchInternalNodeGroup(key, ing, startIdx);
+        NodeIdxAndIdx iis = (startIdx > -1) ? searchInternalNodeGroup(key, ing, startIdx) : NodeIdxAndIdx.INVALID;
         return Breadcrumb.of(ing, iis);
     }
 
@@ -178,6 +191,8 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             newRoot.setChildNodeOnNode(0, ing);
             newRoot.setChildNodeOnNode(1, newIng);
             this.root = newRoot;
+            // TODO
+            // do high key business
         } else {
             InternalNodeGroup<K> newIng = ing.split();
             Breadcrumb<K> bc = breadcrumbs.remove(breadcrumbs.size() - 1);
