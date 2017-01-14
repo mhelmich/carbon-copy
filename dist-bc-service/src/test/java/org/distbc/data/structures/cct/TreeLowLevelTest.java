@@ -1,5 +1,6 @@
 package org.distbc.data.structures.cct;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -9,6 +10,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+@Ignore
 public class TreeLowLevelTest {
     private final int nodeSize = 3;
     private final int numNodes = 4;
