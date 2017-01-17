@@ -261,7 +261,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
                     bc.indexes.nodeIdx == (numberOfNodesInInternalNodeGroup - 1)
                             && bc.indexes.idx > 0
                             && bc.indexes.idx % (internalNodeSize - 1) == 0;
-            current = bc.ing;
+            current = grandParent.ing;
         }
 
     }
