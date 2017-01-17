@@ -81,6 +81,18 @@ abstract class NodeGroup<K extends Comparable<K>> {
                 : NodeIdxAndIdx.INVALID;
     }
 
+    NodeIdxAndIdx findClosestFullSlotFrom(NodeIdxAndIdx indexes) {
+        return findClosestFullSlotFrom(indexes.nodeIdx, indexes.idx);
+    }
+
+    private NodeIdxAndIdx findClosestFullSlotFrom(int nodeIdx, int idx) {
+        int startIdx = nodeIdx * nodeSize + idx;
+        int emptySlotIdx = full.nextSetBit(startIdx);
+        return (emptySlotIdx > -1 && emptySlotIdx < nodeSize * numNodes)
+                ? NodeIdxAndIdx.of(emptySlotIdx / nodeSize, emptySlotIdx % nodeSize)
+                : NodeIdxAndIdx.INVALID;
+    }
+
     void doBookKeepingForPut(NodeIdxAndIdx indexes, boolean isKeyAndValueNull, boolean isShifting) {
         // a put with nulls is a delete
         // delete and shift might transport null values
@@ -101,8 +113,12 @@ abstract class NodeGroup<K extends Comparable<K>> {
         }
     }
 
+    K getHighestKeyForNode(int nodeIdx) {
+        return getKey(nodeIdx, nodeSize - 1);
+    }
+
     K getHighestKey() {
-        return getKey(numNodes - 1, nodeSize - 1);
+        return getHighestKeyForNode(numNodes - 1);
     }
 
     NodeIdxAndIdx plusOne(NodeIdxAndIdx indexes) {

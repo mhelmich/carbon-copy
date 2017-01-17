@@ -120,8 +120,9 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     private int searchStartIdx(K key, InternalNodeGroup<K> ing) {
         NodeIdxAndIdx p = NodeIdxAndIdx.of(0, 0);
         while (!NodeIdxAndIdx.INVALID.equals(p)
-                && ing.getKey(p) != null
-                && compareTo(key, ing.getKey(p)) > 0) {
+                && !isNullAndLast(ing, p.nodeIdx, p.idx)
+                || (ing.getKey(p) != null && compareTo(key, ing.getKey(p)) > 0)
+              ) {
                 p = ing.plusOne(p);
         }
         return p.nodeIdx;
@@ -129,7 +130,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private NodeIdxAndIdx searchInternalNodeGroup(K key, InternalNodeGroup<K> ing, int startIdx) {
         for (int j = 0; j < internalNodeSize; j++) {
-            if (ing.getKey(startIdx, j) == null || compareTo(key, ing.getKey(startIdx, j)) <= 0) {
+            if (isNullAndLast(ing, startIdx, j) || (ing.getKey(startIdx, j) != null && compareTo(key, ing.getKey(startIdx, j)) <= 0)) {
                 return NodeIdxAndIdx.of(startIdx, j);
             }
         }
@@ -148,7 +149,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     private NodeIdxAndIdx searchLeafNodeGroup(K key, LeafNodeGroup<K, V> ing, int startIdx) {
         for (int i = startIdx; i < numberOfNodesInLeafNodeGroup; i++) {
             for (int j = 0; j < leafNodeSize; j++) {
-                if (ing.getKey(i, j) == null || compareTo(key, ing.getKey(i, j)) < 0) {
+                if (isNullAndLast(ing, i, j) || (ing.getKey(i, j) != null && compareTo(key, ing.getKey(i, j)) < 0)) {
                     return NodeIdxAndIdx.of(i, j);
                 }
             }
@@ -157,10 +158,15 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         return NodeIdxAndIdx.of(numberOfNodesInLeafNodeGroup, 0);
     }
 
+    private boolean isNullAndLast(NodeGroup<K> ng, int nodeIdx, int idx) {
+        return ng.getKey(nodeIdx, idx) == null && NodeIdxAndIdx.INVALID.equals(
+                ng.findClosestFullSlotFrom(NodeIdxAndIdx.of(nodeIdx, idx)));
+    }
+
     private NodeIdxAndIdx searchLeafNodeGroupForGets(K key, LeafNodeGroup<K, V> ing, int startIdx) {
         for (int i = startIdx; i < numberOfNodesInLeafNodeGroup; i++) {
             for (int j = 0; j < leafNodeSize; j++) {
-                if (ing.getKey(i, j) == null || compareTo(key, ing.getKey(i, j)) <= 0) {
+                if (isNullAndLast(ing, i, j) || compareTo(key, ing.getKey(i, j)) <= 0) {
                     return NodeIdxAndIdx.of(i, j);
                 }
             }
@@ -190,9 +196,14 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             InternalNodeGroup<K> newIng = ing.split();
             newRoot.setChildNodeOnNode(0, ing);
             newRoot.setChildNodeOnNode(1, newIng);
+
+            NodeIdxAndIdx indexes = NodeIdxAndIdx.of(0, 0);
+            while (!NodeIdxAndIdx.INVALID.equals(indexes)) {
+                K key = newRoot.getChildForNode(indexes.nodeIdx).getHighestKeyForNode(indexes.idx);
+                newRoot.put(indexes, key);
+                indexes = newRoot.plusOne(indexes);
+            }
             this.root = newRoot;
-            // TODO
-            // do high key business
         } else {
             InternalNodeGroup<K> newIng = ing.split();
             Breadcrumb<K> bc = breadcrumbs.remove(breadcrumbs.size() - 1);
@@ -237,6 +248,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
                 emptyIdx.nodeIdx == (numberOfNodesInLeafNodeGroup - 1)
                         && emptyIdx.idx > 0
                         && emptyIdx.idx % (leafNodeSize - 1) == 0;
+
         for (int i = breadcrumbs.size() - 2; shouldDoIt && i >= 0; i--) {
             Breadcrumb<K> grandParent = breadcrumbs.get(i);
             grandParent.ing.put(grandParent.indexes, current.getHighestKey());

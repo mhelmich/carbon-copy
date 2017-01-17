@@ -2,7 +2,6 @@ package org.distbc.data.structures.sibplustree;
 
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -139,7 +138,6 @@ public class SibPlusTreeTest {
     }
 
     @Test
-    @Ignore
     public void testSplittingSplits() {
         SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
         Map<Integer, String> m = new HashMap<>();
