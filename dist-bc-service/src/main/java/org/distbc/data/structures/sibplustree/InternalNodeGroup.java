@@ -61,7 +61,7 @@ class InternalNodeGroup<K extends Comparable<K>> extends NodeGroup<K> {
 
     InternalNodeGroup<K> split() {
         InternalNodeGroup<K> newIng = new InternalNodeGroup<>(this.level, this.nodeSize, this.numNodes);
-        int divider = (int) Math.ceil(this.numNodes / 2.0);
+        int divider = this.numNodes - 1;
         List<ArrayList<K>> subListOldIngKeys = this.keys.subList(divider, this.numNodes);
 
         for (int i = 0; i < subListOldIngKeys.size(); i++) {
