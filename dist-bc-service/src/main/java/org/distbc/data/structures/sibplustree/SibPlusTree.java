@@ -22,6 +22,10 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
 
     private InternalNodeGroup<K> root;
 
+    public SibPlusTree() {
+        this(3, 3);
+    }
+
     SibPlusTree(int leafNodeSize, int numberOfNodesInLeafNodeGroup) {
         this.numberOfNodesInLeafNodeGroup = numberOfNodesInLeafNodeGroup;
         // this has to be leafNodeSize - 1
@@ -40,12 +44,12 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         System.err.println(toString());
     }
 
-    private InternalNodeGroup<K> newInternalNodeGroup(int level) {
+    InternalNodeGroup<K> newInternalNodeGroup(int level) {
         assert level > 0;
         return new InternalNodeGroup<>(level, this.internalNodeSize, this.numberOfNodesInInternalNodeGroup);
     }
 
-    private LeafNodeGroup<K, V> newLeafNodeGroup() {
+    LeafNodeGroup<K, V> newLeafNodeGroup() {
         return new LeafNodeGroup<>(this.leafNodeSize, this.numberOfNodesInLeafNodeGroup);
     }
 
@@ -218,7 +222,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         }
     }
 
-    private void doHighKeyBusiness(List<Breadcrumb<K>> breadcrumbs, NodeIdxAndIdx insertionIdx, NodeIdxAndIdx emptyIdx) {
+    void doHighKeyBusiness(List<Breadcrumb<K>> breadcrumbs, NodeIdxAndIdx insertionIdx, NodeIdxAndIdx emptyIdx) {
         Breadcrumb<K> parent = breadcrumbs.get(breadcrumbs.size() - 1);
         boolean setHighKey =
                 emptyIdx.nodeIdx < (leafNodeSize - 1)
