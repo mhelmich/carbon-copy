@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
@@ -223,55 +222,30 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     }
 
     void doHighKeyBusiness(List<Breadcrumb<K>> breadcrumbs, NodeIdxAndIdx insertionIdx, NodeIdxAndIdx emptyIdx) {
+        // first deal with the lowest 3 levels
         Breadcrumb<K> parent = breadcrumbs.get(breadcrumbs.size() - 1);
-        boolean setHighKey =
-                emptyIdx.nodeIdx < (leafNodeSize - 1)
-                        && emptyIdx.idx > 0
-                        && emptyIdx.idx % (leafNodeSize - 1) == 0;
+        LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) parent.ing.getChildForNode(parent.indexes.nodeIdx);
+        K highestKey = lng.getHighestKey();
+        boolean shouldDoIt = true;
 
-        boolean shiftedHighKey =
-                ((emptyIdx.nodeIdx * leafNodeSize + emptyIdx.idx) - (insertionIdx.nodeIdx * leafNodeSize + insertionIdx.idx)) / leafNodeSize > 0;
-
-        if (setHighKey) {
-            LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) parent.ing.getChildForNode(parent.indexes.nodeIdx);
-            K key = lng.getKey(emptyIdx);
-            parent.ing.put(parent.indexes, key);
-        } else if (shiftedHighKey) {
-            // find all the high keys between the indexes
-            // move them up
-            LeafNodeGroup<K, V> lng = (LeafNodeGroup<K, V>) parent.ing.getChildForNode(parent.indexes.nodeIdx);
-            List<NodeIdxAndIdx> highKeys = getHighKeysBetweenInsertionAndEmpty(insertionIdx, emptyIdx);
-            for (NodeIdxAndIdx indexes : highKeys) {
-                K key = lng.getKey(indexes);
-                parent.ing.put(NodeIdxAndIdx.of(parent.indexes.nodeIdx, indexes.nodeIdx), key);
-            }
+        for (int i = insertionIdx.nodeIdx; shouldDoIt && i < internalNodeSize; i++) {
+            K highestKeyForNode = lng.getHighestKeyForNode(i);
+            parent.ing.put(NodeIdxAndIdx.of(parent.indexes.nodeIdx, i), highestKeyForNode);
+            shouldDoIt = highestKeyForNode!= null && compareTo(highestKey, highestKeyForNode) > 0;
         }
 
-        NodeGroup<K> current = parent.ing.getChildForNode(parent.indexes.nodeIdx);
-        boolean shouldDoIt =
-                emptyIdx.nodeIdx == (numberOfNodesInLeafNodeGroup - 1)
-                        && emptyIdx.idx > 0
-                        && emptyIdx.idx % (leafNodeSize - 1) == 0;
+        Breadcrumb<K> grandParent = breadcrumbs.get(breadcrumbs.size() - 2);
+        grandParent.ing.put(grandParent.indexes, highestKey);
 
-        for (int i = breadcrumbs.size() - 2; shouldDoIt && i >= 0; i--) {
-            Breadcrumb<K> grandParent = breadcrumbs.get(i);
-            grandParent.ing.put(grandParent.indexes, current.getHighestKey());
-            Breadcrumb<K> bc = breadcrumbs.get(i + 1);
-            shouldDoIt =
-                    bc.indexes.nodeIdx == (numberOfNodesInInternalNodeGroup - 1)
-                            && bc.indexes.idx > 0
-                            && bc.indexes.idx % (internalNodeSize - 1) == 0;
-            current = grandParent.ing;
-        }
-
-    }
-
-    private List<NodeIdxAndIdx> getHighKeysBetweenInsertionAndEmpty(NodeIdxAndIdx insertionIdx, NodeIdxAndIdx emptyIdx) {
-        List<NodeIdxAndIdx> highKeys = new LinkedList<>();
-        for (int i = insertionIdx.nodeIdx; i < emptyIdx.nodeIdx; i++) {
-            highKeys.add(NodeIdxAndIdx.of(i, leafNodeSize - 1));
-        }
-        return highKeys;
+//        // then iteratively follow the breadcrumbs
+//        shouldDoIt = true;
+//        for (int i = breadcrumbs.size() - 3; shouldDoIt && i >= 0; i--) {
+//            Breadcrumb<K> loopParent = breadcrumbs.get(i);
+//            Breadcrumb<K> loopChild = breadcrumbs.get(i + 1);
+//            K childKey = loopChild.ing.getKey(loopChild.indexes);
+//            loopParent.ing.put(loopParent.indexes, childKey);
+//            shouldDoIt = childKey != null && !childKey.equals(loopParent.ing.getKey(loopChild.indexes));
+//        }
     }
 
     public Set<V> get(K key) {

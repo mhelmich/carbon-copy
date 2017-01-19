@@ -44,7 +44,7 @@ public class SibPlusTreeLowLevelTest {
 
         assertEquals(Integer.valueOf(222), ing1.getKey(0, 1));
         assertEquals(Integer.valueOf(99), ing2.getKey(0, 0));
-        assertNull(ing2.getKey(0, 1));
+        assertEquals(Integer.valueOf(111), ing2.getKey(0, 1));
 
         ///////////////////////////////////////
         /////////////////////////////
@@ -83,6 +83,10 @@ public class SibPlusTreeLowLevelTest {
         insertionIdx = NodeIdxAndIdx.of(2, 2);
         emptyIdx = NodeIdxAndIdx.of(2, 2);
         t.doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
+
+        assertNull(ing1.getKey(0, 1));
+        assertNull(ing2.getKey(0, 0));
+        assertEquals(Integer.valueOf(222), ing2.getKey(1, 1));
     }
 
     @Test
@@ -113,46 +117,14 @@ public class SibPlusTreeLowLevelTest {
         t.doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
 
         assertEquals(Integer.valueOf(6), ing1.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(null, ing1.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertEquals(Integer.valueOf(15), ing1.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertEquals(Integer.valueOf(24), ing2.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 1)));
 
         ///////////////////////////////////////
         /////////////////////////////
         //////////////////
         // second case
-        breadcrumbs.clear();
-        breadcrumbs.add(Breadcrumb.of(ing3, NodeIdxAndIdx.of(1, 1)));
-        breadcrumbs.add(Breadcrumb.of(ing2, NodeIdxAndIdx.of(1, 1)));
-        breadcrumbs.add(Breadcrumb.of(ing1, NodeIdxAndIdx.of(1, 1)));
-        insertionIdx = NodeIdxAndIdx.of(1, 2);
-        emptyIdx = NodeIdxAndIdx.of(1, 2);
-        t.doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
-
-        assertEquals(Integer.valueOf(6), ing1.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(15), ing1.getKey(NodeIdxAndIdx.of(1, 1)));
-
-        ///////////////////////////////////////
-        /////////////////////////////
-        //////////////////
-        // third case
-        breadcrumbs.clear();
-        breadcrumbs.add(Breadcrumb.of(ing3, NodeIdxAndIdx.of(1, 1)));
-        breadcrumbs.add(Breadcrumb.of(ing2, NodeIdxAndIdx.of(1, 1)));
-        breadcrumbs.add(Breadcrumb.of(ing1, NodeIdxAndIdx.of(1, 2)));
-        insertionIdx = NodeIdxAndIdx.of(2, 2);
-        emptyIdx = NodeIdxAndIdx.of(2, 2);
-        t.doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
-
-        assertEquals(Integer.valueOf(6), ing1.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(15), ing1.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing2.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing2.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing3.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing3.getKey(NodeIdxAndIdx.of(1, 1)));
-
-        ///////////////////////////////////////
-        /////////////////////////////
-        //////////////////
-        // fourth case
         breadcrumbs.clear();
         breadcrumbs.add(Breadcrumb.of(ing4, NodeIdxAndIdx.of(1, 1)));
         breadcrumbs.add(Breadcrumb.of(ing3, NodeIdxAndIdx.of(1, 1)));
@@ -164,12 +136,11 @@ public class SibPlusTreeLowLevelTest {
 
         assertEquals(Integer.valueOf(6), ing1.getKey(NodeIdxAndIdx.of(1, 0)));
         assertEquals(Integer.valueOf(15), ing1.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing2.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing2.getKey(NodeIdxAndIdx.of(1, 0)));
         assertEquals(Integer.valueOf(24), ing2.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing3.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing3.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing4.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing4.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing4.getKey(NodeIdxAndIdx.of(1, 1)));
     }
 
     @Test
@@ -196,14 +167,14 @@ public class SibPlusTreeLowLevelTest {
         NodeIdxAndIdx emptyIdx = NodeIdxAndIdx.of(2, 2);
         t.doHighKeyBusiness(breadcrumbs, insertionIdx, emptyIdx);
 
-        assertEquals(null, ing1.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(null, ing1.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing2.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing1.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing1.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing2.getKey(NodeIdxAndIdx.of(1, 0)));
         assertEquals(Integer.valueOf(24), ing2.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing3.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing3.getKey(NodeIdxAndIdx.of(1, 1)));
-        assertEquals(null, ing4.getKey(NodeIdxAndIdx.of(1, 0)));
-        assertEquals(Integer.valueOf(24), ing4.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(ing4.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(ing4.getKey(NodeIdxAndIdx.of(1, 1)));
     }
 
     private LeafNodeGroup<Integer, String> getFullLeafNodeGroup(SibPlusTree<Integer, String> t) {
