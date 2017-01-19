@@ -93,7 +93,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
 
     LeafNodeGroup<K, V> split() {
         LeafNodeGroup<K, V> newLng = new LeafNodeGroup<>(this.nodeSize, this.numNodes);
-        int divider = this.numNodes - 1;
+        int divider = (int) Math.ceil(this.numNodes / 2.0);
         List<ArrayList<K>> subListOldLngKeys = this.keys.subList(divider, this.numNodes);
         List<ArrayList<V>> subListOldLngValues = this.values.subList(divider, this.numNodes);
 
