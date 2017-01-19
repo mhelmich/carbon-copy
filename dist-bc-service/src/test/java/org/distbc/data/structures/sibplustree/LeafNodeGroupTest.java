@@ -1,6 +1,54 @@
 package org.distbc.data.structures.sibplustree;
 
+import org.junit.Test;
+
+import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 public class LeafNodeGroupTest {
+
+    private int leafNodeSize = 3;
+    private int numberOfNodesInLeafNodeGroup = 3;
+
+    @Test
+    public void testSplit() {
+        LeafNodeGroup<Integer, String> lng = new LeafNodeGroup<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        NodeIdxAndIdx p = NodeIdxAndIdx.of(0, 0);
+        while (!NodeIdxAndIdx.INVALID.equals(p)) {
+            lng.put(p, p.nodeIdx * leafNodeSize + p.idx, UUID.randomUUID().toString());
+            p = lng.plusOne(p);
+        }
+
+        LeafNodeGroup<Integer, String> newLng = lng.split();
+
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(0, 0)));
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(0, 1)));
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(0, 2)));
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNotNull(lng.getKey(NodeIdxAndIdx.of(1, 2)));
+
+        assertNull(lng.getKey(NodeIdxAndIdx.of(2, 0)));
+        assertNull(lng.getKey(NodeIdxAndIdx.of(2, 1)));
+        assertNull(lng.getKey(NodeIdxAndIdx.of(2, 2)));
+
+        assertNotNull(newLng.getKey(NodeIdxAndIdx.of(0, 0)));
+        assertNotNull(newLng.getKey(NodeIdxAndIdx.of(0, 1)));
+        assertNotNull(newLng.getKey(NodeIdxAndIdx.of(0, 2)));
+
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(1, 0)));
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(1, 1)));
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(1, 2)));
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(2, 0)));
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(2, 1)));
+        assertNull(newLng.getKey(NodeIdxAndIdx.of(2, 2)));
+
+        assertEquals(lng, newLng.previous);
+        assertEquals(newLng, lng.next);
+    }
 
 //    @Test
 //    public void testInsertAndShiftRightInDifferentNodes() throws Exception {

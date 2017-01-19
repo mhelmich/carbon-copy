@@ -13,7 +13,7 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
     private final ArrayList<ArrayList<V>> values;
 
     LeafNodeGroup<K, V> next;
-    private LeafNodeGroup<K, V> previous;
+    LeafNodeGroup<K, V> previous;
 
     LeafNodeGroup(int nodeSize, int numNodes) {
         super(nodeSize, numNodes);
@@ -110,8 +110,8 @@ class LeafNodeGroup<K extends Comparable<K>, V extends Comparable<V>> extends No
         }
         this.next = newLng;
 
-        for (int i = divider; i < subListOldLngKeys.size(); i++) {
-            for (int j = 0; j < subListOldLngKeys.get(i).size(); j++) {
+        for (int i = divider; i < this.numNodes; i++) {
+            for (int j = 0; j < this.nodeSize; j++) {
                 put(NodeIdxAndIdx.of(i, j), null, null);
             }
         }
