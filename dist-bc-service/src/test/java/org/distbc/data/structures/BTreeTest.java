@@ -53,8 +53,6 @@ public class BTreeTest {
             if (r.nextBoolean() && !m.containsKey(key)) m.put(key, value);
         }
 
-        System.err.println(t.toString());
-
         for (Map.Entry<Integer, String> e : m.entrySet()) {
             assertEquals("on key " + e.getKey(), e.getValue(), t.get(e.getKey()));
         }
