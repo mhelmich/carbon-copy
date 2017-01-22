@@ -5,7 +5,7 @@ package org.distbc.data.structures;
 
  Limitations
  -----------
- -  Assumes M is even and M >= 4
+ -  Assumes nodeSize is even and nodeSize >= 4
 
  */
 
@@ -30,9 +30,9 @@ import java.util.Vector;
  *  {@code compareTo()} and method to compare two keys. It does not call either
  *  {@code equals()} or {@code hashCode()}.
  *  The <em>get</em>, <em>put</em>, and <em>contains</em> operations
- *  each make log<sub><em>m</em></sub>(<em>n</em>) probes in the worst case,
- *  where <em>n</em> is the number of key-value pairs
- *  and <em>m</em> is the branching factor.
+ *  each make log<sub><em>numChildren</em></sub>(<em>size</em>) probes in the worst case,
+ *  where <em>size</em> is the number of key-value pairs
+ *  and <em>numChildren</em> is the branching factor.
  *  The <em>size</em>, and <em>is-empty</em> operations take constant time.
  *  Construction takes constant time.
  *  <p>
@@ -40,40 +40,52 @@ import java.util.Vector;
  *  <a href="http://algs4.cs.princeton.edu/62btree">Section 6.2</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
  */
-public class BTree<Key extends Comparable<Key>, Value>  {
-    // max children per B-tree node = M-1
+public class BTree<Key extends Comparable<Key>, Value> {
+    // max children per B-tree node = nodeSize-1
     // (must be even and greater than 2)
-    private static final int M = 4;
+    private static final int nodeSize = 4;
 
     private Node root;       // root of the B-tree
     private int height;      // height of the B-tree
-    private int n;           // number of key-value pairs in the B-tree
+    private int size;           // number of key-value pairs in the B-tree
 
     // helper B-tree node data type
     private final class Node {
-        private int m;                             // number of children
+        private int numChildren;                   // number of children
         private ArrayList<Entry> children;         // the array of children
 
-        // create a node with k children
-        private Node(int k) {
-            Vector<Entry> v = new Vector<>(M);
-            v.setSize(M);
+        // create a node with numChildren children
+        private Node(int numChildren) {
+            Vector<Entry> v = new Vector<>(nodeSize);
+            v.setSize(nodeSize);
             children = new ArrayList<>(v);
-            m = k;
+            this.numChildren = numChildren;
         }
     }
 
     // internal nodes: only use key and next
     // external nodes: only use key and value
-    private class Entry {
+    private final class Entry {
         private Key key;
         private final Value val;
         private Node next;     // helper field to iterate over array entries
-        Entry(Key key, Value val, Node next) {
+        private Entry(Key key, Value val, Node next) {
             this.key  = key;
             this.val  = val;
             this.next = next;
         }
+
+        Node getNext() {
+            return next;
+        }
+
+        void setNext(Node next) {
+            this.next = next;
+        }
+    }
+
+    private Entry newEntry(Key key, Value val, Node next) {
+        return new Entry(key, val, next);
     }
 
     /**
@@ -96,7 +108,7 @@ public class BTree<Key extends Comparable<Key>, Value>  {
      * @return the number of key-value pairs in this symbol table
      */
     public int size() {
-        return n;
+        return size;
     }
 
     /**
@@ -122,21 +134,20 @@ public class BTree<Key extends Comparable<Key>, Value>  {
         return search(root, key, height);
     }
 
-    private Value search(Node x, Key key, int ht) {
+    private Value search(Node x, Key key, int height) {
         ArrayList<Entry> children = x.children;
 
-        // external node
-        if (ht == 0) {
-            for (int j = 0; j < x.m; j++) {
+        // leaf node
+        if (height == 0) {
+            for (int j = 0; j < x.numChildren; j++) {
                 if (eq(key, children.get(j).key)) return children.get(j).val;
             }
-        }
-
+        } else {
         // internal node
-        else {
-            for (int j = 0; j < x.m; j++) {
-                if (j+1 == x.m || less(key, children.get(j+1).key))
-                    return search(children.get(j).next, key, ht-1);
+            for (int j = 0; j < x.numChildren; j++) {
+                if (j+1 == x.numChildren || less(key, children.get(j+1).key)) {
+                    return search(children.get(j).getNext(), key, height-1);
+                }
             }
         }
         return null;
@@ -154,88 +165,80 @@ public class BTree<Key extends Comparable<Key>, Value>  {
      */
     public void put(Key key, Value val) {
         if (key == null) throw new IllegalArgumentException("argument key to put() is null");
-        Node u = insert(root, key, val, height);
-        n++;
-        if (u == null) return;
+        Node insertedNode = insert(root, key, val, height);
+        size++;
+        if (insertedNode == null) return;
 
         // need to split root
-        Node t = new Node(2);
-        t.children.set(0, new Entry(root.children.get(0).key, null, root));
-        t.children.set(1, new Entry(u.children.get(0).key, null, u));
-        root = t;
+        Node newNode = new Node(2);
+        newNode.children.set(0, newEntry(root.children.get(0).key, null, root));
+        newNode.children.set(1, newEntry(insertedNode.children.get(0).key, null, insertedNode));
+        root = newNode;
         height++;
     }
 
-    private Node insert(Node h, Key key, Value val, int ht) {
+    private Node insert(Node x, Key key, Value val, int height) {
         int j;
-        Entry t = new Entry(key, val, null);
+        Entry entry = newEntry(key, val, null);
 
-        // external node
-        if (ht == 0) {
-            for (j = 0; j < h.m; j++) {
-                if (less(key, h.children.get(j).key)) break;
+        // leaf node
+        if (height == 0) {
+            for (j = 0; j < x.numChildren; j++) {
+                if (less(key, x.children.get(j).key)) break;
             }
-        }
-
+        } else {
         // internal node
-        else {
-            for (j = 0; j < h.m; j++) {
-                if ((j+1 == h.m) || less(key, h.children.get(j+1).key)) {
-                    Node u = insert(h.children.get(j++).next, key, val, ht-1);
-                    if (u == null) return null;
-                    t.key = u.children.get(0).key;
-                    t.next = u;
+            for (j = 0; j < x.numChildren; j++) {
+                if ((j+1 == x.numChildren) || less(key, x.children.get(j+1).key)) {
+                    Node insertedNode = insert(x.children.get(j++).getNext(), key, val, height-1);
+                    if (insertedNode == null) return null;
+                    entry.key = insertedNode.children.get(0).key;
+                    entry.setNext(insertedNode);
                     break;
                 }
             }
         }
 
-        for (int i = h.m; i > j; i--)
-            h.children.set(i, h.children.get(i-1));
-        h.children.set(j, t);
-        h.m++;
-        if (h.m < M) return null;
-        else         return split(h);
+        for (int i = x.numChildren; i > j; i--) {
+            x.children.set(i, x.children.get(i-1));
+        }
+        x.children.set(j, entry);
+        x.numChildren++;
+        return (x.numChildren < nodeSize) ? null : split(x);
     }
 
     // split node in half
     private Node split(Node h) {
-        Node t = new Node(M/2);
-        h.m = M/2;
-        for (int j = 0; j < M/2; j++)
-            t.children.set(j, h.children.get(M/2+j));
+        Node t = new Node(nodeSize / 2);
+        h.numChildren = nodeSize / 2;
+        for (int j = 0; j < nodeSize / 2; j++) {
+            t.children.set(j, h.children.get((nodeSize / 2) + j));
+        }
         return t;
     }
 
-    /**
-     * Returns a string representation of this B-tree (for debugging).
-     *
-     * @return a string representation of this B-tree.
-     */
     public String toString() {
         return toString(root, height, "") + "\n";
     }
 
-    private String toString(Node h, int ht, String indent) {
-        StringBuilder s = new StringBuilder();
-        ArrayList<Entry> children = h.children;
+    private String toString(Node x, int height, String indent) {
+        StringBuilder sb = new StringBuilder();
+        ArrayList<Entry> children = x.children;
 
-        if (ht == 0) {
-            for (int j = 0; j < h.m; j++) {
-                s.append(indent).append(children.get(j).key).append(" ").append(children.get(j).val).append("\n");
+        if (height == 0) {
+            for (int j = 0; j < x.numChildren; j++) {
+                sb.append(indent).append(children.get(j).key).append(" ").append(children.get(j).val).append("\n");
             }
         }
         else {
-            for (int j = 0; j < h.m; j++) {
-                if (j > 0) s.append(indent).append("(").append(children.get(j).key).append(")\n");
-                s.append(toString(children.get(j).next, ht-1, indent + "     "));
+            for (int j = 0; j < x.numChildren; j++) {
+                if (j > 0) sb.append(indent).append("(").append(children.get(j).key).append(")\n");
+                sb.append(toString(children.get(j).getNext(), height-1, indent + "     "));
             }
         }
-        return s.toString();
+        return sb.toString();
     }
 
-
-    // comparison functions - make Comparable instead of Key to avoid casts
     private boolean less(Key k1, Key k2) {
         return k1.compareTo(k2) < 0;
     }
