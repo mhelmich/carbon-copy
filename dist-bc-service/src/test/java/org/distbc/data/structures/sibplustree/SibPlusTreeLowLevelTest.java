@@ -1,5 +1,6 @@
 package org.distbc.data.structures.sibplustree;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -175,6 +176,30 @@ public class SibPlusTreeLowLevelTest {
         assertNull(ing3.getKey(NodeIdxAndIdx.of(1, 1)));
         assertNull(ing4.getKey(NodeIdxAndIdx.of(1, 0)));
         assertNull(ing4.getKey(NodeIdxAndIdx.of(1, 1)));
+    }
+
+    @Test
+    public void testSplits() throws IllegalAccessException {
+        int count = 35;
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        for (int i = 0; i <= count; i++) {
+            t.put(i, UUID.randomUUID().toString());
+        }
+
+        System.err.println(t.toString());
+
+        InternalNodeGroup<Integer> root = getRoot(t);
+        List<Breadcrumb<Integer>> breadcrumbs = t.searchTree(7, root);
+        LeafNodeGroup<Integer, String> lng = (LeafNodeGroup<Integer, String>) breadcrumbs.get(breadcrumbs.size() - 1).ing.getChildForNode(breadcrumbs.get(breadcrumbs.size() - 1).indexes.nodeIdx);
+        t.splitNodes(lng, breadcrumbs);
+        System.err.println(t.toString());
+        root = getRoot(t);
+        System.err.println(root.toString());
+    }
+
+    @SuppressWarnings("unchecked")
+    private InternalNodeGroup<Integer> getRoot(SibPlusTree<Integer, String> t) throws IllegalAccessException {
+        return (InternalNodeGroup<Integer>) FieldUtils.readField(t, "root", true);
     }
 
     private LeafNodeGroup<Integer, String> getFullLeafNodeGroup(SibPlusTree<Integer, String> t) {
