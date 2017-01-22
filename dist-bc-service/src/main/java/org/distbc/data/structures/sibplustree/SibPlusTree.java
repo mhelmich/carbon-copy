@@ -78,7 +78,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         System.err.println(toString());
     }
 
-    private List<Breadcrumb<K>> searchTree(K key, InternalNodeGroup<K> ing) {
+    List<Breadcrumb<K>> searchTree(K key, InternalNodeGroup<K> ing) {
         NodeGroup<K> ng = ing;
         Breadcrumb parentBC = null;
         List<Breadcrumb<K>> breadcrumbs = new ArrayList<>(ing.getLevel());
@@ -89,11 +89,6 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             InternalNodeGroup<K> tmp = (InternalNodeGroup<K>) ng;
             Breadcrumb<K> bc = searchInternalNodeGroup(key, tmp, parentBC);
             breadcrumbs.add(bc);
-            // might happen when the tree is full
-            // we gotta split the root
-            if (NodeIdxAndIdx.INVALID.equals(bc.indexes)) {
-                return Collections.emptyList();
-            }
             ng = tmp.getChildForNode(bc.indexes.nodeIdx);
             if (ng == null && tmp.getLevel() > 1) {
                 ng = newInternalNodeGroup(tmp.getLevel() - 1);
@@ -123,8 +118,9 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
     private int searchStartIdx(K key, InternalNodeGroup<K> ing) {
         NodeIdxAndIdx p = NodeIdxAndIdx.of(0, 0);
         while (!NodeIdxAndIdx.INVALID.equals(p)
-                && !isNullAndLast(ing, p.nodeIdx, p.idx)
-                || (ing.getKey(p) != null && compareTo(key, ing.getKey(p)) > 0)
+                && ing.getKey(p) != null
+                && (compareTo(key, ing.getKey(p)) > 0
+                    || NodeIdxAndIdx.INVALID.equals(ing.findClosestFullSlotFrom(p)))
               ) {
                 p = ing.plusOne(p);
         }
@@ -180,7 +176,7 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         return NodeIdxAndIdx.of(numberOfNodesInLeafNodeGroup, 0);
     }
 
-    private void splitNodes(LeafNodeGroup<K, V> lng, List<Breadcrumb<K>> breadcrumbs) {
+    void splitNodes(LeafNodeGroup<K, V> lng, List<Breadcrumb<K>> breadcrumbs) {
         LeafNodeGroup<K, V> newLng = lng.split();
         Breadcrumb<K> bc = breadcrumbs.remove(breadcrumbs.size() - 1);
         NodeIdxAndIdx next = NodeIdxAndIdx.of(bc.indexes.nodeIdx + 1, bc.indexes.idx);
@@ -191,9 +187,14 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
         bc.ing.shiftNodesOneRight(next, nextEmpty);
         bc.ing.setChildNodeOnNode(next.nodeIdx, newLng);
         bc.ing.setChildNodeOnNode(bc.indexes.nodeIdx, lng);
+
+        doHighKeyBusiness(
+                Collections.singletonList(Breadcrumb.of(bc.ing, next)),
+                NodeIdxAndIdx.of(0, 0),
+                newLng.findClosestEmptySlotFrom(NodeIdxAndIdx.of(0, 0)));
     }
 
-    private void splitNodes(InternalNodeGroup<K> ing, List<Breadcrumb<K>> breadcrumbs) {
+    void splitNodes(InternalNodeGroup<K> ing, List<Breadcrumb<K>> breadcrumbs) {
         if (breadcrumbs.isEmpty()) {
             InternalNodeGroup<K> newRoot = newInternalNodeGroup(ing.getLevel() + 1);
             InternalNodeGroup<K> newIng = ing.split();
@@ -234,8 +235,10 @@ public class SibPlusTree<K extends Comparable<K>, V extends Comparable<V>> {
             shouldDoIt = highestKeyForNode!= null && compareTo(highestKey, highestKeyForNode) > 0;
         }
 
-        Breadcrumb<K> grandParent = breadcrumbs.get(breadcrumbs.size() - 2);
-        grandParent.ing.put(grandParent.indexes, highestKey);
+        if (breadcrumbs.size() > 1) {
+            Breadcrumb<K> grandParent = breadcrumbs.get(breadcrumbs.size() - 2);
+            grandParent.ing.put(grandParent.indexes, highestKey);
+        }
 
 //        // then iteratively follow the breadcrumbs
 //        shouldDoIt = true;

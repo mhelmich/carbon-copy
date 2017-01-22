@@ -58,8 +58,8 @@ public class InternalNodeGroupTest {
         assertNull(ing.getChildForNode(0));
     }
 
-    private InternalNodeGroup<Integer> getFullInternNodeGroup() {
-        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(1, nodeSize, numNodes);
+    private InternalNodeGroup<Integer> getFullInternNodeGroup(int level) {
+        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(level, nodeSize, numNodes);
         for (int i = 0; i < numNodes; i++) {
             for (int j = 0; j < nodeSize; j++) {
                 NodeIdxAndIdx here = NodeIdxAndIdx.of(i, j);
@@ -74,5 +74,9 @@ public class InternalNodeGroupTest {
         }
 
         return ing;
+    }
+
+    private InternalNodeGroup<Integer> getFullInternNodeGroup() {
+        return getFullInternNodeGroup(1);
     }
 }

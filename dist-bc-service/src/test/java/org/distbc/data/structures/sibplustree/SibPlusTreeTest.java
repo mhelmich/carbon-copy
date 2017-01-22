@@ -1,16 +1,23 @@
 package org.distbc.data.structures.sibplustree;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SibPlusTreeTest {
@@ -18,6 +25,7 @@ public class SibPlusTreeTest {
 
     private int leafNodeSize = 3;
     private int numberOfNodesInLeafNodeGroup = 3;
+    private String prefix = "narf_";
 
     @Before
     public void before() {
@@ -139,6 +147,55 @@ public class SibPlusTreeTest {
     }
 
     @Test
+    public void testSplits() throws IllegalAccessException {
+        int count = 35;
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        for (int i = 0; i <= count; i++) {
+            t.put(i, UUID.randomUUID().toString());
+        }
+
+        t.put(7, UUID.randomUUID().toString());
+
+        InternalNodeGroup<Integer> root = getRoot(t);
+        assertNotNull(root);
+        assertEquals(Integer.valueOf(17), root.getKey(NodeIdxAndIdx.of(0, 0)));
+
+        InternalNodeGroup<Integer> ing2 = (InternalNodeGroup<Integer>) root.getChildForNode(0);
+        assertNotNull(ing2);
+        assertNull(ing2.getKey(NodeIdxAndIdx.of(0, 0)));
+        assertEquals(Integer.valueOf(17), ing2.getKey(NodeIdxAndIdx.of(0, 1)));
+
+        InternalNodeGroup<Integer> ing1 = (InternalNodeGroup<Integer>) ing2.getChildForNode(0);
+        assertNotNull(ing1);
+        assertEquals(Integer.valueOf(2), ing1.getKey(NodeIdxAndIdx.of(0, 0)));
+        assertEquals(Integer.valueOf(5), ing1.getKey(NodeIdxAndIdx.of(0, 1)));
+        assertEquals(Integer.valueOf(8), ing1.getKey(NodeIdxAndIdx.of(1, 0)));
+
+        Set<String> rs = t.get(7);
+        assertEquals(2, rs.size());
+    }
+
+    @Test
+    public void testSplitMultipleLevels() throws IllegalAccessException {
+        SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
+        InternalNodeGroup<Integer> ing3 = getFullInternNodeGroup(3);
+        InternalNodeGroup<Integer> ing2 = getFullInternNodeGroup(2);
+        InternalNodeGroup<Integer> ing1 = getFullInternNodeGroup(1);
+        LeafNodeGroup<Integer, String> lng = getFullLeafNodeGroup(t);
+        ing1.setChildNodeOnNode(1, lng);
+        ing2.setChildNodeOnNode(1, ing1);
+        ing3.setChildNodeOnNode(1, ing2);
+
+        setRootNode(t, ing3);
+
+        List<Breadcrumb<Integer>> breadcrumbs = new ArrayList<>();
+        breadcrumbs.add(Breadcrumb.of(ing3, NodeIdxAndIdx.of(1, 1)));
+        breadcrumbs.add(Breadcrumb.of(ing2, NodeIdxAndIdx.of(1, 1)));
+        breadcrumbs.add(Breadcrumb.of(ing1, NodeIdxAndIdx.of(1, 1)));
+        t.splitNodes(ing3, breadcrumbs);
+    }
+
+    @Test
     @Ignore
     public void testSplittingSplits() {
         SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
@@ -162,5 +219,48 @@ public class SibPlusTreeTest {
                 assertTrue(s.contains(e.getValue()));
             }
         );
+    }
+
+    private InternalNodeGroup<Integer> getFullInternNodeGroup(int level) {
+        int nodeSize = leafNodeSize - 1;
+        int numNodes = numberOfNodesInLeafNodeGroup - 1;
+        InternalNodeGroup<Integer> ing = new InternalNodeGroup<>(level, nodeSize, numNodes);
+        for (int i = 0; i < numNodes; i++) {
+            for (int j = 0; j < nodeSize; j++) {
+                NodeIdxAndIdx here = NodeIdxAndIdx.of(i, j);
+                assertEquals(here, ing.findClosestEmptySlotFrom(here));
+                ing.put(here, ((i * nodeSize) + j) * 3);
+                assertEquals(ing.plusOne(here), ing.findClosestEmptySlotFrom(here));
+            }
+
+            @SuppressWarnings("unchecked")
+            NodeGroup<Integer> ng = (NodeGroup<Integer>) Mockito.mock(NodeGroup.class);
+            ing.setChildNodeOnNode(i, ng);
+        }
+
+        return ing;
+    }
+
+    private LeafNodeGroup<Integer, String> getFullLeafNodeGroup(SibPlusTree<Integer, String> t) {
+        LeafNodeGroup<Integer, String> lng = t.newLeafNodeGroup();
+        NodeIdxAndIdx p = NodeIdxAndIdx.of(0, 0);
+        while (!NodeIdxAndIdx.INVALID.equals(p)) {
+            assertEquals(p, lng.findClosestEmptySlotFrom(p));
+            lng.put(p, ((p.nodeIdx * leafNodeSize) + p.idx) * 3, prefix + p.toString());
+            assertEquals(p, lng.findClosestFullSlotFrom(p));
+            p = lng.plusOne(p);
+        }
+
+        assertEquals(NodeIdxAndIdx.INVALID, lng.findClosestEmptySlotFrom(NodeIdxAndIdx.of(0, 0)));
+        return lng;
+    }
+
+    private void setRootNode(SibPlusTree<Integer, String> t, InternalNodeGroup<Integer> root) throws IllegalAccessException {
+        FieldUtils.writeField(t, "root", root, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    private InternalNodeGroup<Integer> getRoot(SibPlusTree<Integer, String> t) throws IllegalAccessException {
+        return (InternalNodeGroup<Integer>) FieldUtils.readField(t, "root", true);
     }
 }
