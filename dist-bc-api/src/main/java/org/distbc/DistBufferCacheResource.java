@@ -1,16 +1,12 @@
 package org.distbc;
 
 import com.codahale.metrics.annotation.Timed;
-import com.google.common.base.Optional;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
-/**
- * Created by mhelmich on 10/4/16.
- */
 @Path("/distbc")
 public interface DistBufferCacheResource {
     @GET
@@ -21,5 +17,5 @@ public interface DistBufferCacheResource {
     @GET
     @Path("/query")
     @Timed
-    String query(@QueryParam("name") Optional<String> name);
+    String query(@QueryParam("name") String name);
 }
