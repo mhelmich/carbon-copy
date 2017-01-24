@@ -1,5 +1,7 @@
 package org.distbc.data.structures;
 
+import java.util.Iterator;
+
 public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private Node first;
@@ -60,6 +62,24 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
             }
             x = x.next;
         }
+    }
+
+    Iterable<Key> keys() {
+        return () -> new Iterator<Key>() {
+            Node x = first;
+
+            @Override
+            public boolean hasNext() {
+                return x != null;
+            }
+
+            @Override
+            public Key next() {
+                Node n = x;
+                x = x.next;
+                return n.key;
+            }
+        };
     }
 
     @Override
