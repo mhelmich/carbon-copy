@@ -20,6 +20,18 @@ import java.nio.ByteBuffer;
 abstract class DataStructure implements Persistable {
     static final int MAX_BYTE_SIZE = 32768;
 
+    // actually there's a +1 is for the kryo byte to identify the class
+    // however I hope that compression and not having the +1
+    // even out in the long run :)
+    private static final int LONG_FIELD_SIZE     = 8;
+    private static final int INT_FIELD_SIZE      = 4;
+    private static final int SHORT_FIELD_SIZE    = 2;
+    private static final int CHAR_FIELD_SIZE     = 2;
+    private static final int BYTE_FIELD_SIZE     = 1;
+    private static final int BOOLEAN_FIELD_SIZE  = 1;
+    private static final int DOUBLE_FIELD_SIZE   = 8;
+    private static final int FLOAT_FIELD_SIZE    = 4;
+
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
         kryo.setRegistrationRequired(true);
@@ -89,6 +101,33 @@ abstract class DataStructure implements Persistable {
 
     abstract void serialize(KryoOutputStream out);
     abstract void deserialize(KryoInputStream out);
+
+    int sizeOfObject(Object o) {
+        Class type = o.getClass();
+        if (Integer.class.equals(type)) {
+            return INT_FIELD_SIZE;
+        } else if (String.class.equals(type)) {
+            return ((String)o).getBytes().length;
+        } else if (Long.class.equals(type)) {
+            return LONG_FIELD_SIZE;
+        } else if (Short.class.equals(type)) {
+            return SHORT_FIELD_SIZE;
+        } else if (Byte.class.equals(type)) {
+            return BYTE_FIELD_SIZE;
+        } else if (Boolean.class.equals(type)) {
+            return BOOLEAN_FIELD_SIZE;
+        } else if (Character.class.equals(type)) {
+            return CHAR_FIELD_SIZE;
+        } else if (Double.class.equals(type)) {
+            return DOUBLE_FIELD_SIZE;
+        } else if (Float.class.equals(type)) {
+            return FLOAT_FIELD_SIZE;
+        } else if (Persistable.class.isAssignableFrom(o.getClass())) {
+            return ((Persistable)o).size();
+        } else {
+            throw new IllegalArgumentException ("unrecognized type: " + o.getClass());
+        }
+    }
 
     static class KryoOutputStream extends OutputStream {
         private Kryo kryo;
