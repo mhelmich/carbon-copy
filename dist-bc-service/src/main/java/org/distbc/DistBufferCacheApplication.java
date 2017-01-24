@@ -1,25 +1,14 @@
 package org.distbc;
 
 import co.paralleluniverse.galaxy.Grid;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.pool.KryoFactory;
-import com.esotericsoftware.kryo.pool.KryoPool;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.distbc.data.structures.SkipList;
 
 public class DistBufferCacheApplication extends Application<DistBufferCacheConfiguration> {
     public static void main(String[] args) throws Exception {
         new DistBufferCacheApplication().run(args);
     }
-
-    private static KryoFactory kryoFactory = () -> {
-        Kryo kryo = new Kryo();
-        // configure kryo instance, customize settings
-        kryo.register(SkipList.class, 0);
-        return kryo;
-    };
 
     @Override
     public String getName() {
@@ -35,9 +24,7 @@ public class DistBufferCacheApplication extends Application<DistBufferCacheConfi
     public void run(DistBufferCacheConfiguration configuration, Environment environment) {
         Grid g = startupGalaxy(configuration);
 
-        KryoPool pool = new KryoPool.Builder(kryoFactory).softReferences().build();
-
-        DistBufferCacheResourceImpl resource = new DistBufferCacheResourceImpl(g, pool);
+        DistBufferCacheResourceImpl resource = new DistBufferCacheResourceImpl(g);
         environment.jersey().register(resource);
 
         environment.healthChecks().register("galaxy", new GalaxyHealthCheck(g));
