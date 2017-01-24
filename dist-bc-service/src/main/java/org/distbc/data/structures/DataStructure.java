@@ -55,15 +55,23 @@ abstract class DataStructure implements Persistable {
     private Grid grid;
 
     private long id;
-    protected int size;
+    int currentObjectSize;
 
     DataStructure() {
-        this.size = MAX_BYTE_SIZE;
+        this.currentObjectSize = 0;
     }
 
     DataStructure(long id) {
         this();
         this.id = id;
+    }
+
+    boolean isUnderMaxByteSize(int addSize) {
+        return currentObjectSize + addSize <= getMaxByteSize();
+    }
+
+    int getMaxByteSize() {
+        return MAX_BYTE_SIZE;
     }
 
     public void write(ByteBuffer compressedBB) {
@@ -76,7 +84,8 @@ abstract class DataStructure implements Persistable {
 
         try {
             uncompressedBB.rewind();
-            Snappy.compress(uncompressedBB, compressedBB);
+            int compressedSize = Snappy.compress(uncompressedBB, compressedBB);
+            compressedBB.position(compressedSize);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
         }
