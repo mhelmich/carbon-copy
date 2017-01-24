@@ -39,11 +39,10 @@ public class DataBlockTest {
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(6), db.get(6));
 
-        int cap = 10;
-        ByteBuffer bb = ByteBuffer.allocate(cap);
+        ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db.write(bb);
         System.err.println("byte size: " + bb.position());
-        assertTrue(cap > bb.remaining());
+        assertTrue(DataStructure.MAX_BYTE_SIZE > bb.remaining());
         bb.rewind();
 
         DataBlock<Integer, Integer> db2 = new DataBlock<>();
@@ -60,11 +59,10 @@ public class DataBlockTest {
         db3.put("2", val2);
         db3.put("3", val3);
 
-        cap = 4096;
-        ByteBuffer bb2 = ByteBuffer.allocate(cap);
+        ByteBuffer bb2 = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db3.write(bb2);
         System.err.println("byte size: " + bb2.position());
-        assertTrue(cap > bb2.remaining());
+        assertTrue(DataStructure.MAX_BYTE_SIZE > bb2.remaining());
         bb2.rewind();
 
         DataBlock<String, String> db4 = new DataBlock<>();
