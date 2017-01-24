@@ -54,12 +54,10 @@ abstract class DataStructure implements Persistable {
     @Inject
     private Grid grid;
 
-    private long id;
-    int currentObjectSize;
+    private long id = -1;
+    int currentObjectSize = 0;
 
-    DataStructure() {
-        this.currentObjectSize = 0;
-    }
+    DataStructure() { }
 
     DataStructure(long id) {
         this();
@@ -72,6 +70,10 @@ abstract class DataStructure implements Persistable {
 
     int getMaxByteSize() {
         return MAX_BYTE_SIZE;
+    }
+
+    long getId() {
+        return id;
     }
 
     // there is some sort of overhead included
@@ -121,6 +123,7 @@ abstract class DataStructure implements Persistable {
     abstract void deserialize(KryoInputStream out);
 
     int sizeOfObject(Object o) {
+        if (o == null) return 0;
         Class type = o.getClass();
         if (Integer.class.equals(type)) {
             return INT_FIELD_SIZE;

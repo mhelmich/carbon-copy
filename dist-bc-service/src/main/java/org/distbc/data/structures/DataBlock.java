@@ -57,6 +57,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         Node x = first;
         while (x != null) {
             if (x.next != null && x.next.key.equals(key)) {
+                currentObjectSize -= sizeOfObject(key) + sizeOfObject(x.next.value);
                 x.next = x.next.next;
                 return;
             }

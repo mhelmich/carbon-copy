@@ -110,6 +110,7 @@ public class DataBlockTest {
         assertNull(db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
+        assertEquals(24, db.size());
     }
 
     @Test
@@ -122,12 +123,14 @@ public class DataBlockTest {
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
+        assertEquals(32, db.size());
 
         db.delete(7);
 
         assertNull(db.get(7));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(24, db.size());
     }
 
     @Test
@@ -140,12 +143,14 @@ public class DataBlockTest {
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
+        assertEquals(32, db.size());
 
         db.delete(3);
 
         assertNull(db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(7), db.get(7));
+        assertEquals(24, db.size());
     }
 
     @Test
@@ -154,6 +159,7 @@ public class DataBlockTest {
         db.put(3, 3);
         db.put(5, 5);
         db.put(7, 7);
+        assertEquals(32, db.size());
 
         Set<Integer> keys = new HashSet<>();
         for (Integer key : db.keys()) {
