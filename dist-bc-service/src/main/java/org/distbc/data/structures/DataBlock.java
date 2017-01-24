@@ -38,24 +38,6 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         return true;
     }
 
-//    @Override
-//    long calculateByteSize() {
-//        if (first == null) return 0;
-//
-//        long size = 0;
-//        Node x = first;
-//        try {
-//            Class keyType = x.getClass().getField("key").getType();
-//            Class valueType = x.getClass().getField("value").getType();
-//            while (x != null) {
-//                x = x.next;
-//            }
-//        } catch (Exception xcp) {
-//            xcp.printStackTrace();
-//        }
-//        return size;
-//    }
-
     @Override
     void serialize(KryoOutputStream out) {
         Node x = first;
@@ -80,6 +62,13 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     @Override
     public int size() {
-        return 0;
+        int size = 0;
+        Node x = first;
+        while (x != null) {
+            size += sizeOfObject(x.key);
+            size += sizeOfObject(x.value);
+            x = x.next;
+        }
+        return size;
     }
 }
