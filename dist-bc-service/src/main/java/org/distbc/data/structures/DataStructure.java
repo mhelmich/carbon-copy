@@ -10,6 +10,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.inject.Inject;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,9 +18,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 abstract class DataStructure implements Persistable {
-    // TODO : kryo business could go here
-    // that seems to common across all data structures
-    private static final int MAX_BYTE_SIZE = 32768;
+    static final int MAX_BYTE_SIZE = 32768;
 
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
@@ -41,26 +40,47 @@ abstract class DataStructure implements Persistable {
     private static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
 
     @Inject
-    Grid grid;
+    private Grid grid;
 
     private long id;
+    protected int size;
 
-    DataStructure() {}
+    DataStructure() {
+        this.size = MAX_BYTE_SIZE;
+    }
 
     DataStructure(long id) {
+        this();
         this.id = id;
     }
 
-    public void write(ByteBuffer bb) {
-        try (KryoOutputStream out = new KryoOutputStream(new ByteBufferOutputStream(bb))) {
+    public void write(ByteBuffer compressedBB) {
+        ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(MAX_BYTE_SIZE);
+        try (KryoOutputStream out = new KryoOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
             serialize(out);
+        } catch (IOException xcp) {
+            throw new RuntimeException(xcp);
+        }
+
+        try {
+            uncompressedBB.rewind();
+            Snappy.compress(uncompressedBB, compressedBB);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
         }
     }
 
-    public void read(ByteBuffer bb) {
-        try (KryoInputStream in = new KryoInputStream(new ByteBufferInputStream(bb))) {
+    public void read(ByteBuffer compressedBB) {
+        ByteBuffer uncompressedBB;
+        try {
+            int uncompressedLength = Snappy.uncompressedLength(compressedBB);
+            uncompressedBB = ByteBuffer.allocateDirect(uncompressedLength);
+            Snappy.uncompress(compressedBB, uncompressedBB);
+        } catch (IOException xcp) {
+            throw new RuntimeException(xcp);
+        }
+
+        try (KryoInputStream in = new KryoInputStream(new ByteBufferInputStream(uncompressedBB))) {
             deserialize(in);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
