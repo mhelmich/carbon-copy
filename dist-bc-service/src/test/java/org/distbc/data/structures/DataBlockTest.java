@@ -3,6 +3,8 @@ package org.distbc.data.structures;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +44,7 @@ public class DataBlockTest {
 
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db.write(bb);
-        assertEquals(16, db.size());
+        assertEquals(24, db.size());
         assertEquals(1549, bb.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb.remaining());
 
@@ -65,7 +67,7 @@ public class DataBlockTest {
 
         ByteBuffer bb2 = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db3.write(bb2);
-        assertEquals(111, db3.size());
+        assertEquals(119, db3.size());
         assertTrue(1665 >= bb2.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb2.remaining());
         bb2.rewind();
@@ -144,5 +146,24 @@ public class DataBlockTest {
         assertNull(db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(7), db.get(7));
+    }
+
+    @Test
+    public void testKeys() {
+        DataBlock<Integer, Integer> db = new DataBlock<>();
+        db.put(3, 3);
+        db.put(5, 5);
+        db.put(7, 7);
+
+        Set<Integer> keys = new HashSet<>();
+        for (Integer key : db.keys()) {
+            keys.add(key);
+        }
+
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains(3));
+        assertTrue(keys.contains(5));
+        assertTrue(keys.contains(7));
+        assertFalse(keys.contains(2));
     }
 }
