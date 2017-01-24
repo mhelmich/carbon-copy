@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -42,8 +43,10 @@ public class DataBlockTest {
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db.write(bb);
         assertEquals(16, db.size());
+        assertEquals(1549, bb.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb.remaining());
 
+        bb.rewind();
         DataBlock<Integer, Integer> db2 = new DataBlock<>();
         db2.read(bb);
 
@@ -63,6 +66,7 @@ public class DataBlockTest {
         ByteBuffer bb2 = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db3.write(bb2);
         assertEquals(111, db3.size());
+        assertTrue(1665 >= bb2.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb2.remaining());
         bb2.rewind();
 
@@ -72,5 +76,73 @@ public class DataBlockTest {
         assertEquals(val3, db4.get("3"));
         assertEquals(val1, db4.get("1"));
         assertEquals(db3.size(), db4.size());
+    }
+
+    @Test
+    public void testPutIfPossible() {
+        DataBlock<Integer, Integer> db = new DataBlock<Integer, Integer>() {
+            @Override
+            int getMaxByteSize() {
+                return 22;
+            }
+        };
+
+        assertTrue(db.putIfPossible(3, 3));
+        assertTrue(db.putIfPossible(5, 5));
+        assertFalse(db.putIfPossible(7, 7));
+    }
+
+    @Test
+    public void testDeleteMiddle() {
+        DataBlock<Integer, Integer> db = new DataBlock<>();
+        db.put(3, 3);
+        db.put(5, 5);
+        db.put(7, 7);
+
+        assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(7), db.get(7));
+
+        db.delete(5);
+
+        assertNull(db.get(5));
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(7), db.get(7));
+    }
+
+    @Test
+    public void testDeleteFirst() {
+        DataBlock<Integer, Integer> db = new DataBlock<>();
+        db.put(3, 3);
+        db.put(5, 5);
+        db.put(7, 7);
+
+        assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(7), db.get(7));
+
+        db.delete(7);
+
+        assertNull(db.get(7));
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(5), db.get(5));
+    }
+
+    @Test
+    public void testDeleteLast() {
+        DataBlock<Integer, Integer> db = new DataBlock<>();
+        db.put(3, 3);
+        db.put(5, 5);
+        db.put(7, 7);
+
+        assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(7), db.get(7));
+
+        db.delete(3);
+
+        assertNull(db.get(3));
+        assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(Integer.valueOf(7), db.get(7));
     }
 }
