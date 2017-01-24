@@ -3,12 +3,9 @@ package org.distbc;
 import co.paralleluniverse.galaxy.Grid;
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
-import com.esotericsoftware.kryo.pool.KryoCallback;
-import com.esotericsoftware.kryo.pool.KryoPool;
-import com.google.common.base.Optional;
+import com.google.inject.Inject;
 import org.distbc.data.structures.SkipList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,21 +14,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by mhelmich on 9/30/16.
- */
-public class DistBufferCacheResourceImpl implements DistBufferCacheResource {
+class DistBufferCacheResourceImpl implements DistBufferCacheResource {
 
     private static Logger logger = LoggerFactory.getLogger(DistBufferCacheResourceImpl.class);
-
     private static final Map<String, Long> namesToId = new ConcurrentHashMap<>();
 
     private final Grid grid;
-    private final KryoPool kryoPool;
 
-    DistBufferCacheResourceImpl(Grid grid, KryoPool kryoPool) {
+    @Inject
+    DistBufferCacheResourceImpl(Grid grid) {
         this.grid = grid;
-        this.kryoPool = kryoPool;
     }
 
     public String feedData(String index) {
@@ -44,13 +36,6 @@ public class DistBufferCacheResourceImpl implements DistBufferCacheResource {
 
         logger.info("created skip list size [{}]", sl.size());
         final Output output = new UnsafeMemoryOutput(1024);
-
-        kryoPool.run(new KryoCallback<Void>() {
-            public Void execute(Kryo kryo) {
-                kryo.writeClassAndObject(output, sl);
-                return null;
-            }
-        });
 
         long root = -1;
         Store store = grid.store();
@@ -82,7 +67,7 @@ public class DistBufferCacheResourceImpl implements DistBufferCacheResource {
         return "ok";
     }
 
-    public String query(Optional<String> name) {
+    public String query(String name) {
         return "all zeros";
     }
 }
