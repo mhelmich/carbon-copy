@@ -34,7 +34,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         first = new Node(key, val, first);
     }
 
-    public boolean putIfPossible(Key key, Value val) {
+    boolean putIfPossible(Key key, Value val) {
         int size = sizeOfObject(key) + sizeOfObject(val);
         if (isUnderMaxByteSize(size)) {
             put(key, val);
@@ -86,7 +86,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     @Override
     public int size() {
-        int size = 0;
+        int size = super.size();
         Node x = first;
         while (x != null) {
             size += sizeOfObject(x.key);
