@@ -74,8 +74,17 @@ abstract class DataStructure implements Persistable {
         return MAX_BYTE_SIZE;
     }
 
+    // there is some sort of overhead included
+    // I suppose that has to do with leading magic bytes
+    // this needs to be a fairly performant method though
+    // since it's called during serialization ... twice ... unnecessarily
+    @Override
+    public int size() {
+        return 8;
+    }
+
     public void write(ByteBuffer compressedBB) {
-        ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(MAX_BYTE_SIZE);
+        ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
         try (KryoOutputStream out = new KryoOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
             serialize(out);
         } catch (IOException xcp) {
