@@ -1,5 +1,6 @@
 package org.distbc.data.structures;
-/******************************************************************************
+/*
+ * *****************************************************************************
  *  Compilation:  javac RedBlackBST.java
  *  Execution:    java RedBlackBST < input.txt
  *  Dependencies: StdIn.java StdOut.java  
@@ -66,7 +67,7 @@ import java.util.Queue;
  *  @author Kevin Wayne
  */
 
-class RedBlackBST<Key extends Comparable<Key>, Value> extends Index {
+class RedBlackBST<Key extends Comparable<Key>, Value> {
 
     private static final boolean RED   = true;
     private static final boolean BLACK = false;
@@ -119,12 +120,10 @@ class RedBlackBST<Key extends Comparable<Key>, Value> extends Index {
         return size(root);
     }
 
-    @Override
     public void write(ByteBuffer byteBuffer) {
 
     }
 
-    @Override
     public void read(ByteBuffer byteBuffer) {
 
     }

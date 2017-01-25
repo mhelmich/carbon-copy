@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.google.common.base.Optional;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
@@ -14,12 +15,9 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by mhelmich on 10/1/16.
- */
 public class SkipListTest {
 
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(SkipList.class);
+    private static Logger logger = LoggerFactory.getLogger(SkipList.class);
 
     @Test
     public void testBasic() throws Exception {

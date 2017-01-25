@@ -9,10 +9,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-/**
- * Created by mhelmich on 10/4/16.
- */
-public class SkipList<Key extends Comparable<Key>, Value extends Comparable<Value>> extends Index {
+public class SkipList<Key extends Comparable<Key>, Value extends Comparable<Value>> {
 
 //    private static Logger logger = LoggerFactory.getLogger(SkipList.class);
 
@@ -155,7 +152,7 @@ public class SkipList<Key extends Comparable<Key>, Value extends Comparable<Valu
             }
         }
         x = x.forward[0];
-        return x.key.compareTo(key) == 0 ? Optional.of(x.value) : Optional.<Value>absent();
+        return x.key.compareTo(key) == 0 ? Optional.of(x.value) : Optional.absent();
     }
 
     public Set<Value> search(Key key) {
@@ -185,12 +182,10 @@ public class SkipList<Key extends Comparable<Key>, Value extends Comparable<Valu
         return size;
     }
 
-    @Override
     public void write(ByteBuffer byteBuffer) {
 
     }
 
-    @Override
     public void read(ByteBuffer byteBuffer) {
 
     }
