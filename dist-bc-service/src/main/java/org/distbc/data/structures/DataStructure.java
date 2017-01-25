@@ -120,7 +120,7 @@ abstract class DataStructure implements Persistable {
     }
 
     abstract void serialize(KryoOutputStream out);
-    abstract void deserialize(KryoInputStream out);
+    abstract void deserialize(KryoInputStream in);
 
     int sizeOfObject(Object o) {
         if (o == null) return 0;
@@ -198,6 +198,11 @@ abstract class DataStructure implements Persistable {
 
         Object readObject() {
             return kryo.readClassAndObject(in);
+        }
+
+        @Override
+        public int available() throws IOException {
+            return in.available();
         }
 
         @Override
