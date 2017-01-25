@@ -2,6 +2,7 @@ package org.distbc.data.structures;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Vector;
 
 public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
@@ -50,6 +51,33 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         }
     }
 
+    public void delete(Key key) {
+        if (key == null) throw new IllegalArgumentException("Key cannot be null");
+        int i = hash(key);
+        hashTable.get(i).delete(key);
+    }
+
+    public Iterable<Key> keys() {
+        return () -> new Iterator<Key>() {
+            private int i = 0;
+            private Iterator<Key> dbIter;
+
+            @Override
+            public boolean hasNext() {
+                return i < hashTableSize || dbIter.hasNext();
+            }
+
+            @Override
+            public Key next() {
+                if (dbIter == null || !dbIter.hasNext()) {
+                    dbIter = hashTable.get(i).keys().iterator();
+                    i++;
+                }
+                return dbIter.next();
+            }
+        };
+    }
+
     private int hash(Key key) {
         return (key.hashCode() & 0x7fffffff) % hashTableSize;
     }
@@ -84,7 +112,6 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     void deserialize(SerializerInputStream in) {
         int i = 0;

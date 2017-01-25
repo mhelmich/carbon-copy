@@ -51,4 +51,73 @@ public class ChainingHashTest {
 
         m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
     }
+
+    @Test
+    public void testDelete() {
+        Map<String, String> m = new HashMap<>();
+        ChainingHash<String, String> h = new ChainingHash<>();
+
+        String key = UUID.randomUUID().toString();
+        String value = UUID.randomUUID().toString();
+
+        m.put(key, value);
+        h.put(key, value);
+
+        m.put("12", "12");
+        h.put("12", "12");
+
+        key = UUID.randomUUID().toString();
+        value = UUID.randomUUID().toString();
+
+        m.put(key, value);
+        h.put(key, value);
+
+        m.put("13", "13");
+        h.put("13", "13");
+
+        key = UUID.randomUUID().toString();
+        value = UUID.randomUUID().toString();
+
+        m.put(key, value);
+        h.put(key, value);
+
+        int count = ChainingHash.DEFAULT_NUM_BUCKETS * 2;
+        for (int i = 0; i < count; i++) {
+            key = UUID.randomUUID().toString();
+            value = UUID.randomUUID().toString();
+            m.put(key, value);
+            h.put(key, value);
+        }
+        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
+
+        m.remove("13");
+        h.delete("13");
+        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
+
+        m.remove("12");
+        h.delete("12");
+        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
+
+        h.delete("12");
+        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
+    }
+
+    @Test
+    public void testKeys() {
+        Map<String, String> m = new HashMap<>();
+        ChainingHash<String, String> h = new ChainingHash<>();
+
+        // this needs to be
+        int count = ChainingHash.DEFAULT_NUM_BUCKETS * 3;
+        for (int i = 0; i < count; i++) {
+            String key = UUID.randomUUID().toString();
+            String value = UUID.randomUUID().toString();
+            m.put(key, value);
+            h.put(key, value);
+        }
+
+        for (String s : h.keys()) {
+            assertEquals(m.get(s), h.get(s));
+        }
+    }
 }
