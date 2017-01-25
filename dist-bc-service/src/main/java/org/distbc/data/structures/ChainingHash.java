@@ -1,5 +1,6 @@
 package org.distbc.data.structures;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -54,6 +55,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     private void resize(int newNumBuckets) {
+        // resizing by copying
         ChainingHash<Key, Value> temp = new ChainingHash<>(newNumBuckets);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
@@ -75,13 +77,27 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     @Override
-    void serialize(KryoOutputStream out) {
-
+    void serialize(SerializerOutputStream out) {
+        for (int i = 0; i < hashTableSize; i++) {
+            DataBlock<Key, Value> db = getDataBlock(i);
+            out.writeObject((db != null) ? db.getId() : null);
+        }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    void deserialize(KryoInputStream out) {
-
+    void deserialize(SerializerInputStream in) {
+        int i = 0;
+        try {
+            while (in.available() > 0) {
+                Long id = (Long) in.readObject();
+                DataBlock<Key, Value> db = (id != null) ? new DataBlock<>(id) : null;
+                hashTable.set(i, db);
+                i++;
+            }
+        } catch (IOException xcp) {
+            throw new RuntimeException(xcp);
+        }
     }
 
     @Override

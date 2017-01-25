@@ -4,6 +4,7 @@ import co.paralleluniverse.common.io.ByteBufferInputStream;
 import co.paralleluniverse.common.io.ByteBufferOutputStream;
 import co.paralleluniverse.common.io.Persistable;
 import co.paralleluniverse.galaxy.Grid;
+import co.paralleluniverse.galaxy.TimeoutException;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -76,6 +77,14 @@ abstract class DataStructure implements Persistable {
         return id;
     }
 
+    <T extends DataStructure> void load(T o) {
+        get(getId(), o);
+    }
+
+    void save() {
+
+    }
+
     // there is some sort of overhead included
     // I suppose that has to do with leading magic bytes
     // this needs to be a fairly performant method though
@@ -117,6 +126,34 @@ abstract class DataStructure implements Persistable {
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
         }
+    }
+
+    private <T extends DataStructure> void get(long id, T o) {
+        try {
+            grid.store().get(id, o);
+        } catch (TimeoutException xcp) {
+            throw new RuntimeException(xcp);
+        }
+    }
+
+    private <T extends DataStructure> T getX(long id) {
+        return null;
+    }
+
+    private <T extends DataStructure> T getX(long id, T o) {
+        return null;
+    }
+
+    private <T extends DataStructure> void put(T o) {
+        long id = -1;
+        try {
+            id = grid.store().put(o, null);
+        } catch (TimeoutException xcp) {
+            throw new RuntimeException(xcp);
+        } finally {
+            grid.store().release(id);
+        }
+        this.id = id;
     }
 
     abstract void serialize(SerializerOutputStream out);
