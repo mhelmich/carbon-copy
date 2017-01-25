@@ -4,6 +4,7 @@ import co.paralleluniverse.galaxy.Grid;
 import co.paralleluniverse.galaxy.TimeoutException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -43,5 +44,18 @@ public class GalaxyDataBlockTest {
         grid.store().get(dbId, db2);
         assertEquals(Long.valueOf(123), db2.get(123));
         assertNull(db2.get(125));
+    }
+
+    @Test
+    @Ignore // until I figured out how I can get this stupid DI working
+    public void testCtorWithId() throws TimeoutException {
+        DataBlock<Integer, Long> db = new DataBlock<>();
+        db.put(123, 123L);
+        long dbId = grid.store().put(db, null);
+        grid.store().release(dbId);
+
+        // tic toc tic toc
+        DataBlock<Integer, Long> db2 = new DataBlock<>(dbId);
+        assertEquals(Long.valueOf(123L), db2.get(123));
     }
 }
