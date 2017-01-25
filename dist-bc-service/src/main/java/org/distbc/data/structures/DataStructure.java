@@ -87,7 +87,7 @@ abstract class DataStructure implements Persistable {
 
     public void write(ByteBuffer compressedBB) {
         ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
-        try (KryoOutputStream out = new KryoOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
+        try (SerializerOutputStream out = new SerializerOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
             serialize(out);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
@@ -112,15 +112,15 @@ abstract class DataStructure implements Persistable {
             throw new RuntimeException(xcp);
         }
 
-        try (KryoInputStream in = new KryoInputStream(new ByteBufferInputStream(uncompressedBB))) {
+        try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
             deserialize(in);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
         }
     }
 
-    abstract void serialize(KryoOutputStream out);
-    abstract void deserialize(KryoInputStream in);
+    abstract void serialize(SerializerOutputStream out);
+    abstract void deserialize(SerializerInputStream in);
 
     int sizeOfObject(Object o) {
         if (o == null) return 0;
@@ -150,11 +150,11 @@ abstract class DataStructure implements Persistable {
         }
     }
 
-    static class KryoOutputStream extends OutputStream {
+    static class SerializerOutputStream extends OutputStream {
         private Kryo kryo;
         private Output out;
 
-        private KryoOutputStream(OutputStream o) {
+        private SerializerOutputStream(OutputStream o) {
             out = new Output(o);
             kryo = kryoPool.borrow();
         }
@@ -182,11 +182,11 @@ abstract class DataStructure implements Persistable {
         }
     }
 
-    static class KryoInputStream extends InputStream {
+    static class SerializerInputStream extends InputStream {
         private final Kryo kryo;
         private final Input in;
 
-        private KryoInputStream(InputStream i) {
+        private SerializerInputStream(InputStream i) {
             in = new Input(i);
             kryo = kryoPool.borrow();
         }

@@ -84,7 +84,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
     }
 
     @Override
-    void serialize(KryoOutputStream out) {
+    void serialize(SerializerOutputStream out) {
         Node x = first;
         while (x != null) {
             out.writeObject(x.key);
@@ -95,7 +95,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     @SuppressWarnings("unchecked")
     @Override
-    void deserialize(KryoInputStream in) {
+    void deserialize(SerializerInputStream in) {
         boolean shouldDoIt;
         do {
             Key key = (Key) in.readObject();
