@@ -18,6 +18,15 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         }
     }
 
+    DataBlock() {
+        super();
+    }
+
+    DataBlock(long id) {
+        super(id);
+        load(this);
+    }
+
     public Value get(Key key) {
         if (key == null) throw new IllegalArgumentException("key can't be null");
         Node x = first;
@@ -36,7 +45,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         first = new Node(key, val, first);
     }
 
-    boolean putIfPossible(Key key, Value val) {
+    public boolean putIfPossible(Key key, Value val) {
         int size = sizeOfObject(key) + sizeOfObject(val);
         if (isUnderMaxByteSize(size)) {
             put(key, val);
@@ -46,7 +55,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         }
     }
 
-    void delete(Key key) {
+    public void delete(Key key) {
         if (key == null) throw new IllegalArgumentException("key can't be null");
 
         if (key.equals(first.key)) {
