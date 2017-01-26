@@ -147,6 +147,7 @@ public class SibPlusTreeTest {
     }
 
     @Test
+    @Ignore
     public void testSplits() throws IllegalAccessException {
         int count = 35;
         SibPlusTree<Integer, String> t = new SibPlusTree<>(leafNodeSize, numberOfNodesInLeafNodeGroup);
