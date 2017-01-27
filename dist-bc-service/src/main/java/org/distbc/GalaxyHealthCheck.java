@@ -1,20 +1,18 @@
 package org.distbc;
 
-import co.paralleluniverse.galaxy.Grid;
+import co.paralleluniverse.galaxy.Cluster;
 import com.codahale.metrics.health.HealthCheck;
+import com.google.inject.Inject;
 
-/**
- * Created by mhelmich on 10/4/16.
- */
 public class GalaxyHealthCheck extends HealthCheck {
 
-    private Grid grid;
+    @Inject
+    private Cluster cluster;
 
-    GalaxyHealthCheck(Grid grid) {
-        this.grid = grid;
+    GalaxyHealthCheck() {
     }
 
     protected Result check() throws Exception {
-        return grid.cluster().isOnline() ? Result.healthy() : Result.unhealthy("Galaxy cluster is not online!");
+        return cluster.isOnline() ? Result.healthy() : Result.unhealthy("Galaxy cluster is not online!");
     }
 }

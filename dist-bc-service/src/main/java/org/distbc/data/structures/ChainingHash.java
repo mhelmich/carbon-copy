@@ -1,5 +1,7 @@
 package org.distbc.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,20 +14,24 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     private int hashTableSize;
     private ArrayList<DataBlock<Key, Value>> hashTable;
 
-    ChainingHash() {
-        this(DEFAULT_NUM_BUCKETS);
+    private final DataStructureFactory dsFactory;
+
+    ChainingHash(Store store, DataStructureFactory dsFactory) {
+        this(store, dsFactory, DEFAULT_NUM_BUCKETS);
     }
 
-    ChainingHash(int initNumBuckets) {
-        super();
+    ChainingHash(Store store, DataStructureFactory dsFactory, int initNumBuckets) {
+        super(store);
+        this.dsFactory = dsFactory;
         this.hashTableSize = initNumBuckets;
         Vector<DataBlock<Key, Value>> v = new Vector<>(initNumBuckets);
         v.setSize(initNumBuckets);
         hashTable = new ArrayList<>(v);
     }
 
-    ChainingHash(long id) {
-        super(id);
+    ChainingHash(Store store, DataStructureFactory dsFactory, long id) {
+        super(store, id);
+        this.dsFactory = dsFactory;
     }
 
     public Value get(Key key) {
@@ -84,7 +90,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     private void resize(int newNumBuckets) {
         // resizing by copying
-        ChainingHash<Key, Value> temp = new ChainingHash<>(newNumBuckets);
+        ChainingHash<Key, Value> temp = dsFactory.newChainingHashWithNumBuckets(newNumBuckets);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
@@ -100,8 +106,8 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return hashTable.get(i);
     }
 
-    DataBlock<Key, Value> newDataBlock() {
-        return new DataBlock<>();
+    private DataBlock<Key, Value> newDataBlock() {
+        return dsFactory.newDataBlock();
     }
 
     @Override
@@ -118,7 +124,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         try {
             while (in.available() > 0) {
                 Long id = (Long) in.readObject();
-                DataBlock<Key, Value> db = (id != null) ? new DataBlock<>(id) : null;
+                DataBlock<Key, Value> db = (id != null) ? dsFactory.loadDataBlock(id) : null;
                 hashTable.set(i, db);
                 i++;
             }

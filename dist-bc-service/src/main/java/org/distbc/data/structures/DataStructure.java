@@ -3,14 +3,13 @@ package org.distbc.data.structures;
 import co.paralleluniverse.common.io.ByteBufferInputStream;
 import co.paralleluniverse.common.io.ByteBufferOutputStream;
 import co.paralleluniverse.common.io.Persistable;
-import co.paralleluniverse.galaxy.Grid;
+import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.TimeoutException;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import com.google.inject.Inject;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
@@ -18,6 +17,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * Abstract classes and super classes are a red flag for guice
+ * The combination of which is even worse
+ * But this way I managed to build a fairly nice interface that should allow
+ * easy addition of new data structures without going through the hassle
+ * of setting up galaxy, worry about serialization, etc.
+ */
 abstract class DataStructure implements Persistable {
     static final int MAX_BYTE_SIZE = 32768;
 
@@ -52,16 +58,17 @@ abstract class DataStructure implements Persistable {
 
     private static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
 
-    @Inject
-    private Grid grid;
+    private Store store;
 
     private long id = -1;
     int currentObjectSize = 0;
 
-    DataStructure() { }
+    DataStructure(Store store) {
+        this.store = store;
+    }
 
-    DataStructure(long id) {
-        this();
+    DataStructure(Store store, long id) {
+        this(store);
         this.id = id;
     }
 
@@ -130,7 +137,7 @@ abstract class DataStructure implements Persistable {
 
     private <T extends DataStructure> void get(long id, T o) {
         try {
-            grid.store().get(id, o);
+            store.get(id, o);
         } catch (TimeoutException xcp) {
             throw new RuntimeException(xcp);
         }
@@ -147,11 +154,11 @@ abstract class DataStructure implements Persistable {
     private <T extends DataStructure> void put(T o) {
         long id = -1;
         try {
-            id = grid.store().put(o, null);
+            id = store.put(o, null);
         } catch (TimeoutException xcp) {
             throw new RuntimeException(xcp);
         } finally {
-            grid.store().release(id);
+            store.release(id);
         }
         this.id = id;
     }
