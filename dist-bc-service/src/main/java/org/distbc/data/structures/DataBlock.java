@@ -1,5 +1,7 @@
 package org.distbc.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
+
 import java.util.Iterator;
 
 public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
@@ -18,12 +20,12 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         }
     }
 
-    DataBlock() {
-        super();
+    DataBlock(Store store) {
+        super(store);
     }
 
-    DataBlock(long id) {
-        super(id);
+    DataBlock(Store store, long id) {
+        super(store, id);
         load(this);
     }
 
@@ -45,7 +47,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         first = new Node(key, val, first);
     }
 
-    public boolean putIfPossible(Key key, Value val) {
+    boolean putIfPossible(Key key, Value val) {
         int size = sizeOfObject(key) + sizeOfObject(val);
         if (isUnderMaxByteSize(size)) {
             put(key, val);
