@@ -1,5 +1,6 @@
 package org.distbc.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.distbc.DataStructureModule;
 import org.distbc.GuiceJUnit4Runner;
@@ -20,6 +21,9 @@ public class ChainingHashTest {
     @Inject
     private DataStructureFactory dsFactory;
 
+    @Inject
+    private Store store;
+
     @Test
     public void testBasic() {
         Map<String, String> m = new HashMap<>();
@@ -39,30 +43,28 @@ public class ChainingHashTest {
 
     @Test
     public void testResize() {
-        // MAJOR TODO -- fix this !!!
-        // FIXME FIXME FIXME
-//        Map<String, String> m = new HashMap<>();
-//        ChainingHash<String, String> h = new ChainingHash<String, String>() {
-//            @Override
-//            DataBlock<String, String> newDataBlock() {
-//                return new DataBlock<String, String>() {
-//                    @Override
-//                    int getMaxByteSize() {
-//                        return 8;
-//                    }
-//                };
-//            }
-//        };
-//
-//        int count = ChainingHash.DEFAULT_NUM_BUCKETS * 11;
-//        for (int i = 0; i < count; i++) {
-//            String key = UUID.randomUUID().toString();
-//            String value = UUID.randomUUID().toString();
-//            m.put(key, value);
-//            h.put(key, value);
-//        }
-//
-//        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
+        Map<String, String> m = new HashMap<>();
+        ChainingHash<String, String> h = new ChainingHash<String, String>(store, dsFactory) {
+            @Override
+            DataBlock<String, String> newDataBlock() {
+                return new DataBlock<String, String>(store) {
+                    @Override
+                    int getMaxByteSize() {
+                        return 8;
+                    }
+                };
+            }
+        };
+
+        int count = ChainingHash.DEFAULT_NUM_BUCKETS * 11;
+        for (int i = 0; i < count; i++) {
+            String key = UUID.randomUUID().toString();
+            String value = UUID.randomUUID().toString();
+            m.put(key, value);
+            h.put(key, value);
+        }
+
+        m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
     }
 
     @Test
