@@ -26,7 +26,7 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     DataBlock(Store store, long id) {
         super(store, id);
-        load(this);
+        asyncLoadForReads(this);
     }
 
     public Value get(Key key) {
