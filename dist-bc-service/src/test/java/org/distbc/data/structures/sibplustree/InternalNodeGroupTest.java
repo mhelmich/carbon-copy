@@ -1,5 +1,6 @@
 package org.distbc.data.structures.sibplustree;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -9,6 +10,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class InternalNodeGroupTest {
     private final int nodeSize = 2;
     private final int numNodes = 3;
