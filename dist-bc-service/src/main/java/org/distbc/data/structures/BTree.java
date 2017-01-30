@@ -42,14 +42,14 @@ public class BTree<Key extends Comparable<Key>, Value> {
     // (must be even and greater than 2)
     private static final int nodeSize = 4;
 
-    private Node root;       // root of the B-tree
-    private int height;      // height of the B-tree
+    private Node root;          // root of the B-tree
+    private int height;         // height of the B-tree
     private int size;           // number of key-value pairs in the B-tree
 
     // helper B-tree node data type
     private final class Node {
-        private int numChildren;                   // number of children
-        private ArrayList<Entry> children;         // the array of children
+        private int numChildren;              // number of children
+        private ArrayList<Entry> children;    // the array of children
 
         // create a node with numChildren children
         private Node(int numChildren) {
@@ -61,7 +61,7 @@ public class BTree<Key extends Comparable<Key>, Value> {
     }
 
     // internal nodes: only use key and next
-    // external nodes: only use key and value
+    // leaf nodes: only use key and value
     private final class Entry {
         private Key key;
         private final Value val;
@@ -116,7 +116,6 @@ public class BTree<Key extends Comparable<Key>, Value> {
     public int height() {
         return height;
     }
-
 
     /**
      * Returns the value associated with the given key.
@@ -186,8 +185,8 @@ public class BTree<Key extends Comparable<Key>, Value> {
         } else {
         // internal node
             for (j = 0; j < x.numChildren; j++) {
-                if ((j+1 == x.numChildren) || less(key, x.children.get(j+1).key)) {
-                    Node insertedNode = insert(x.children.get(j++).getNext(), key, val, height-1);
+                if ((j + 1 == x.numChildren) || less(key, x.children.get(j + 1).key)) {
+                    Node insertedNode = insert(x.children.get(j++).getNext(), key, val, height - 1);
                     if (insertedNode == null) return null;
                     entry.key = insertedNode.children.get(0).key;
                     entry.setNext(insertedNode);
@@ -214,6 +213,7 @@ public class BTree<Key extends Comparable<Key>, Value> {
         return t;
     }
 
+    @Override
     public String toString() {
         return toString(root, height, "") + "\n";
     }
