@@ -7,6 +7,7 @@ import co.paralleluniverse.galaxy.Store;
 import com.google.inject.AbstractModule;
 import org.distbc.data.structures.DataStructureFactory;
 import org.distbc.data.structures.DataStructureFactoryImpl;
+import org.distbc.data.structures.TxnManager;
 
 /**
  * This class configures all things data structures and below
@@ -31,5 +32,6 @@ public class DataStructureModule extends AbstractModule {
         bind(Messenger.class).toInstance(g.messenger());
 
         bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
+        bind(TxnManager.class).to(TxnManager.class);
     }
 }
