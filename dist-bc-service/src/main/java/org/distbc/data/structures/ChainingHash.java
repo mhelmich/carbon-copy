@@ -104,7 +104,9 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     private DataBlock<Key, Value> getDataBlock(int i) {
         DataBlock<Key, Value> db = hashTable.get(i);
-        db.checkDataStructureRetrieved();
+        if (db != null) {
+            db.checkDataStructureRetrieved();
+        }
         return db;
     }
 
