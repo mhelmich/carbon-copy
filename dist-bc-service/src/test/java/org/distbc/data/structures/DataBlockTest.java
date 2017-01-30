@@ -1,7 +1,7 @@
 package org.distbc.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
-import org.distbc.DataStructureModule;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
 import org.junit.Test;
@@ -20,6 +20,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class })
 public class DataBlockTest {
+
+    @Inject
+    private Store store;
 
     @Inject
     private DataStructureFactory dsFactory;
@@ -93,16 +96,16 @@ public class DataBlockTest {
 
     @Test
     public void testPutIfPossible() {
-//        DataBlock<Integer, Integer> db = new DataBlock<Integer, Integer>() {
-//            @Override
-//            int getMaxByteSize() {
-//                return 22;
-//            }
-//        };
-//
-//        assertTrue(db.putIfPossible(3, 3));
-//        assertTrue(db.putIfPossible(5, 5));
-//        assertFalse(db.putIfPossible(7, 7));
+        DataBlock<Integer, Integer> db = new DataBlock<Integer, Integer>(store) {
+            @Override
+            int getMaxByteSize() {
+                return 22;
+            }
+        };
+
+        assertTrue(db.putIfPossible(3, 3));
+        assertTrue(db.putIfPossible(5, 5));
+        assertFalse(db.putIfPossible(7, 7));
     }
 
     @Test

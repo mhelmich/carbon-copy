@@ -2,7 +2,6 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
-import org.distbc.DataStructureModule;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
 import org.junit.Test;

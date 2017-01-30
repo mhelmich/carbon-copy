@@ -10,12 +10,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract classes and super classes are a red flag for guice
@@ -59,14 +61,20 @@ abstract class DataStructure implements Persistable {
     private static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
 
     private Store store;
-
     private long id = -1;
+    private ListenableFuture<Persistable> dataFuture = null;
+
     int currentObjectSize = 0;
 
     DataStructure(Store store) {
         this.store = store;
     }
 
+    /**
+     * Convenience constructor for read-only use
+     * @param store
+     * @param id
+     */
     DataStructure(Store store, long id) {
         this(store);
         this.id = id;
@@ -84,13 +92,24 @@ abstract class DataStructure implements Persistable {
         return id;
     }
 
-    <T extends DataStructure> void load(T o) {
+    <T extends DataStructure> void loadForReads(T o) {
         get(getId(), o);
     }
 
-    void save() {
-
+    <T extends DataStructure> void asyncLoadForReads(T o) {
+        if (dataFuture != null) {
+            throw new IllegalStateException("Can't override loadable future");
+        }
+        dataFuture = getAsync(getId(), this);
     }
+
+//    <T extends DataStructure> void loadForWrites(T o) {
+//        getX(getId(), o);
+//    }
+
+//    void save() {
+//        loadForWrites(this);
+//    }
 
     // there is some sort of overhead included
     // I suppose that has to do with leading magic bytes
@@ -135,12 +154,31 @@ abstract class DataStructure implements Persistable {
         }
     }
 
+    void checkDataStructureRetrieved() {
+        if (dataFuture == null) {
+            return;
+        }
+
+        try {
+            Persistable persistable = dataFuture.get(5, TimeUnit.SECONDS);
+            if (persistable != null && dataFuture.isDone()) {
+                dataFuture = null;
+            }
+        } catch (Exception xcp) {
+            throw new RuntimeException(xcp);
+        }
+    }
+
     private <T extends DataStructure> void get(long id, T o) {
         try {
             store.get(id, o);
         } catch (TimeoutException xcp) {
             throw new RuntimeException(xcp);
         }
+    }
+
+    private <T extends DataStructure> ListenableFuture<Persistable> getAsync(long id, T o) {
+        return store.getAsync(id, o);
     }
 
     private <T extends DataStructure> T getX(long id) {
