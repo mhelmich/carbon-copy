@@ -34,7 +34,7 @@ public class GalaxyDataBlockTest {
         t.commit();
 
         // time goes by
-        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlockForWrites(db.getId(), t);
+        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlock(db.getId());
         assertEquals(Long.valueOf(123), db2.get(123));
         assertNull(db2.get(125));
     }
