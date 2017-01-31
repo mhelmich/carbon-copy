@@ -26,7 +26,7 @@ public class ChainingHashTest {
             String key = UUID.randomUUID().toString();
             String value = UUID.randomUUID().toString();
             m.put(key, value);
-            h.put(value, key, txn);
+            h.put(key, value, txn);
         }
 
         m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
@@ -55,7 +55,7 @@ public class ChainingHashTest {
             String key = UUID.randomUUID().toString();
             String value = UUID.randomUUID().toString();
             m.put(key, value);
-            h.put(value, key, txn);
+            h.put(key, value, txn);
         }
 
         m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
@@ -72,7 +72,7 @@ public class ChainingHashTest {
         String value = UUID.randomUUID().toString();
 
         m.put(key, value);
-        h.put(value, key, txn);
+        h.put(key, value, txn);
 
         m.put("12", "12");
         h.put("12", "12", txn);
@@ -81,7 +81,7 @@ public class ChainingHashTest {
         value = UUID.randomUUID().toString();
 
         m.put(key, value);
-        h.put(value, key, txn);
+        h.put(key, value, txn);
 
         m.put("13", "13");
         h.put("13", "13", txn);
@@ -90,14 +90,14 @@ public class ChainingHashTest {
         value = UUID.randomUUID().toString();
 
         m.put(key, value);
-        h.put(value, key, txn);
+        h.put(key, value, txn);
 
         int count = ChainingHash.DEFAULT_NUM_BUCKETS * 2;
         for (int i = 0; i < count; i++) {
             key = UUID.randomUUID().toString();
             value = UUID.randomUUID().toString();
             m.put(key, value);
-            h.put(value, key, txn);
+            h.put(key, value, txn);
         }
 
         m.entrySet().forEach(e -> assertEquals(e.getValue(), h.get(e.getKey())));
@@ -127,7 +127,7 @@ public class ChainingHashTest {
             String key = UUID.randomUUID().toString();
             String value = UUID.randomUUID().toString();
             m.put(key, value);
-            h.put(value, key, txn);
+            h.put(key, value, txn);
         }
 
         for (String s : h.keys()) {
