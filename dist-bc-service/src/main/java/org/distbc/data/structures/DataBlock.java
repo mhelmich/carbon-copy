@@ -58,7 +58,6 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
         txn.addToChangedObjects(this);
-        addObjectToObjectSize(this);
         innerPut(key, val);
     }
 

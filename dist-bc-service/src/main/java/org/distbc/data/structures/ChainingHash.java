@@ -22,42 +22,53 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     ChainingHash(Store store, DataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
         super(store);
-        asyncUpsert(this, txn);
         this.dsFactory = dsFactory;
+        asyncUpsert(this, txn);
         this.hashTableSize = initNumBuckets;
         Vector<DataBlock<Key, Value>> v = new Vector<>(initNumBuckets);
         v.setSize(initNumBuckets);
         hashTable = new ArrayList<>(v);
+        // increment object (this is the hash) since we allocate
+        // a DataBlock pointer (which is a Long)
+        for (int i = 0; i < initNumBuckets; i++) {
+            addObjectToObjectSize(123L);
+        }
     }
 
     ChainingHash(Store store, DataStructureFactory dsFactory, long id) {
         super(store, id);
+        this.dsFactory = dsFactory;
         // load data for reads aggressively
         asyncLoadForReads(this);
-        this.dsFactory = dsFactory;
     }
 
     ChainingHash(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
+        this.dsFactory = dsFactory;
         // load data for writes aggressively too
         asyncLoadForWrites(this, txn);
-        this.dsFactory = dsFactory;
     }
 
     public Value get(Key key) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         int i = hash(key);
-        return getDataBlock(i).get(key);
+        DataBlock<Key, Value> db = getDataBlock(i);
+        return (db != null) ? db.get(key) : null;
     }
 
     public void put(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         innerPut(key, val, txn);
     }
 
     public void delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
-        innerDelete(key);
+        checkDataStructureRetrieved();
+        if (innerDelete(key)) {
+            txn.addToChangedObjects(this);
+        }
     }
 
     public Iterable<Key> keys() {
@@ -105,10 +116,10 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         }
     }
 
-    private void innerDelete(Key key) {
+    private boolean innerDelete(Key key) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         int i = hash(key);
-        hashTable.get(i).innerDelete(key);
+        return hashTable.get(i).innerDelete(key);
     }
 
     private int hash(Key key) {
@@ -138,9 +149,6 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     DataBlock<Key, Value> newDataBlock(Txn txn) {
-        // increment object (this is the hash) since we allocate
-        // a DataBlock pointer (which is a Long)
-        addObjectToObjectSize(123L);
         return dsFactory.newDataBlock(txn);
     }
 
@@ -150,6 +158,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     @Override
     void serialize(SerializerOutputStream out) {
+        out.writeObject(hashTableSize);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
             out.writeObject((db != null) ? db.getId() : null);
@@ -158,13 +167,20 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     @Override
     void deserialize(SerializerInputStream in) {
-        int i = 0;
+        Integer tmp;
         try {
-            while (in.available() > 0) {
+            tmp = (Integer) in.readObject();
+            hashTableSize = (tmp != null) ? tmp : 0;
+
+            Vector<DataBlock<Key, Value>> v = new Vector<>(hashTableSize);
+            v.setSize(hashTableSize);
+            hashTable = new ArrayList<>(v);
+
+            for (int i = 0; i < hashTableSize && in.available() > 0; i++) {
                 Long id = (Long) in.readObject();
                 DataBlock<Key, Value> db = (id != null) ? dsFactory.loadDataBlock(id) : null;
                 hashTable.set(i, db);
-                i++;
+                addObjectToObjectSize(123L);
             }
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
