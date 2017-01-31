@@ -28,13 +28,13 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
     }
 
     @Override
-    public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash() {
-        return new ChainingHash<>(store, this);
+    public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash(Txn txn) {
+        return new ChainingHash<>(store, this, txn);
     }
 
     @Override
-    public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHashWithNumBuckets(int numBuckets) {
-        return new ChainingHash<>(store, this, numBuckets);
+    public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHashWithNumBuckets(int numBuckets, Txn txn) {
+        return new ChainingHash<>(store, this, numBuckets, txn);
     }
 
     @Override

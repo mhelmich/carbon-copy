@@ -16,12 +16,13 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     private final DataStructureFactory dsFactory;
 
-    ChainingHash(Store store, DataStructureFactory dsFactory) {
-        this(store, dsFactory, DEFAULT_NUM_BUCKETS);
+    ChainingHash(Store store, DataStructureFactory dsFactory, Txn txn) {
+        this(store, dsFactory, DEFAULT_NUM_BUCKETS, txn);
     }
 
-    ChainingHash(Store store, DataStructureFactory dsFactory, int initNumBuckets) {
+    ChainingHash(Store store, DataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
         super(store);
+        asyncUpsert(this, txn);
         this.dsFactory = dsFactory;
         this.hashTableSize = initNumBuckets;
         Vector<DataBlock<Key, Value>> v = new Vector<>(initNumBuckets);
@@ -30,11 +31,16 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     ChainingHash(Store store, DataStructureFactory dsFactory, long id) {
-        this(store, dsFactory, id, null);
+        super(store, id);
+        // load data for reads aggressively
+        asyncLoadForReads(this);
+        this.dsFactory = dsFactory;
     }
 
     ChainingHash(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
-        super(store, id, txn);
+        super(store, id);
+        // load data for writes aggressively too
+        asyncLoadForWrites(this, txn);
         this.dsFactory = dsFactory;
     }
 
@@ -44,32 +50,9 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return getDataBlock(i).get(key);
     }
 
-    void innerPut(Key key, Value val, Txn txn) {
-        if (key == null) throw new IllegalArgumentException("Key cannot be null");
-
-        int i = hash(key);
-        DataBlock<Key, Value> db = getDataBlock(i);
-        if (db == null) {
-            DataBlock<Key, Value> newDB = newDataBlock(txn);
-            newDB.put(key, val, txn);
-            hashTable.set(i, newDB);
-        } else {
-            if (!db.putIfPossible(key, val, txn)) {
-                resize(hashTableSize * EXPANSION_FACTOR, txn);
-                put(val, key, txn);
-            }
-        }
-    }
-
     public void put(Value val, Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         innerPut(key, val, txn);
-    }
-
-    void innerDelete(Key key) {
-        if (key == null) throw new IllegalArgumentException("Key cannot be null");
-        int i = hash(key);
-        hashTable.get(i).innerDelete(key);
     }
 
     public void delete(Key key, Txn txn) {
@@ -101,13 +84,40 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         };
     }
 
+    /////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // internal unit testable data structure implementation
+
+    private void innerPut(Key key, Value val, Txn txn) {
+        if (key == null) throw new IllegalArgumentException("Key cannot be null");
+
+        int i = hash(key);
+        DataBlock<Key, Value> db = getDataBlock(i);
+        if (db == null) {
+            DataBlock<Key, Value> newDB = newDataBlock(txn);
+            newDB.put(key, val, txn);
+            hashTable.set(i, newDB);
+        } else {
+            if (!db.putIfPossible(key, val, txn)) {
+                resize(hashTableSize * EXPANSION_FACTOR, txn);
+                put(val, key, txn);
+            }
+        }
+    }
+
+    private void innerDelete(Key key) {
+        if (key == null) throw new IllegalArgumentException("Key cannot be null");
+        int i = hash(key);
+        hashTable.get(i).innerDelete(key);
+    }
+
     private int hash(Key key) {
         return (key.hashCode() & 0x7fffffff) % hashTableSize;
     }
 
     private void resize(int newNumBuckets, Txn txn) {
         // resizing by copying
-        ChainingHash<Key, Value> temp = dsFactory.newChainingHashWithNumBuckets(newNumBuckets);
+        ChainingHash<Key, Value> temp = dsFactory.newChainingHashWithNumBuckets(newNumBuckets, txn);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
@@ -133,6 +143,10 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         addObjectToObjectSize(123L);
         return dsFactory.newDataBlock(txn);
     }
+
+    /////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // galaxy-specific serialization overrides
 
     @Override
     void serialize(SerializerOutputStream out) {

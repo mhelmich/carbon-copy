@@ -62,7 +62,6 @@ abstract class DataStructure implements Persistable {
 
     private final Store store;
     private long id = -1;
-    private final Txn txn;
     private ListenableFuture<Persistable> dataFuture = null;
     private ListenableFuture<Long> creationFuture = null;
     private int currentObjectSize = 0;
@@ -75,16 +74,8 @@ abstract class DataStructure implements Persistable {
      * Convenience constructor for read-only use
      */
     DataStructure(Store store, long id) {
-        this(store, id, null);
-    }
-
-    /**
-     * Convenience constructor for read-write use
-     */
-    DataStructure(Store store, long id, Txn txn) {
         this.store = store;
         this.id = id;
-        this.txn = txn;
     }
 
     boolean isUnderMaxByteSize(int addSize) {
