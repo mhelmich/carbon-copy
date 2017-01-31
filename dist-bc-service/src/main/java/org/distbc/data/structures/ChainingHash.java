@@ -50,7 +50,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return getDataBlock(i).get(key);
     }
 
-    public void put(Value val, Key key, Txn txn) {
+    public void put(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         innerPut(key, val, txn);
     }
@@ -100,7 +100,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         } else {
             if (!db.putIfPossible(key, val, txn)) {
                 resize(hashTableSize * EXPANSION_FACTOR, txn);
-                put(val, key, txn);
+                put(key, val, txn);
             }
         }
     }
@@ -121,7 +121,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
-                db.keys().forEach(k -> temp.put(db.get(k), k, txn));
+                db.keys().forEach(k -> temp.put(k, db.get(k), txn));
             }
         }
 
