@@ -1,4 +1,4 @@
-package org.distbc.transaction.manager;
+package org.distbc.data.structures;
 
 import com.google.inject.AbstractModule;
 

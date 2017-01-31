@@ -1,11 +1,8 @@
-package org.distbc.transaction.manager;
+package org.distbc.data.structures;
 
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
-import org.distbc.data.structures.ChainingHash;
-import org.distbc.data.structures.DataStructureFactory;
-import org.distbc.data.structures.DataStructureModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,6 +25,23 @@ public class TxnManagerTest {
         int count = 100;
         Map<String, String> map = new HashMap<>();
 
+        DataBlock<String, String> db = dsFactory.newDataBlock();
+        txnManager.doTransactionally(txn -> {
+            for (int i = 0; i < count; i++) {
+                String key = UUID.randomUUID().toString();
+                String value = UUID.randomUUID().toString();
+
+                map.put(key, value);
+                db.put(key, value, txn);
+            }
+        });
+    }
+
+    @Test
+    public void testChangingExistingHash() throws Exception {
+        int count = 100;
+        Map<String, String> map = new HashMap<>();
+
         ChainingHash<String, String> hash = dsFactory.newChainingHash();
         txnManager.doTransactionally(txn -> {
             for (int i = 0; i < count; i++) {
@@ -35,7 +49,7 @@ public class TxnManagerTest {
                 String value = UUID.randomUUID().toString();
 
                 map.put(key, value);
-                hash.put(key, value);
+                hash.put(value, key, txn);
             }
         });
     }

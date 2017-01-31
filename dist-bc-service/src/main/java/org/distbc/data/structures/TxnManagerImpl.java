@@ -1,4 +1,4 @@
-package org.distbc.transaction.manager;
+package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
@@ -14,19 +14,19 @@ public class TxnManagerImpl implements TxnManager {
         this.store = store;
     }
 
-    public void doTransactionally(Consumer<Txn> l) throws Exception {
-        Txn t = beginTransaction();
+    public void doTransactionally(Consumer<Txn> lambda) throws Exception {
+        Txn txn = beginTransaction();
         try {
-            l.accept(t);
-            t.commit();
+            lambda.accept(txn);
+            txn.commit();
         } catch (Exception xcp) {
-            t.rollback();
-            t.abort();
+            txn.rollback();
+            txn.abort();
             throw new IOException(xcp);
         }
     }
 
     public Txn beginTransaction() {
-        return new Txn(store, store.beginTransaction());
+        return new Txn(store);
     }
 }
