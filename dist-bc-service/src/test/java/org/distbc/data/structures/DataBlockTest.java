@@ -30,8 +30,8 @@ public class DataBlockTest {
     @Test
     public void testBasic() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(5, 5);
-        db.put(6, 6);
+        db.innerPut(5, 5);
+        db.innerPut(6, 6);
 
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(6), db.get(6));
@@ -41,8 +41,8 @@ public class DataBlockTest {
     @Test
     public void testDups() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(5, 5);
-        db.put(5, 6);
+        db.innerPut(5, 5);
+        db.innerPut(5, 6);
 
         assertEquals(Integer.valueOf(6), db.get(5));
         assertNull(db.get(6));
@@ -51,8 +51,8 @@ public class DataBlockTest {
     @Test
     public void testSerialization() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(5, 5);
-        db.put(6, 6);
+        db.innerPut(5, 5);
+        db.innerPut(6, 6);
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(6), db.get(6));
 
@@ -75,9 +75,9 @@ public class DataBlockTest {
         String val1 = UUID.randomUUID().toString();
         String val2 = UUID.randomUUID().toString();
         String val3 = UUID.randomUUID().toString();
-        db3.put("1", val1);
-        db3.put("2", val2);
-        db3.put("3", val3);
+        db3.innerPut("1", val1);
+        db3.innerPut("2", val2);
+        db3.innerPut("3", val3);
 
         ByteBuffer bb2 = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db3.write(bb2);
@@ -103,23 +103,23 @@ public class DataBlockTest {
             }
         };
 
-        assertTrue(db.putIfPossible(3, 3));
-        assertTrue(db.putIfPossible(5, 5));
-        assertFalse(db.putIfPossible(7, 7));
+        assertTrue(db.innerPutIfPossible(3, 3));
+        assertTrue(db.innerPutIfPossible(5, 5));
+        assertFalse(db.innerPutIfPossible(7, 7));
     }
 
     @Test
     public void testDeleteMiddle() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(3, 3);
-        db.put(5, 5);
-        db.put(7, 7);
+        db.innerPut(3, 3);
+        db.innerPut(5, 5);
+        db.innerPut(7, 7);
 
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
 
-        db.delete(5);
+        db.innerDelete(5);
 
         assertNull(db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
@@ -130,16 +130,16 @@ public class DataBlockTest {
     @Test
     public void testDeleteFirst() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(3, 3);
-        db.put(5, 5);
-        db.put(7, 7);
+        db.innerPut(3, 3);
+        db.innerPut(5, 5);
+        db.innerPut(7, 7);
 
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
         assertEquals(32, db.size());
 
-        db.delete(7);
+        db.innerDelete(7);
 
         assertNull(db.get(7));
         assertEquals(Integer.valueOf(3), db.get(3));
@@ -150,16 +150,16 @@ public class DataBlockTest {
     @Test
     public void testDeleteLast() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(3, 3);
-        db.put(5, 5);
-        db.put(7, 7);
+        db.innerPut(3, 3);
+        db.innerPut(5, 5);
+        db.innerPut(7, 7);
 
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
         assertEquals(32, db.size());
 
-        db.delete(3);
+        db.innerDelete(3);
 
         assertNull(db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
@@ -170,9 +170,9 @@ public class DataBlockTest {
     @Test
     public void testKeys() {
         DataBlock<Integer, Integer> db = dsFactory.newDataBlock();
-        db.put(3, 3);
-        db.put(5, 5);
-        db.put(7, 7);
+        db.innerPut(3, 3);
+        db.innerPut(5, 5);
+        db.innerPut(7, 7);
         assertEquals(32, db.size());
 
         Set<Integer> keys = new HashSet<>();
