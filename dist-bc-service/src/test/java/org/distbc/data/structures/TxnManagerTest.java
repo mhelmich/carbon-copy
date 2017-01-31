@@ -3,6 +3,7 @@ package org.distbc.data.structures;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -21,12 +22,13 @@ public class TxnManagerTest {
     private TxnManager txnManager;
 
     @Test
+    @Ignore
     public void testBasicTransaction() throws Exception {
         int count = 100;
         Map<String, String> map = new HashMap<>();
 
-        DataBlock<String, String> db = dsFactory.newDataBlock();
         txnManager.doTransactionally(txn -> {
+            DataBlock<String, String> db = dsFactory.newDataBlock(txn);
             for (int i = 0; i < count; i++) {
                 String key = UUID.randomUUID().toString();
                 String value = UUID.randomUUID().toString();
@@ -38,6 +40,7 @@ public class TxnManagerTest {
     }
 
     @Test
+    @Ignore
     public void testChangingExistingHash() throws Exception {
         int count = 100;
         Map<String, String> map = new HashMap<>();

@@ -24,8 +24,9 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     private Node first;
 
-    DataBlock(Store store) {
+    DataBlock(Store store, Txn txn) {
         super(store);
+        asyncUpsert(this, txn);
     }
 
     DataBlock(Store store, long id) {
