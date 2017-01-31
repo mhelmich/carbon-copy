@@ -56,17 +56,28 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
 
     public void put(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
+        addObjectToObjectSize(this);
         innerPut(key, val);
     }
 
     public boolean putIfPossible(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
-        return innerPutIfPossible(key, val);
+        checkDataStructureRetrieved();
+        boolean didPut = innerPutIfPossible(key, val);
+        if (didPut) {
+            txn.addToChangedObjects(this);
+        }
+        return didPut;
     }
 
     public void delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
-        innerDelete(key);
+        checkDataStructureRetrieved();
+        if (innerDelete(key)) {
+            txn.addToChangedObjects(this);
+        }
     }
 
     public Iterable<Key> keys() {
@@ -109,12 +120,13 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         }
     }
 
-    void innerDelete(Key key) {
+    boolean innerDelete(Key key) {
         if (key == null) throw new IllegalArgumentException("key can't be null");
+        if (first == null) return false;
 
         if (key.equals(first.key)) {
             first = (first.next != null) ? first.next : null;
-            return;
+            return true;
         }
 
         Node x = first;
@@ -123,10 +135,12 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
                 subtractObjectToObjectSize(key);
                 subtractObjectToObjectSize(x.next.value);
                 x.next = x.next.next;
-                return;
+                return true;
             }
             x = x.next;
         }
+
+        return false;
     }
 
     /////////////////////////////////////////////////////////////

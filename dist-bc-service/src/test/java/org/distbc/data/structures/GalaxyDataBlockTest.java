@@ -1,11 +1,9 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
-import co.paralleluniverse.galaxy.TimeoutException;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -13,6 +11,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
@@ -28,39 +27,84 @@ public class GalaxyDataBlockTest {
     private TxnManager txnManager;
 
     @Test
-    @Ignore
-    public void testPutGet() throws TimeoutException {
-        DataBlock<Integer, Long> db = dsFactory.newDataBlock(null);
-        db.innerPut(123, 123L);
-        long dbId = store.put(db, null);
-        store.release(dbId);
+    public void testBasicPutGet() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db = dsFactory.newDataBlock(t);
+        db.put(123, 123L, t);
+        t.commit();
 
         // time goes by
-        DataBlock<Integer, Long> db2 = dsFactory.newDataBlock(null);
-        store.get(dbId, db2);
+        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlockForWrites(db.getId(), t);
         assertEquals(Long.valueOf(123), db2.get(123));
         assertNull(db2.get(125));
     }
 
-    @Test
-    @Ignore
-    public void testCtorWithId() throws TimeoutException {
-        DataBlock<Integer, Long> db = dsFactory.newDataBlock(null);
-        db.innerPut(123, 123L);
-        long dbId = store.put(db, null);
-        store.release(dbId);
+    @Test(expected = IOException.class)
+    public void testDoubleCommit() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db = dsFactory.newDataBlock(t);
+        db.put(123, 123L, t);
 
-        // tic toc tic toc
-        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlock(dbId);
-        assertEquals(Long.valueOf(123L), db2.get(123));
+        try {
+            t.commit();
+        } catch (Exception xcp) {
+            fail(xcp.getMessage());
+        }
+
+        t.commit();
     }
 
     @Test
-    @Ignore
-    public void testUpsert() throws IOException {
-        Txn txn = txnManager.beginTransaction();
-        DataBlock<Integer, Long> db = dsFactory.newDataBlock(txn);
-        db.put(123, 123L, txn);
-        txn.commit();
+    public void testPutGetDelete() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db = dsFactory.newDataBlock(t);
+        db.put(123, 123L, t);
+        db.put(124, 124L, t);
+        db.put(125, 125L, t);
+        t.commit();
+
+        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlock(db.getId());
+        assertEquals(Long.valueOf(125), db2.get(125));
+        assertEquals(Long.valueOf(123), db2.get(123));
+        assertEquals(Long.valueOf(124), db2.get(124));
+        assertNull(db2.get(127));
+
+        t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db3 = dsFactory.loadDataBlockForWrites(db.getId(), t);
+        db3.delete(123, t);
+        t.commit();
+
+        DataBlock<Integer, Long> db4 = dsFactory.loadDataBlock(db.getId());
+        assertEquals(Long.valueOf(125), db4.get(125));
+        assertNull(db4.get(123));
+        assertEquals(Long.valueOf(124), db4.get(124));
+        assertNull(db4.get(127));
+    }
+
+    @Test
+    public void testPutIfPossibleGetDelete() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db = dsFactory.newDataBlock(t);
+        db.putIfPossible(123, 123L, t);
+        db.putIfPossible(124, 124L, t);
+        db.putIfPossible(125, 125L, t);
+        t.commit();
+
+        DataBlock<Integer, Long> db2 = dsFactory.loadDataBlock(db.getId());
+        assertEquals(Long.valueOf(125), db2.get(125));
+        assertEquals(Long.valueOf(123), db2.get(123));
+        assertEquals(Long.valueOf(124), db2.get(124));
+        assertNull(db2.get(127));
+
+        t = txnManager.beginTransaction();
+        DataBlock<Integer, Long> db3 = dsFactory.loadDataBlockForWrites(db.getId(), t);
+        db3.delete(123, t);
+        t.commit();
+
+        DataBlock<Integer, Long> db4 = dsFactory.loadDataBlock(db.getId());
+        assertEquals(Long.valueOf(125), db4.get(125));
+        assertNull(db4.get(123));
+        assertEquals(Long.valueOf(124), db4.get(124));
+        assertNull(db4.get(127));
     }
 }
