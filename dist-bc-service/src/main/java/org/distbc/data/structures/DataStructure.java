@@ -178,12 +178,14 @@ abstract class DataStructure implements Persistable {
             throw new RuntimeException(xcp);
         }
 
-        try {
-            uncompressedBB.rewind();
-            int compressedSize = Snappy.compress(uncompressedBB, compressedBB);
-            compressedBB.position(compressedSize);
-        } catch (IOException xcp) {
-            throw new RuntimeException(xcp);
+        if (uncompressedBB.position() > 0) {
+            try {
+                uncompressedBB.rewind();
+                int compressedSize = Snappy.compress(uncompressedBB, compressedBB);
+                compressedBB.position(compressedSize);
+            } catch (IOException xcp) {
+                throw new RuntimeException(xcp);
+            }
         }
     }
 
