@@ -5,9 +5,11 @@ import co.paralleluniverse.galaxy.Store;
 import java.util.Iterator;
 
 public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
-
-    private Node first;
-
+    /**
+     * Internal node implementing a linked list
+     * insertion is O(1)
+     * search / deletion is O(n)
+     */
     private class Node {
         Key key;
         Value value;
@@ -19,6 +21,8 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
             this.next = next;
         }
     }
+
+    private Node first;
 
     DataBlock(Store store) {
         super(store);
@@ -54,6 +58,39 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         innerPut(key, val);
     }
 
+    public boolean putIfPossible(Key key, Value val, Txn txn) {
+        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        return innerPutIfPossible(key, val);
+    }
+
+    public void delete(Key key, Txn txn) {
+        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        innerDelete(key);
+    }
+
+    public Iterable<Key> keys() {
+        checkDataStructureRetrieved();
+        return () -> new Iterator<Key>() {
+            Node x = first;
+
+            @Override
+            public boolean hasNext() {
+                return x != null;
+            }
+
+            @Override
+            public Key next() {
+                Node n = x;
+                x = x.next;
+                return n.key;
+            }
+        };
+    }
+
+    /////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // internal unit testable data structure implementation
+
     void innerPut(Key key, Value val) {
         if (key == null) throw new IllegalArgumentException("key can't be null");
         addObjectToObjectSize(key);
@@ -69,16 +106,6 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         } else {
             return false;
         }
-    }
-
-    public boolean putIfPossible(Key key, Value val, Txn txn) {
-        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
-        return innerPutIfPossible(key, val);
-    }
-
-    public void delete(Key key, Txn txn) {
-        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
-        innerDelete(key);
     }
 
     void innerDelete(Key key) {
@@ -101,24 +128,9 @@ public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure
         }
     }
 
-    public Iterable<Key> keys() {
-        checkDataStructureRetrieved();
-        return () -> new Iterator<Key>() {
-            Node x = first;
-
-            @Override
-            public boolean hasNext() {
-                return x != null;
-            }
-
-            @Override
-            public Key next() {
-                Node n = x;
-                x = x.next;
-                return n.key;
-            }
-        };
-    }
+    /////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // galaxy-specific serialization overrides
 
     @Override
     void serialize(SerializerOutputStream out) {
