@@ -30,7 +30,11 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     ChainingHash(Store store, DataStructureFactory dsFactory, long id) {
-        super(store, id);
+        this(store, dsFactory, id, null);
+    }
+
+    ChainingHash(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
+        super(store, id, txn);
         this.dsFactory = dsFactory;
     }
 
@@ -40,27 +44,37 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return getDataBlock(i).get(key);
     }
 
-    public void put(Key key, Value val) {
+    void innerPut(Key key, Value val, Txn txn) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
 
         int i = hash(key);
         DataBlock<Key, Value> db = getDataBlock(i);
         if (db == null) {
             DataBlock<Key, Value> newDB = newDataBlock();
-            newDB.put(key, val);
+            newDB.put(key, val, txn);
             hashTable.set(i, newDB);
         } else {
-            if (!db.putIfPossible(key, val)) {
-                resize(hashTableSize * EXPANSION_FACTOR);
-                put(key, val);
+            if (!db.putIfPossible(key, val, txn)) {
+                resize(hashTableSize * EXPANSION_FACTOR, txn);
+                put(val, key, txn);
             }
         }
     }
 
-    public void delete(Key key) {
+    public void put(Value val, Key key, Txn txn) {
+        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        innerPut(key, val, txn);
+    }
+
+    void innerDelete(Key key) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         int i = hash(key);
-        hashTable.get(i).delete(key);
+        hashTable.get(i).innerDelete(key);
+    }
+
+    public void delete(Key key, Txn txn) {
+        if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
+        innerDelete(key);
     }
 
     public Iterable<Key> keys() {
@@ -75,8 +89,11 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
             @Override
             public Key next() {
-                if (dbIter == null || !dbIter.hasNext()) {
-                    dbIter = hashTable.get(i).keys().iterator();
+                while (dbIter == null || !dbIter.hasNext()) {
+                    DataBlock<Key, Value> db = hashTable.get(i);
+                    if (db != null) {
+                        dbIter = db.keys().iterator();
+                    }
                     i++;
                 }
                 return dbIter.next();
@@ -88,13 +105,13 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return (key.hashCode() & 0x7fffffff) % hashTableSize;
     }
 
-    private void resize(int newNumBuckets) {
+    private void resize(int newNumBuckets, Txn txn) {
         // resizing by copying
         ChainingHash<Key, Value> temp = dsFactory.newChainingHashWithNumBuckets(newNumBuckets);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
-                db.keys().forEach(k -> temp.put(k, db.get(k)));
+                db.keys().forEach(k -> temp.put(db.get(k), k, txn));
             }
         }
 
@@ -111,6 +128,9 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     }
 
     DataBlock<Key, Value> newDataBlock() {
+        // increment object (this is the hash) since we allocate
+        // a DataBlock pointer (which is a Long)
+        addObjectToObjectSize(123L);
         return dsFactory.newDataBlock();
     }
 
@@ -135,10 +155,5 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
         }
-    }
-
-    @Override
-    public int size() {
-        return super.size();
     }
 }
