@@ -60,24 +60,31 @@ abstract class DataStructure implements Persistable {
 
     private static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
 
-    private Store store;
+    private final Store store;
     private long id = -1;
+    private final Txn txn;
     private ListenableFuture<Persistable> dataFuture = null;
-
-    int currentObjectSize = 0;
+    private ListenableFuture<Long> creationFuture = null;
+    private int currentObjectSize = 0;
 
     DataStructure(Store store) {
-        this.store = store;
+        this(store, -1);
     }
 
     /**
      * Convenience constructor for read-only use
-     * @param store
-     * @param id
      */
     DataStructure(Store store, long id) {
-        this(store);
+        this(store, id, null);
+    }
+
+    /**
+     * Convenience constructor for read-write use
+     */
+    DataStructure(Store store, long id, Txn txn) {
+        this.store = store;
         this.id = id;
+        this.txn = txn;
     }
 
     boolean isUnderMaxByteSize(int addSize) {
@@ -92,32 +99,75 @@ abstract class DataStructure implements Persistable {
         return id;
     }
 
-    <T extends DataStructure> void loadForReads(T o) {
-        get(getId(), o);
-    }
-
     <T extends DataStructure> void asyncLoadForReads(T o) {
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
-        dataFuture = getAsync(getId(), this);
+        dataFuture = getAsync(getId(), o);
     }
 
-//    <T extends DataStructure> void loadForWrites(T o) {
-//        getX(getId(), o);
-//    }
+    <T extends DataStructure> void asyncLoadForWrites(T o, Txn txn) {
+        if (dataFuture != null) {
+            throw new IllegalStateException("Can't override loadable future");
+        }
 
-//    void save() {
-//        loadForWrites(this);
-//    }
+        if (getId() == -1) {
+            creationFuture = putAsync(o, txn);
+        } else {
+            dataFuture = getxAsync(getId(), o, txn);
+        }
+    }
+
+    <T extends DataStructure> void upsert(T o, Txn txn) {
+        try {
+            if (getId() == -1) {
+                creationFuture = putAsync(o, txn);
+            } else {
+                store.set(o.getId(), o, txn.getStoreTransaction());
+            }
+        } catch (TimeoutException xcp) {
+            throw new RuntimeException(xcp);
+        }
+    }
+
+    void checkDataStructureRetrieved() {
+        if (creationFuture != null) {
+            try {
+                Long id = creationFuture.get(5, TimeUnit.SECONDS);
+                if (id != null && creationFuture.isDone()) {
+                    this.id = id;
+                    creationFuture = null;
+                }
+            } catch (Exception xcp) {
+                throw new RuntimeException(xcp);
+            }
+        } else if (dataFuture != null) {
+            try {
+                Persistable persistable = dataFuture.get(5, TimeUnit.SECONDS);
+                if (persistable != null && dataFuture.isDone()) {
+                    dataFuture = null;
+                }
+            } catch (Exception xcp) {
+                throw new RuntimeException(xcp);
+            }
+        }
+    }
 
     // there is some sort of overhead included
     // I suppose that has to do with leading magic bytes
     // this needs to be a fairly performant method though
     // since it's called during serialization ... twice ... unnecessarily
     @Override
-    public int size() {
-        return 8;
+    public final int size() {
+        return 8 + currentObjectSize;
+    }
+
+    void addObjectToObjectSize(Object o) {
+        currentObjectSize += sizeOfObject(o);
+    }
+
+    void subtractObjectToObjectSize(Object o) {
+        currentObjectSize = Math.max(0, currentObjectSize - sizeOfObject(o));
     }
 
     public void write(ByteBuffer compressedBB) {
@@ -154,51 +204,16 @@ abstract class DataStructure implements Persistable {
         }
     }
 
-    void checkDataStructureRetrieved() {
-        if (dataFuture == null) {
-            return;
-        }
-
-        try {
-            Persistable persistable = dataFuture.get(5, TimeUnit.SECONDS);
-            if (persistable != null && dataFuture.isDone()) {
-                dataFuture = null;
-            }
-        } catch (Exception xcp) {
-            throw new RuntimeException(xcp);
-        }
-    }
-
-    private <T extends DataStructure> void get(long id, T o) {
-        try {
-            store.get(id, o);
-        } catch (TimeoutException xcp) {
-            throw new RuntimeException(xcp);
-        }
-    }
-
     private <T extends DataStructure> ListenableFuture<Persistable> getAsync(long id, T o) {
         return store.getAsync(id, o);
     }
 
-    private <T extends DataStructure> T getX(long id) {
-        return null;
+    private <T extends DataStructure> ListenableFuture<Persistable> getxAsync(long id, T o, Txn txn) {
+        return store.getxAsync(id, o, txn.getStoreTransaction());
     }
 
-    private <T extends DataStructure> T getX(long id, T o) {
-        return null;
-    }
-
-    private <T extends DataStructure> void put(T o) {
-        long id = -1;
-        try {
-            id = store.put(o, null);
-        } catch (TimeoutException xcp) {
-            throw new RuntimeException(xcp);
-        } finally {
-            store.release(id);
-        }
-        this.id = id;
+    private <T extends DataStructure> ListenableFuture<Long> putAsync(T o, Txn txn) {
+        return store.putAsync(o, txn.getStoreTransaction());
     }
 
     abstract void serialize(SerializerOutputStream out);
@@ -230,6 +245,28 @@ abstract class DataStructure implements Persistable {
         } else {
             throw new IllegalArgumentException ("unrecognized type: " + o.getClass());
         }
+    }
+
+    @Override
+    public final int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((getId() == -1) ? 0 : (int) (getId() % Integer.MAX_VALUE));
+        return result;
+    }
+
+    @Override
+    public final boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        final DataStructure other = (DataStructure) obj;
+        return !(getId() == other.getId() && getId() == -1) && getId() == other.getId();
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(getId());
     }
 
     static class SerializerOutputStream extends OutputStream {
