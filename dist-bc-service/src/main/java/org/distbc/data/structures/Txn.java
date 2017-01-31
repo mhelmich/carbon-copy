@@ -5,13 +5,17 @@ import co.paralleluniverse.galaxy.StoreTransaction;
 
 import java.io.IOException;
 
-public final class Txn {
+public class Txn {
     private final Store store;
     private final StoreTransaction stxn;
 
     Txn(Store store) {
+        this(store, store.beginTransaction());
+    }
+
+    Txn(Store store, StoreTransaction stxn) {
         this.store = store;
-        this.stxn = store.beginTransaction();
+        this.stxn = stxn;
     }
 
     public void commit() throws IOException {

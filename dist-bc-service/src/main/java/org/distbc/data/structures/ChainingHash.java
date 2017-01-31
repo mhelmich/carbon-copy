@@ -50,7 +50,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         int i = hash(key);
         DataBlock<Key, Value> db = getDataBlock(i);
         if (db == null) {
-            DataBlock<Key, Value> newDB = newDataBlock();
+            DataBlock<Key, Value> newDB = newDataBlock(txn);
             newDB.put(key, val, txn);
             hashTable.set(i, newDB);
         } else {
@@ -127,11 +127,11 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         return db;
     }
 
-    DataBlock<Key, Value> newDataBlock() {
+    DataBlock<Key, Value> newDataBlock(Txn txn) {
         // increment object (this is the hash) since we allocate
         // a DataBlock pointer (which is a Long)
         addObjectToObjectSize(123L);
-        return dsFactory.newDataBlock();
+        return dsFactory.newDataBlock(txn);
     }
 
     @Override

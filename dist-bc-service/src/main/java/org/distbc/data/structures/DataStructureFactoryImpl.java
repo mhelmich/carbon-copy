@@ -13,8 +13,8 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
     }
 
     @Override
-    public <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock() {
-        return new DataBlock<>(store);
+    public <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock(Txn txn) {
+        return new DataBlock<>(store, txn);
     }
 
     @Override

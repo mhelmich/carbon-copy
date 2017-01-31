@@ -118,7 +118,7 @@ abstract class DataStructure implements Persistable {
         }
     }
 
-    <T extends DataStructure> void upsert(T o, Txn txn) {
+    <T extends DataStructure> void asyncUpsert(T o, Txn txn) {
         try {
             if (getId() == -1) {
                 creationFuture = putAsync(o, txn);
