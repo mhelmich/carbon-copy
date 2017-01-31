@@ -23,6 +23,11 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
     }
 
     @Override
+    public <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlockForWrites(long id, Txn txn) {
+        return new DataBlock<>(store, id, txn);
+    }
+
+    @Override
     public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash() {
         return new ChainingHash<>(store, this);
     }
@@ -35,5 +40,10 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
     @Override
     public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> loadChainingHash(long id) {
         return new ChainingHash<>(store, this, id);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> loadChainingHashForWrites(long id, Txn txn) {
+        return new ChainingHash<>(store, this, id, txn);
     }
 }
