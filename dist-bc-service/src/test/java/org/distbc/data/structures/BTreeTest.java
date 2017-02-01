@@ -1,6 +1,8 @@
 package org.distbc.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,11 +11,12 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.when;
 
 public class BTreeTest {
     @Test
     public void testBasic() {
-        BTree<String, String> t = new BTree<>();
+        BTree<String, String> t = newTree();
 
         t.put("www.cs.princeton.edu", "128.112.136.12");
         t.put("www.cs.princeton.edu", "128.112.136.11");
@@ -33,15 +36,13 @@ public class BTreeTest {
         t.put("www.weather.com",      "63.111.66.11");
         t.put("www.yahoo.com",        "216.109.118.65");
 
-        System.err.println(t.toString());
-
         assertEquals("63.111.66.11", t.get("www.weather.com"));
         assertEquals("128.112.128.15", t.get("www.princeton.edu"));
     }
 
     @Test
     public void testRandomIntString() {
-        BTree<Integer, String> t = new BTree<>();
+        BTree<Integer, String> t = newTree();
         Map<Integer, String> m = new HashMap<>();
         int count = 10000;
         Random r = new Random();
@@ -60,7 +61,7 @@ public class BTreeTest {
 
     @Test
     public void testDups() {
-        BTree<Integer, String> t = new BTree<>();
+        BTree<Integer, String> t = newTree();
         t.put(5, "narf_5");
         t.put(5, "narf_6");
 
@@ -69,7 +70,7 @@ public class BTreeTest {
 
     @Test
     public void testDelete() {
-        BTree<Integer, String> t = new BTree<>();
+        BTree<Integer, String> t = newTree();
         t.put(5, "narf_5");
         t.put(6, "narf_6");
         t.put(7, "narf_7");
@@ -79,5 +80,12 @@ public class BTreeTest {
         assertEquals("narf_5", t.get(5));
         assertNull(t.get(6));
         assertEquals("narf_7", t.get(7));
+    }
+
+    private <Key extends Comparable<Key>, Value> BTree<Key, Value> newTree() {
+        Txn txn = Mockito.mock(Txn.class);
+        when(txn.getStoreTransaction()).thenReturn(null);
+        Store s = Mockito.mock(Store.class);
+        return new BTree<>(s, txn);
     }
 }
