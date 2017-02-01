@@ -63,12 +63,10 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         innerPut(key, val, txn);
     }
 
-    public void delete(Key key, Txn txn) {
+    public boolean delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
-        if (innerDelete(key)) {
-            txn.addToChangedObjects(this);
-        }
+        return innerDelete(key, txn);
     }
 
     public Iterable<Key> keys() {
@@ -116,10 +114,15 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
         }
     }
 
-    private boolean innerDelete(Key key) {
+    private boolean innerDelete(Key key, Txn txn) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         int i = hash(key);
-        return hashTable.get(i).innerDelete(key);
+        DataBlock<Key, Value> db = getDataBlock(i);
+        boolean didDelete = (db != null) && db.innerDelete(key);
+        if (db != null && didDelete) {
+            txn.addToChangedObjects(db);
+        }
+        return didDelete;
     }
 
     private int hash(Key key) {
@@ -158,6 +161,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
 
     @Override
     void serialize(SerializerOutputStream out) {
+        // stick in the hash table size as leading byte
         out.writeObject(hashTableSize);
         for (int i = 0; i < hashTableSize; i++) {
             DataBlock<Key, Value> db = getDataBlock(i);
@@ -169,6 +173,7 @@ public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStruct
     void deserialize(SerializerInputStream in) {
         Integer tmp;
         try {
+            // the leading byte is the size of the hash table
             tmp = (Integer) in.readObject();
             hashTableSize = (tmp != null) ? tmp : 0;
 

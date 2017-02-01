@@ -150,7 +150,9 @@ abstract class DataStructure implements Persistable {
     // since it's called during serialization ... twice ... unnecessarily
     @Override
     public final int size() {
-        return 8 + currentObjectSize;
+        //  8: for general compression and kryo overhead
+        // 16: for a few leading bytes to put the number of elements in the object somewhere
+        return 8 + 16 + currentObjectSize;
     }
 
     void addObjectToObjectSize(Object o) {
