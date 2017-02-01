@@ -15,7 +15,7 @@
     <bean id="cache" class="co.paralleluniverse.galaxy.core.Cache"> <!-- depends-on="memory" -->
         <constructor-arg name="monitoringType" value="METRICS"/> <!-- METRICS/JMX -->
         <constructor-arg name="maxCapacity" value="100000000"/>
-        <property name="maxItemSize" value="32768"/> <!-- the maximum payload of a UDP packet ; this is enforced in code -->
+        <property name="maxItemSize" value="${galaxy.max_item_size}"/>
         <property name="reuseLines" value="true"/>
         <property name="reuseSharerSets" value="true"/>
         <property name="rollbackSupported" value="true"/>
@@ -60,8 +60,8 @@
     -->
 
     <bean id="localStorage" class="co.paralleluniverse.galaxy.core.OffHeapLocalStorage">
-        <constructor-arg name="pageSize" value="32768"/>
-        <constructor-arg name="maxItemSize" value="1024"/>
+        <constructor-arg name="pageSize" value="${galaxy.max_item_size}"/>
+        <constructor-arg name="maxItemSize" value="${galaxy.max_item_size}"/>
         <constructor-arg name="monitoringType" value="METRICS"/>
         <property name="maxPagesForConcurrency" value="4"/>
     </bean>
