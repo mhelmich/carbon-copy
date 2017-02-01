@@ -15,7 +15,7 @@
     <bean id="cache" class="co.paralleluniverse.galaxy.core.Cache"> <!-- depends-on="memory" -->
         <constructor-arg name="monitoringType" value="METRICS"/> <!-- METRICS/JMX -->
         <constructor-arg name="maxCapacity" value="100000000"/>
-        <property name="maxItemSize" value="1024"/>
+        <property name="maxItemSize" value="32768"/> <!-- the maximum payload of a UDP packet ; this is enforced in code -->
         <property name="reuseLines" value="true"/>
         <property name="reuseSharerSets" value="true"/>
         <property name="rollbackSupported" value="true"/>
