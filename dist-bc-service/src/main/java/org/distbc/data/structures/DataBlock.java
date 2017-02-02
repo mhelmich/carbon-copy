@@ -4,7 +4,7 @@ import co.paralleluniverse.galaxy.Store;
 
 import java.util.Iterator;
 
-public class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
+class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     /**
      * Internal node implementing a linked list
      * insertion is O(1)
