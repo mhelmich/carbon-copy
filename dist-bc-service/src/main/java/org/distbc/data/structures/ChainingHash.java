@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Vector;
 
-public class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
+class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     private static final int EXPANSION_FACTOR = 3;
     static final int DEFAULT_NUM_BUCKETS = 4;
 

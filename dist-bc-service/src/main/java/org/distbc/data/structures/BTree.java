@@ -10,7 +10,7 @@ import java.util.Vector;
  *  Check out their useful website to learn more about basic data structures.
  *  http://algs4.cs.princeton.edu
  */
-public class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
+class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     // helper B-tree node data type
     private final class Node {
         private int numChildren;
@@ -39,11 +39,11 @@ public class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             this.next = next;
         }
 
-        Node getNext() {
+        Node getChildNode() {
             return next;
         }
 
-        void setNext(Node next) {
+        void setChildNode(Node next) {
             this.next = next;
         }
     }
@@ -122,7 +122,7 @@ public class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             // find the right child node to descend to
             for (int j = 0; j < x.numChildren; j++) {
                 if (j + 1 == x.numChildren || lessThan(key, children.get(j + 1).key)) {
-                    return search(children.get(j).getNext(), key, height - 1);
+                    return search(children.get(j).getChildNode(), key, height - 1);
                 }
             }
         } else {
@@ -145,11 +145,11 @@ public class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             // internal node
             for (j = 0; j < x.numChildren; j++) {
                 if ((j + 1 == x.numChildren) || lessThan(key, x.children.get(j + 1).key)) {
-                    Node insertedNode = insert(x.children.get(j++).getNext(), key, value, height - 1);
+                    Node insertedNode = insert(x.children.get(j++).getChildNode(), key, value, height - 1);
                     // we're done, bubble up through recursion
                     if (insertedNode == null) return null;
                     entryToInsert.key = insertedNode.children.get(0).key;
-                    entryToInsert.setNext(insertedNode);
+                    entryToInsert.setChildNode(insertedNode);
                     break;
                 }
             }
@@ -198,7 +198,7 @@ public class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         else {
             for (int j = 0; j < x.numChildren; j++) {
                 if (j > 0) sb.append(indent).append("(").append(children.get(j).key).append(")\n");
-                sb.append(toString(children.get(j).getNext(), height-1, indent + "     "));
+                sb.append(toString(children.get(j).getChildNode(), height-1, indent + "     "));
             }
         }
         return sb.toString();
