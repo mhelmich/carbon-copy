@@ -46,4 +46,14 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
     public <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> loadChainingHashForWrites(long id, Txn txn) {
         return new ChainingHash<>(store, this, id, txn);
     }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren, Txn txn) {
+        return new BTreeNode<>(store, numChildren, txn);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> BTree<Key, Value> newBTree(Txn txn) {
+        return new BTree<>(store, this, txn);
+    }
 }

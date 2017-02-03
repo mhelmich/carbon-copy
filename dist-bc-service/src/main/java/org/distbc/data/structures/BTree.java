@@ -15,24 +15,28 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     // this is gotta be >= 4
     static final int MAX_NODE_SIZE = 4;
 
+    private DataStructureFactory dsFactory;
     private BTreeNode<Key, Value> root;
+
     // height of the tree
     private int height;
 
-    BTree(Store store, Txn txn) {
+    BTree(Store store, DataStructureFactory dsFactory, Txn txn) {
         super(store);
+        this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
-        root = new BTreeNode<>(0);
+        root = newNode(0, txn);
     }
 
     BTree(Store store, long id) {
         super(store, id);
-        root = new BTreeNode<>(0);
+        asyncLoadForReads(this);
     }
 
-    BTree(Store store, long id, Txn txn) {
+    BTree(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
-        root = new BTreeNode<>(0);
+        this.dsFactory = dsFactory;
+        root = newNode(0, txn);
     }
 
     public Value get(Key key) {
@@ -41,35 +45,39 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         return search(root, key, height);
     }
 
-    public void put(Key key, Value value) {
+    public void put(Key key, Value value, Txn txn) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         checkDataStructureRetrieved();
-        innerPut(key, value);
+        innerPut(key, value, txn);
     }
 
     public Iterable<Key> keys() {
         return null;
     }
 
-    public void delete(Key key) {
-        put(key, null);
+    public void delete(Key key, Txn txn) {
+        put(key, null, txn);
     }
 
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////
     // internal unit testable data structure implementation
 
-    private void innerPut(Key key, Value value) {
-        BTreeNode<Key, Value> insertedNode = insert(root, key, value, height);
+    private void innerPut(Key key, Value value, Txn txn) {
+        BTreeNode<Key, Value> insertedNode = insert(root, key, value, height, txn);
         if (insertedNode == null) return;
 
         // insert doesn't return null means we gotta
         // split the top-most node
-        BTreeNode<Key, Value> newNode = new BTreeNode<>(2);
+        BTreeNode<Key, Value> newNode = newNode(2, txn);
         newNode.getChildren().set(0, newEntry(root.getChildren().get(0).getKey(), null, root));
         newNode.getChildren().set(1, newEntry(insertedNode.getChildren().get(0).getKey(), null, insertedNode));
         root = newNode;
         height++;
+    }
+
+    private BTreeNode<Key, Value> newNode(int numChildren, Txn txn) {
+        return dsFactory.newBTreeNode(numChildren, txn);
     }
 
     private BTreeEntry<Key, Value> newEntry(Key key, Value value, BTreeNode<Key, Value> next) {
@@ -99,7 +107,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         return null;
     }
 
-    private BTreeNode<Key, Value> insert(BTreeNode<Key, Value> x, Key key, Value value, int height) {
+    private BTreeNode<Key, Value> insert(BTreeNode<Key, Value> x, Key key, Value value, int height, Txn txn) {
         int j;
         BTreeEntry<Key, Value> entryToInsert = newEntry(key, value, null);
 
@@ -107,7 +115,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             // internal node
             for (j = 0; j < x.getNumChildren(); j++) {
                 if ((j + 1 == x.getNumChildren()) || lessThan(key, x.getChildren().get(j + 1).getKey())) {
-                    BTreeNode<Key, Value> insertedNode = insert(x.getChildren().get(j++).getChildNode(), key, value, height - 1);
+                    BTreeNode<Key, Value> insertedNode = insert(x.getChildren().get(j++).getChildNode(), key, value, height - 1, txn);
                     // we're done, bubble up through recursion
                     if (insertedNode == null) return null;
                     entryToInsert.setKey(insertedNode.getChildren().get(0).getKey());
@@ -131,11 +139,11 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         x.setNumChildren(x.getNumChildren() + 1);
         // if we have space, end recursion
         // if not, split the node
-        return (x.getNumChildren() < MAX_NODE_SIZE) ? null : split(x);
+        return (x.getNumChildren() < MAX_NODE_SIZE) ? null : split(x, txn);
     }
 
-    private BTreeNode<Key, Value> split(BTreeNode<Key, Value> oldNode) {
-        BTreeNode<Key, Value> newNode = new BTreeNode<>(MAX_NODE_SIZE / 2);
+    private BTreeNode<Key, Value> split(BTreeNode<Key, Value> oldNode, Txn txn) {
+        BTreeNode<Key, Value> newNode = newNode(MAX_NODE_SIZE / 2, txn);
         oldNode.setNumChildren(MAX_NODE_SIZE / 2);
         for (int j = 0; j < MAX_NODE_SIZE / 2; j++) {
             newNode.getChildren().set(j, oldNode.getChildren().get((MAX_NODE_SIZE / 2) + j));
