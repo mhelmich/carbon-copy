@@ -1,11 +1,13 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Vector;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -60,18 +62,36 @@ public class BTreeNodeTest {
     }
 
     @Test
-    @Ignore // TODO ->>> write this
-    public void testSerializationTwoLevels() {
+    public void testSerializationTwoLevels() throws Exception {
         BTreeNode<String, String> leaf1 = newBTreeNodeWithId(125);
+        leaf1.setNumChildren(3);
+        primeEntriesList(leaf1);
+        leaf1.setEntryAt(0, new BTreeEntry<>("key__1", "zs.rtgv nmk"));
+        leaf1.setEntryAt(1, new BTreeEntry<>("key__2", " xsertgb mk"));
+        leaf1.setEntryAt(2, new BTreeEntry<>("key__3", "xdr56yhji9ok"));
         BTreeNode<String, String> leaf2 = newBTreeNodeWithId(123);
+        leaf2.setNumChildren(1);
+        primeEntriesList(leaf2);
+        leaf2.setEntryAt(0, new BTreeEntry<>("key__5", "wertgh"));
 
-        BTreeNode<String, String> node = newBTreeNode(2);
-        node.setEntryAt(0, new BTreeEntry<>("narf", leaf1));
-        node.setEntryAt(1, new BTreeEntry<>("moep", leaf2));
-        assertEquals("narf", node.getEntryAt(0).getKey());
-        assertEquals(125, node.getEntryAt(0).getChildNode().getId());
-        assertEquals("moep", node.getEntryAt(1).getKey());
-        assertEquals(123, node.getEntryAt(1).getChildNode().getId());
+        BTreeNode<String, String> internalNode = newBTreeNode(2);
+        internalNode.setEntryAt(0, new BTreeEntry<>("key__3", leaf1));
+        internalNode.setEntryAt(1, new BTreeEntry<>("key__5", leaf2));
+        assertEquals("key__3", internalNode.getEntryAt(0).getKey());
+        assertEquals(125, internalNode.getEntryAt(0).getChildNode().getId());
+        assertEquals("key__5", internalNode.getEntryAt(1).getKey());
+        assertEquals(123, internalNode.getEntryAt(1).getChildNode().getId());
+
+        ByteBuffer bb = ByteBuffer.allocateDirect(internalNode.size());
+        internalNode.write(bb);
+        bb.rewind();
+
+        BTreeNode<String, String> internalNode2 = newBTreeNode(0);
+        internalNode2.read(bb);
+        assertEquals("key__3", internalNode2.getEntryAt(0).getKey());
+        assertEquals(125, internalNode2.getEntryAt(0).getChildNode().getId());
+        assertEquals("key__5", internalNode2.getEntryAt(1).getKey());
+        assertEquals(123, internalNode2.getEntryAt(1).getChildNode().getId());
     }
 
     private <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren) {
@@ -86,5 +106,14 @@ public class BTreeNodeTest {
         when(txn.getStoreTransaction()).thenReturn(null);
         Store s = Mockito.mock(Store.class);
         return new BTreeNode<>(s, new DataStructureFactoryImpl(s), id);
+    }
+
+    private <Key extends Comparable<Key>, Value> void primeEntriesList(BTreeNode<Key, Value> node) throws NoSuchFieldException, IllegalAccessException {
+        Field field = node.getClass().getDeclaredField("entries");
+        field.setAccessible(true);
+        Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
+        v.setSize(BTree.MAX_NODE_SIZE);
+        ArrayList<BTreeEntry<Key, Value>> entries = new ArrayList<>(v);
+        field.set(node, entries);
     }
 }

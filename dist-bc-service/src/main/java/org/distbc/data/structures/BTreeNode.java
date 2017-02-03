@@ -11,7 +11,7 @@ import java.util.Vector;
  */
 class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     private int numChildren;
-    // pointers to entries
+    // list of entries
     private ArrayList<BTreeEntry<Key, Value>> entries;
 
     private final DataStructureFactory dsFactory;
@@ -43,6 +43,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     void setEntryAt(int idx, BTreeEntry<Key, Value> entry) {
+        addObjectToObjectSize(entry.getKey());
+        addObjectToObjectSize(entry.getValue());
+        addObjectToObjectSize((entry.getChildNode() != null) ? entry.getChildNode().getId() : null);
         entries.set(idx, entry);
     }
 
@@ -71,15 +74,10 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     @SuppressWarnings("unchecked")
     @Override
     void deserialize(SerializerInputStream in) {
-        Integer tmp;
         try {
             // the leading byte is the size of the hash table
-            tmp = (Integer) in.readObject();
+            Integer tmp = (Integer) in.readObject();
             numChildren = (tmp != null) ? tmp : 0;
-
-            Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
-            v.setSize(BTree.MAX_NODE_SIZE);
-            entries = new ArrayList<>(v);
 
             for (int i = 0; i < numChildren && in.available() > 0; i++) {
                 Key key = (Key) in.readObject();
