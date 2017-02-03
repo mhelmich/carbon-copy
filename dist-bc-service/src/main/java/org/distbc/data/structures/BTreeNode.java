@@ -11,8 +11,8 @@ import java.util.Vector;
  */
 class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     private int numChildren;
-    // pointers to children
-    private ArrayList<BTreeEntry<Key, Value>> children;
+    // pointers to entries
+    private ArrayList<BTreeEntry<Key, Value>> entries;
 
     private final DataStructureFactory dsFactory;
 
@@ -25,7 +25,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         super(store);
         Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
         v.setSize(BTree.MAX_NODE_SIZE);
-        children = new ArrayList<>(v);
+        entries = new ArrayList<>(v);
         this.numChildren = numChildren;
         this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
@@ -42,16 +42,12 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         this.numChildren = newNumChildren;
     }
 
-    ArrayList<BTreeEntry<Key, Value>> getChildren() {
-        return children;
-    }
-
     void setEntryAt(int idx, BTreeEntry<Key, Value> entry) {
-        children.set(idx, entry);
+        entries.set(idx, entry);
     }
 
     BTreeEntry<Key, Value> getEntryAt(int idx) {
-        return children.get(idx);
+        return entries.get(idx);
     }
 
     /////////////////////////////////////////////////////////////
@@ -62,7 +58,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     void serialize(SerializerOutputStream out) {
         out.writeObject(numChildren);
         for (int i = 0; i < numChildren; i++) {
-            BTreeEntry<Key, Value> entry = children.get(i);
+            BTreeEntry<Key, Value> entry = entries.get(i);
             if (entry != null) {
                 out.writeObject(entry.getKey());
                 out.writeObject(entry.getValue());
@@ -83,7 +79,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
 
             Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
             v.setSize(BTree.MAX_NODE_SIZE);
-            children = new ArrayList<>(v);
+            entries = new ArrayList<>(v);
 
             for (int i = 0; i < numChildren && in.available() > 0; i++) {
                 Key key = (Key) in.readObject();
@@ -93,7 +89,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
 
                 BTreeNode<Key, Value> node = dsFactory.newBTreeNode(id);
                 BTreeEntry<Key, Value> entry = new BTreeEntry<>(key, value, node);
-                children.set(i, entry);
+                entries.set(i, entry);
             }
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
