@@ -70,8 +70,8 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         // insert doesn't return null means we gotta
         // split the top-most node
         BTreeNode<Key, Value> newNode = newNode(2, txn);
-        newNode.getChildren().set(0, newEntry(root.getChildren().get(0).getKey(), null, root));
-        newNode.getChildren().set(1, newEntry(insertedNode.getChildren().get(0).getKey(), null, insertedNode));
+        newNode.getChildren().set(0, newEntry(root.getChildren().get(0).getKey(), root));
+        newNode.getChildren().set(1, newEntry(insertedNode.getChildren().get(0).getKey(), insertedNode));
         root = newNode;
         height++;
     }
@@ -80,8 +80,12 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         return dsFactory.newBTreeNode(numChildren, txn);
     }
 
-    private BTreeEntry<Key, Value> newEntry(Key key, Value value, BTreeNode<Key, Value> next) {
-        return new BTreeEntry<>(key, value, next);
+    private BTreeEntry<Key, Value> newEntry(Key key, Value value) {
+        return new BTreeEntry<>(key, value);
+    }
+
+    private BTreeEntry<Key, Value> newEntry(Key key, BTreeNode<Key, Value> next) {
+        return new BTreeEntry<>(key, next);
     }
 
     private Value search(BTreeNode<Key, Value> x, Key key, int height) {
@@ -109,7 +113,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private BTreeNode<Key, Value> insert(BTreeNode<Key, Value> x, Key key, Value value, int height, Txn txn) {
         int j;
-        BTreeEntry<Key, Value> entryToInsert = newEntry(key, value, null);
+        BTreeEntry<Key, Value> entryToInsert = newEntry(key, value);
 
         if (height > 0 ) {
             // internal node
