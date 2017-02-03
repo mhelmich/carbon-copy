@@ -14,8 +14,8 @@ public class BTreeNodeTest {
     @Test
     public void testSerializationLeafNode() {
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.getChildren().set(0, new BTreeEntry<>(5, 5, null));
-        node.getChildren().set(1, new BTreeEntry<>(6, 6, null));
+        node.getChildren().set(0, new BTreeEntry<>(5, 5));
+        node.getChildren().set(1, new BTreeEntry<>(6, 6));
         assertEquals(Integer.valueOf(5), node.getChildren().get(0).getKey());
         assertEquals(Integer.valueOf(6), node.getChildren().get(1).getKey());
 
@@ -33,13 +33,12 @@ public class BTreeNodeTest {
 
     @Test
     public void testSerializationInternalNode() {
-
         BTreeNode<Integer, Integer> child1 = newBTreeNodeWithId(125);
         BTreeNode<Integer, Integer> child2 = newBTreeNodeWithId(123);
 
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.getChildren().set(0, new BTreeEntry<>(5, null, child1));
-        node.getChildren().set(1, new BTreeEntry<>(6, null, child2));
+        node.getChildren().set(0, new BTreeEntry<>(5, child1));
+        node.getChildren().set(1, new BTreeEntry<>(6, child2));
         assertEquals(Integer.valueOf(5), node.getChildren().get(0).getKey());
         assertEquals(125, node.getChildren().get(0).getChildNode().getId());
         assertEquals(Integer.valueOf(6), node.getChildren().get(1).getKey());
@@ -57,6 +56,20 @@ public class BTreeNodeTest {
         assertEquals(Integer.valueOf(6), node2.getChildren().get(1).getKey());
         assertEquals(123, node.getChildren().get(1).getChildNode().getId());
         assertNull(node2.getChildren().get(2));
+    }
+
+    @Test
+    public void testSerializationTwoLevels() {
+        BTreeNode<String, String> leaf1 = newBTreeNodeWithId(125);
+        BTreeNode<String, String> leaf2 = newBTreeNodeWithId(123);
+
+        BTreeNode<String, String> node = newBTreeNode(2);
+        node.getChildren().set(0, new BTreeEntry<>("", leaf1));
+        node.getChildren().set(1, new BTreeEntry<>("", leaf2));
+        assertEquals("", node.getChildren().get(0).getKey());
+        assertEquals(125, node.getChildren().get(0).getChildNode().getId());
+        assertEquals("", node.getChildren().get(1).getKey());
+        assertEquals(123, node.getChildren().get(1).getChildNode().getId());
     }
 
     private <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren) {

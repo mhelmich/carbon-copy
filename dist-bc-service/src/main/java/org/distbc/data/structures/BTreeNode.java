@@ -46,6 +46,14 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         return children;
     }
 
+    void setEntryAt(int idx, BTreeEntry<Key, Value> entry) {
+        children.set(idx, entry);
+    }
+
+    BTreeEntry<Key, Value> getEntryAt(int idx) {
+        return children.get(idx);
+    }
+
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////
     // galaxy-specific serialization overrides

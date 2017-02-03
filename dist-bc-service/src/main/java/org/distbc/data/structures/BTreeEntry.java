@@ -11,6 +11,14 @@ class BTreeEntry<Key extends Comparable<Key>, Value> {
     // helper field to iterate over array entries
     private BTreeNode<Key, Value> childNode;
 
+    BTreeEntry(Key key, Value val) {
+        this(key, val, null);
+    }
+
+    BTreeEntry(Key key, BTreeNode<Key, Value> childNode) {
+        this(key, null, childNode);
+    }
+
     BTreeEntry(Key key, Value val, BTreeNode<Key, Value> childNode) {
         this.key  = key;
         this.val  = val;
