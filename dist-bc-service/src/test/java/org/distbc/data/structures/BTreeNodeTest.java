@@ -1,6 +1,7 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -14,10 +15,10 @@ public class BTreeNodeTest {
     @Test
     public void testSerializationLeafNode() {
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.getChildren().set(0, new BTreeEntry<>(5, 5));
-        node.getChildren().set(1, new BTreeEntry<>(6, 6));
-        assertEquals(Integer.valueOf(5), node.getChildren().get(0).getKey());
-        assertEquals(Integer.valueOf(6), node.getChildren().get(1).getKey());
+        node.setEntryAt(0, new BTreeEntry<>(5, 5));
+        node.setEntryAt(1, new BTreeEntry<>(6, 6));
+        assertEquals(Integer.valueOf(5), node.getEntryAt(0).getKey());
+        assertEquals(Integer.valueOf(6), node.getEntryAt(1).getKey());
 
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         node.write(bb);
@@ -26,9 +27,9 @@ public class BTreeNodeTest {
         BTreeNode<Integer, Integer> node2 = newBTreeNode(0);
         node2.read(bb);
         assertEquals(2, node2.getNumChildren());
-        assertEquals(Integer.valueOf(5), node2.getChildren().get(0).getKey());
-        assertEquals(Integer.valueOf(6), node2.getChildren().get(1).getKey());
-        assertNull(node2.getChildren().get(2));
+        assertEquals(Integer.valueOf(5), node2.getEntryAt(0).getKey());
+        assertEquals(Integer.valueOf(6), node2.getEntryAt(1).getKey());
+        assertNull(node2.getEntryAt(2));
     }
 
     @Test
@@ -37,12 +38,12 @@ public class BTreeNodeTest {
         BTreeNode<Integer, Integer> child2 = newBTreeNodeWithId(123);
 
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.getChildren().set(0, new BTreeEntry<>(5, child1));
-        node.getChildren().set(1, new BTreeEntry<>(6, child2));
-        assertEquals(Integer.valueOf(5), node.getChildren().get(0).getKey());
-        assertEquals(125, node.getChildren().get(0).getChildNode().getId());
-        assertEquals(Integer.valueOf(6), node.getChildren().get(1).getKey());
-        assertEquals(123, node.getChildren().get(1).getChildNode().getId());
+        node.setEntryAt(0, new BTreeEntry<>(5, child1));
+        node.setEntryAt(1, new BTreeEntry<>(6, child2));
+        assertEquals(Integer.valueOf(5), node.getEntryAt(0).getKey());
+        assertEquals(125, node.getEntryAt(0).getChildNode().getId());
+        assertEquals(Integer.valueOf(6), node.getEntryAt(1).getKey());
+        assertEquals(123, node.getEntryAt(1).getChildNode().getId());
 
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         node.write(bb);
@@ -51,25 +52,26 @@ public class BTreeNodeTest {
         BTreeNode<Integer, Integer> node2 = newBTreeNode(0);
         node2.read(bb);
         assertEquals(2, node2.getNumChildren());
-        assertEquals(Integer.valueOf(5), node2.getChildren().get(0).getKey());
-        assertEquals(125, node2.getChildren().get(0).getChildNode().getId());
-        assertEquals(Integer.valueOf(6), node2.getChildren().get(1).getKey());
-        assertEquals(123, node.getChildren().get(1).getChildNode().getId());
-        assertNull(node2.getChildren().get(2));
+        assertEquals(Integer.valueOf(5), node2.getEntryAt(0).getKey());
+        assertEquals(125, node2.getEntryAt(0).getChildNode().getId());
+        assertEquals(Integer.valueOf(6), node2.getEntryAt(1).getKey());
+        assertEquals(123, node.getEntryAt(1).getChildNode().getId());
+        assertNull(node2.getEntryAt(2));
     }
 
     @Test
+    @Ignore // TODO ->>> write this
     public void testSerializationTwoLevels() {
         BTreeNode<String, String> leaf1 = newBTreeNodeWithId(125);
         BTreeNode<String, String> leaf2 = newBTreeNodeWithId(123);
 
         BTreeNode<String, String> node = newBTreeNode(2);
-        node.getChildren().set(0, new BTreeEntry<>("", leaf1));
-        node.getChildren().set(1, new BTreeEntry<>("", leaf2));
-        assertEquals("", node.getChildren().get(0).getKey());
-        assertEquals(125, node.getChildren().get(0).getChildNode().getId());
-        assertEquals("", node.getChildren().get(1).getKey());
-        assertEquals(123, node.getChildren().get(1).getChildNode().getId());
+        node.setEntryAt(0, new BTreeEntry<>("narf", leaf1));
+        node.setEntryAt(1, new BTreeEntry<>("moep", leaf2));
+        assertEquals("narf", node.getEntryAt(0).getKey());
+        assertEquals(125, node.getEntryAt(0).getChildNode().getId());
+        assertEquals("moep", node.getEntryAt(1).getKey());
+        assertEquals(123, node.getEntryAt(1).getChildNode().getId());
     }
 
     private <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren) {

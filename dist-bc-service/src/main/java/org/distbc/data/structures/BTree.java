@@ -2,8 +2,6 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
-import java.util.ArrayList;
-
 /**
  *  Modelled after the BTree by Robert Sedgewick and Kevin Wayne.
  *  Check out their useful website to learn more about basic data structures.
@@ -70,8 +68,8 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         // insert doesn't return null means we gotta
         // split the top-most node
         BTreeNode<Key, Value> newNode = newNode(2, txn);
-        newNode.getChildren().set(0, newEntry(root.getChildren().get(0).getKey(), root));
-        newNode.getChildren().set(1, newEntry(insertedNode.getChildren().get(0).getKey(), insertedNode));
+        newNode.setEntryAt(0, newEntry(root.getEntryAt(0).getKey(), root));
+        newNode.setEntryAt(1, newEntry(insertedNode.getEntryAt(0).getKey(), insertedNode));
         root = newNode;
         height++;
     }
@@ -89,22 +87,20 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     private Value search(BTreeNode<Key, Value> x, Key key, int height) {
-        ArrayList<BTreeEntry<Key, Value>> children = x.getChildren();
-
         if (height > 0) {
             // internal node
             // find the right child node to descend to
             for (int j = 0; j < x.getNumChildren(); j++) {
-                if (j + 1 == x.getNumChildren() || lessThan(key, children.get(j + 1).getKey())) {
-                    return search(children.get(j).getChildNode(), key, height - 1);
+                if (j + 1 == x.getNumChildren() || lessThan(key, x.getEntryAt(j + 1).getKey())) {
+                    return search(x.getEntryAt(j).getChildNode(), key, height - 1);
                 }
             }
         } else {
             // leaf node
             // find the right key (if it's there) and return it
             for (int j = 0; j < x.getNumChildren(); j++) {
-                if (equal(key, children.get(j).getKey())) {
-                    return children.get(j).getValue();
+                if (equal(key, x.getEntryAt(j).getKey())) {
+                    return x.getEntryAt(j).getValue();
                 }
             }
         }
@@ -118,11 +114,11 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         if (height > 0 ) {
             // internal node
             for (j = 0; j < x.getNumChildren(); j++) {
-                if ((j + 1 == x.getNumChildren()) || lessThan(key, x.getChildren().get(j + 1).getKey())) {
-                    BTreeNode<Key, Value> insertedNode = insert(x.getChildren().get(j++).getChildNode(), key, value, height - 1, txn);
+                if ((j + 1 == x.getNumChildren()) || lessThan(key, x.getEntryAt(j + 1).getKey())) {
+                    BTreeNode<Key, Value> insertedNode = insert(x.getEntryAt(j++).getChildNode(), key, value, height - 1, txn);
                     // we're done, bubble up through recursion
                     if (insertedNode == null) return null;
-                    entryToInsert.setKey(insertedNode.getChildren().get(0).getKey());
+                    entryToInsert.setKey(insertedNode.getEntryAt(0).getKey());
                     entryToInsert.setChildNode(insertedNode);
                     break;
                 }
@@ -130,16 +126,16 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         } else {
             // leaf node
             for (j = 0; j < x.getNumChildren(); j++) {
-                if (lessThan(key, x.getChildren().get(j).getKey())) break;
+                if (lessThan(key, x.getEntryAt(j).getKey())) break;
             }
         }
 
         // move all children over one slot
         for (int i = x.getNumChildren(); i > j; i--) {
-            x.getChildren().set(i, x.getChildren().get(i - 1));
+            x.setEntryAt(i, x.getEntryAt(i - 1));
         }
         // drop the new one into the right spot
-        x.getChildren().set(j, entryToInsert);
+        x.setEntryAt(j, entryToInsert);
         x.setNumChildren(x.getNumChildren() + 1);
         // if we have space, end recursion
         // if not, split the node
@@ -150,7 +146,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         BTreeNode<Key, Value> newNode = newNode(MAX_NODE_SIZE / 2, txn);
         oldNode.setNumChildren(MAX_NODE_SIZE / 2);
         for (int j = 0; j < MAX_NODE_SIZE / 2; j++) {
-            newNode.getChildren().set(j, oldNode.getChildren().get((MAX_NODE_SIZE / 2) + j));
+            newNode.setEntryAt(j, oldNode.getEntryAt((MAX_NODE_SIZE / 2) + j));
         }
         return newNode;
     }
@@ -162,17 +158,16 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private String toString(BTreeNode<Key, Value> x, int height, String indent) {
         StringBuilder sb = new StringBuilder();
-        ArrayList<BTreeEntry<Key, Value>> children = x.getChildren();
 
         if (height == 0) {
             for (int j = 0; j < x.getNumChildren(); j++) {
-                sb.append(indent).append(children.get(j).getKey()).append(" ").append(children.get(j).getValue()).append("\n");
+                sb.append(indent).append(x.getEntryAt(j).getKey()).append(" ").append(x.getEntryAt(j).getValue()).append("\n");
             }
         }
         else {
             for (int j = 0; j < x.getNumChildren(); j++) {
-                if (j > 0) sb.append(indent).append("(").append(children.get(j).getKey()).append(")\n");
-                sb.append(toString(children.get(j).getChildNode(), height-1, indent + "     "));
+                if (j > 0) sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(")\n");
+                sb.append(toString(x.getEntryAt(j).getChildNode(), height-1, indent + "     "));
             }
         }
         return sb.toString();
