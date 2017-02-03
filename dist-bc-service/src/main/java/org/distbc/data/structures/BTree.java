@@ -100,7 +100,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             // find the right key (if it's there) and return it
             for (int j = 0; j < x.getNumChildren(); j++) {
                 if (equal(key, children.get(j).getKey())) {
-                    return children.get(j).getVal();
+                    return children.get(j).getValue();
                 }
             }
         }
@@ -162,7 +162,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
         if (height == 0) {
             for (int j = 0; j < x.getNumChildren(); j++) {
-                sb.append(indent).append(children.get(j).getKey()).append(" ").append(children.get(j).getVal()).append("\n");
+                sb.append(indent).append(children.get(j).getKey()).append(" ").append(children.get(j).getValue()).append("\n");
             }
         }
         else {
