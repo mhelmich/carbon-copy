@@ -68,8 +68,8 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         // insert doesn't return null means we gotta
         // split the top-most node
         BTreeNode<Key, Value> newNode = newNode(2, txn);
-        newNode.setEntryAt(0, newEntry(root.getEntryAt(0).getKey(), root));
-        newNode.setEntryAt(1, newEntry(insertedNode.getEntryAt(0).getKey(), insertedNode));
+        newNode.setEntryAt(0, newEntry(root.getEntryAt(0).getKey(), root), txn);
+        newNode.setEntryAt(1, newEntry(insertedNode.getEntryAt(0).getKey(), insertedNode), txn);
         root = newNode;
         height++;
     }
@@ -132,10 +132,10 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
         // move all children over one slot
         for (int i = x.getNumChildren(); i > j; i--) {
-            x.setEntryAt(i, x.getEntryAt(i - 1));
+            x.setEntryAt(i, x.getEntryAt(i - 1), txn);
         }
         // drop the new one into the right spot
-        x.setEntryAt(j, entryToInsert);
+        x.setEntryAt(j, entryToInsert, txn);
         x.setNumChildren(x.getNumChildren() + 1);
         // if we have space, end recursion
         // if not, split the node
@@ -146,7 +146,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         BTreeNode<Key, Value> newNode = newNode(MAX_NODE_SIZE / 2, txn);
         oldNode.setNumChildren(MAX_NODE_SIZE / 2);
         for (int j = 0; j < MAX_NODE_SIZE / 2; j++) {
-            newNode.setEntryAt(j, oldNode.getEntryAt((MAX_NODE_SIZE / 2) + j));
+            newNode.setEntryAt(j, oldNode.getEntryAt((MAX_NODE_SIZE / 2) + j), txn);
         }
         return newNode;
     }

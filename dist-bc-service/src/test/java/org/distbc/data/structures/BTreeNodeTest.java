@@ -16,9 +16,10 @@ import static org.mockito.Mockito.when;
 public class BTreeNodeTest {
     @Test
     public void testSerializationLeafNode() {
+        Txn txn = Mockito.mock(Txn.class);
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.setEntryAt(0, new BTreeEntry<>(5, 5));
-        node.setEntryAt(1, new BTreeEntry<>(6, 6));
+        node.setEntryAt(0, new BTreeEntry<>(5, 5), txn);
+        node.setEntryAt(1, new BTreeEntry<>(6, 6), txn);
         assertEquals(Integer.valueOf(5), node.getEntryAt(0).getKey());
         assertEquals(Integer.valueOf(6), node.getEntryAt(1).getKey());
 
@@ -36,12 +37,13 @@ public class BTreeNodeTest {
 
     @Test
     public void testSerializationInternalNode() {
+        Txn txn = Mockito.mock(Txn.class);
         BTreeNode<Integer, Integer> child1 = newBTreeNodeWithId(125);
         BTreeNode<Integer, Integer> child2 = newBTreeNodeWithId(123);
 
         BTreeNode<Integer, Integer> node = newBTreeNode(2);
-        node.setEntryAt(0, new BTreeEntry<>(5, child1));
-        node.setEntryAt(1, new BTreeEntry<>(6, child2));
+        node.setEntryAt(0, new BTreeEntry<>(5, child1), txn);
+        node.setEntryAt(1, new BTreeEntry<>(6, child2), txn);
         assertEquals(Integer.valueOf(5), node.getEntryAt(0).getKey());
         assertEquals(125, node.getEntryAt(0).getChildNode().getId());
         assertEquals(Integer.valueOf(6), node.getEntryAt(1).getKey());
@@ -63,20 +65,21 @@ public class BTreeNodeTest {
 
     @Test
     public void testSerializationTwoLevels() throws Exception {
+        Txn txn = Mockito.mock(Txn.class);
         BTreeNode<String, String> leaf1 = newBTreeNodeWithId(125);
         leaf1.setNumChildren(3);
         primeEntriesList(leaf1);
-        leaf1.setEntryAt(0, new BTreeEntry<>("key__1", "zs.rtgv nmk"));
-        leaf1.setEntryAt(1, new BTreeEntry<>("key__2", " xsertgb mk"));
-        leaf1.setEntryAt(2, new BTreeEntry<>("key__3", "xdr56yhji9ok"));
+        leaf1.setEntryAt(0, new BTreeEntry<>("key__1", "zs.rtgv nmk"), txn);
+        leaf1.setEntryAt(1, new BTreeEntry<>("key__2", " xsertgb mk"), txn);
+        leaf1.setEntryAt(2, new BTreeEntry<>("key__3", "xdr56yhji9ok"), txn);
         BTreeNode<String, String> leaf2 = newBTreeNodeWithId(123);
         leaf2.setNumChildren(1);
         primeEntriesList(leaf2);
-        leaf2.setEntryAt(0, new BTreeEntry<>("key__5", "wertgh"));
+        leaf2.setEntryAt(0, new BTreeEntry<>("key__5", "wertgh"), txn);
 
         BTreeNode<String, String> internalNode = newBTreeNode(2);
-        internalNode.setEntryAt(0, new BTreeEntry<>("key__3", leaf1));
-        internalNode.setEntryAt(1, new BTreeEntry<>("key__5", leaf2));
+        internalNode.setEntryAt(0, new BTreeEntry<>("key__3", leaf1), txn);
+        internalNode.setEntryAt(1, new BTreeEntry<>("key__5", leaf2), txn);
         assertEquals("key__3", internalNode.getEntryAt(0).getKey());
         assertEquals(125, internalNode.getEntryAt(0).getChildNode().getId());
         assertEquals("key__5", internalNode.getEntryAt(1).getKey());

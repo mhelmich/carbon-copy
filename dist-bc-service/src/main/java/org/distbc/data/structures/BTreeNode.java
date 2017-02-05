@@ -18,7 +18,11 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
 
     BTreeNode(Store store, DataStructureFactory dsFactory, long id) {
         super(store, id);
+        Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
+        v.setSize(BTree.MAX_NODE_SIZE);
+        entries = new ArrayList<>(v);
         this.dsFactory = dsFactory;
+        asyncLoadForReads(this);
     }
 
     BTreeNode(Store store, DataStructureFactory dsFactory, int numChildren, Txn txn) {
@@ -35,6 +39,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     int getNumChildren() {
+        checkDataStructureRetrieved();
         return numChildren;
     }
 
@@ -42,7 +47,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         this.numChildren = newNumChildren;
     }
 
-    void setEntryAt(int idx, BTreeEntry<Key, Value> entry) {
+    void setEntryAt(int idx, BTreeEntry<Key, Value> entry, Txn txn) {
+        checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         addObjectToObjectSize(entry.getKey());
         addObjectToObjectSize(entry.getValue());
         addObjectToObjectSize((entry.getChildNode() != null) ? entry.getChildNode().getId() : null);
@@ -50,6 +57,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     BTreeEntry<Key, Value> getEntryAt(int idx) {
+        checkDataStructureRetrieved();
         return entries.get(idx);
     }
 
@@ -82,10 +90,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
             for (int i = 0; i < numChildren && in.available() > 0; i++) {
                 Key key = (Key) in.readObject();
                 Value value = (Value) in.readObject();
-                Long idLong = (Long) in.readObject();
-                long id = (idLong != null) ? idLong : -1;
+                Long id = (Long) in.readObject();
 
-                BTreeNode<Key, Value> node = dsFactory.newBTreeNode(id);
+                BTreeNode<Key, Value> node = (id != null) ? dsFactory.loadBTreeNode(id) : null;
                 BTreeEntry<Key, Value> entry = new BTreeEntry<>(key, value, node);
                 entries.set(i, entry);
             }
