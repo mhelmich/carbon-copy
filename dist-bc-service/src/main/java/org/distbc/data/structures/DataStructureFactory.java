@@ -16,7 +16,7 @@ public interface DataStructureFactory {
     <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> loadChainingHashForWrites(long id, Txn txn);
 
     <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren, Txn txn);
-    <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(long id);
+    <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> loadBTreeNode(long id);
 
     <Key extends Comparable<Key>, Value> BTree<Key, Value> newBTree(Txn txn);
 }
