@@ -1,6 +1,5 @@
 package org.distbc.data.structures;
 
-import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
@@ -14,9 +13,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class GalaxyBTreeNodeTest {
-    @Inject
-    private Store store;
-
     @Inject
     private DataStructureFactory dsFactory;
 
