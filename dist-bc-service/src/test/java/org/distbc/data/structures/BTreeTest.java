@@ -86,6 +86,24 @@ public class BTreeTest {
         assertEquals("narf_7", t.get(7));
     }
 
+    @Test
+    public void testKeys() {
+        int count = 100;
+        BTree<Integer, String> t = newTree();
+        Txn txn = Mockito.mock(Txn.class);
+        for (int i = 0; i < count; i++) {
+            t.put(i, "value_" + i, txn);
+        }
+
+        int numKeys = 0;
+        for (Integer key : t.keys()) {
+            assertEquals("value_" + key, t.get(key));
+            numKeys++;
+        }
+
+        assertEquals(count, numKeys);
+    }
+
     private <Key extends Comparable<Key>, Value> BTree<Key, Value> newTree() {
         Txn txn = Mockito.mock(Txn.class);
         when(txn.getStoreTransaction()).thenReturn(null);
