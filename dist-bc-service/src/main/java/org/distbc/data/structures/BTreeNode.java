@@ -13,6 +13,8 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     private int numChildren;
     // list of entries
     private ArrayList<BTreeEntry<Key, Value>> entries;
+    // next node
+    private BTreeNode<Key, Value> next;
 
     private final DataStructureFactory dsFactory;
 
@@ -50,15 +52,29 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     void setEntryAt(int idx, BTreeEntry<Key, Value> entry, Txn txn) {
         checkDataStructureRetrieved();
         txn.addToChangedObjects(this);
-        addObjectToObjectSize(entry.getKey());
-        addObjectToObjectSize(entry.getValue());
-        addObjectToObjectSize((entry.getChildNode() != null) ? entry.getChildNode().getId() : null);
+        if (entries.get(idx) == null) {
+            addObjectToObjectSize(entry.getKey());
+            addObjectToObjectSize(entry.getValue());
+            addObjectToObjectSize((entry.getChildNode() != null) ? entry.getChildNode().getId() : null);
+        }
         entries.set(idx, entry);
     }
 
     BTreeEntry<Key, Value> getEntryAt(int idx) {
         checkDataStructureRetrieved();
         return entries.get(idx);
+    }
+
+    BTreeNode<Key, Value> getNext() {
+        checkDataStructureRetrieved();
+        return next;
+    }
+
+    void setNext(BTreeNode<Key, Value> next) {
+        if (next == null) {
+            addObjectToObjectSize(getId());
+        }
+        this.next = next;
     }
 
     /////////////////////////////////////////////////////////////

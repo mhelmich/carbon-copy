@@ -2,6 +2,8 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
+import java.util.Iterator;
+
 /**
  *  Modelled after the BTree by Robert Sedgewick and Kevin Wayne.
  *  Check out their useful website to learn more about basic data structures.
@@ -50,7 +52,29 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     public Iterable<Key> keys() {
-        return null;
+        BTreeNode<Key, Value> first = depthFirstSearch(root, height);
+
+        return () -> new Iterator<Key>() {
+            BTreeNode<Key, Value> node = first;
+            int idx = 0;
+
+            @Override
+            public boolean hasNext() {
+                return idx < node.getNumChildren() || node.getNext() != null;
+            }
+
+            @Override
+            public Key next() {
+                if (idx >= node.getNumChildren()) {
+                    node = node.getNext();
+                    idx = 0;
+                }
+
+                Key k = node.getEntryAt(idx).getKey();
+                idx++;
+                return k;
+            }
+        };
     }
 
     public void delete(Key key, Txn txn) {
@@ -126,7 +150,9 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         } else {
             // leaf node
             for (j = 0; j < x.getNumChildren(); j++) {
-                if (lessThan(key, x.getEntryAt(j).getKey())) break;
+                if (lessThan(key, x.getEntryAt(j).getKey())) {
+                    break;
+                }
             }
         }
 
@@ -139,16 +165,29 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         x.setNumChildren(x.getNumChildren() + 1);
         // if we have space, end recursion
         // if not, split the node
-        return (x.getNumChildren() < MAX_NODE_SIZE) ? null : split(x, txn);
+        return (x.getNumChildren() < MAX_NODE_SIZE) ? null : split(x, height, txn);
     }
 
-    private BTreeNode<Key, Value> split(BTreeNode<Key, Value> oldNode, Txn txn) {
+    private BTreeNode<Key, Value> split(BTreeNode<Key, Value> oldNode, int height, Txn txn) {
         BTreeNode<Key, Value> newNode = newNode(MAX_NODE_SIZE / 2, txn);
         oldNode.setNumChildren(MAX_NODE_SIZE / 2);
         for (int j = 0; j < MAX_NODE_SIZE / 2; j++) {
             newNode.setEntryAt(j, oldNode.getEntryAt((MAX_NODE_SIZE / 2) + j), txn);
         }
+        if (height == 0) {
+            newNode.setNext(oldNode.getNext());
+            oldNode.setNext(newNode);
+        }
         return newNode;
+    }
+
+    private BTreeNode<Key, Value> depthFirstSearch(BTreeNode<Key, Value> node, int height) {
+        BTreeNode<Key, Value> child = node.getEntryAt(0).getChildNode();
+        if (height > 0 && child != null) {
+            return depthFirstSearch(child, height - 1);
+        } else {
+            return node;
+        }
     }
 
     @Override
@@ -163,11 +202,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             for (int j = 0; j < x.getNumChildren(); j++) {
                 sb.append(indent).append(x.getEntryAt(j).getKey()).append(" ").append(x.getEntryAt(j).getValue()).append("\n");
             }
-        }
-        else {
+        } else {
             for (int j = 0; j < x.getNumChildren(); j++) {
-                if (j > 0) sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(")\n");
-                sb.append(toString(x.getEntryAt(j).getChildNode(), height-1, indent + "     "));
+                if (j > 0) {
+                    sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(")\n");
+                }
+
+                sb.append(toString(x.getEntryAt(j).getChildNode(), height - 1, indent + "     "));
             }
         }
         return sb.toString();
