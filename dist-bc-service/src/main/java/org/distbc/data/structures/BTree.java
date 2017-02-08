@@ -15,7 +15,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     // this is gotta be >= 4
     static final int MAX_NODE_SIZE = 4;
 
-    private DataStructureFactory dsFactory;
+    private final DataStructureFactory dsFactory;
     private BTreeNode<Key, Value> root;
 
     // height of the tree
@@ -26,17 +26,19 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
         root = newNode(0, txn);
+        txn.addToChangedObjects(this);
     }
 
-    BTree(Store store, long id) {
+    BTree(Store store, DataStructureFactory dsFactory, long id) {
         super(store, id);
+        this.dsFactory = dsFactory;
         asyncLoadForReads(this);
     }
 
     BTree(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
         this.dsFactory = dsFactory;
-        root = newNode(0, txn);
+        asyncLoadForWrites(this, txn);
     }
 
     public Value get(Key key) {
@@ -81,6 +83,11 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         put(key, null, txn);
     }
 
+    @Override
+    public String toString() {
+        return toString(root, height, "") + "\n";
+    }
+
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////
     // internal unit testable data structure implementation
@@ -95,6 +102,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         newNode.setEntryAt(0, newEntry(root.getEntryAt(0).getKey(), root), txn);
         newNode.setEntryAt(1, newEntry(insertedNode.getEntryAt(0).getKey(), insertedNode), txn);
         root = newNode;
+        txn.addToChangedObjects(this);
         height++;
     }
 
@@ -190,11 +198,6 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
-    @Override
-    public String toString() {
-        return toString(root, height, "") + "\n";
-    }
-
     private String toString(BTreeNode<Key, Value> x, int height, String indent) {
         StringBuilder sb = new StringBuilder();
 
@@ -228,11 +231,16 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
     @Override
     void serialize(SerializerOutputStream out) {
-
+        if (root != null) {
+            out.writeObject(root.getId());
+        }
     }
 
     @Override
     void deserialize(SerializerInputStream in) {
-
+        Long rootId = (Long) in.readObject();
+        if (rootId != null) {
+            root = dsFactory.loadBTreeNode(rootId);
+        }
     }
 }
