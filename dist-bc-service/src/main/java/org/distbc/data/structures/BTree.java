@@ -10,7 +10,7 @@ import java.util.Iterator;
  *  http://algs4.cs.princeton.edu
  */
 class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
-    // max children per B-tree node = MAX_NODE_SIZE-1
+    // max children per B-tree node = MAX_NODE_SIZE - 1
     // (must be even and greater than 2)
     // this is gotta be >= 4
     static final int MAX_NODE_SIZE = 4;
@@ -26,7 +26,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
         root = newNode(0, txn);
-        txn.addToChangedObjects(this);
+        addObjectToObjectSize(height);
     }
 
     BTree(Store store, DataStructureFactory dsFactory, long id) {
@@ -50,6 +50,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     public void put(Key key, Value value, Txn txn) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         innerPut(key, value, txn);
     }
 
@@ -83,9 +84,8 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         put(key, null, txn);
     }
 
-    @Override
-    public String toString() {
-        return toString(root, height, "") + "\n";
+    public String dump() {
+        return dump(root, height, "") + "\n";
     }
 
     /////////////////////////////////////////////////////////////
@@ -198,20 +198,20 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
-    private String toString(BTreeNode<Key, Value> x, int height, String indent) {
+    private String dump(BTreeNode<Key, Value> x, int height, String indent) {
         StringBuilder sb = new StringBuilder();
 
         if (height == 0) {
             for (int j = 0; j < x.getNumChildren(); j++) {
-                sb.append(indent).append(x.getEntryAt(j).getKey()).append(" ").append(x.getEntryAt(j).getValue()).append("\n");
+                sb.append(indent).append(x.getEntryAt(j).getKey()).append(" _ ").append(x.toString()).append(" ").append(x.getEntryAt(j).getValue()).append("\n");
             }
         } else {
             for (int j = 0; j < x.getNumChildren(); j++) {
                 if (j > 0) {
-                    sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(")\n");
+                    sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(" _ ").append(x.toString()).append(")\n");
                 }
 
-                sb.append(toString(x.getEntryAt(j).getChildNode(), height - 1, indent + "     "));
+                sb.append(dump(x.getEntryAt(j).getChildNode(), height - 1, indent + "     "));
             }
         }
         return sb.toString();
@@ -233,6 +233,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     void serialize(SerializerOutputStream out) {
         if (root != null) {
             out.writeObject(root.getId());
+            out.writeObject(height);
         }
     }
 
@@ -242,5 +243,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         if (rootId != null) {
             root = dsFactory.loadBTreeNode(rootId);
         }
+        Integer height = (Integer) in.readObject();
+        this.height = (height != null) ? height : 0;
     }
 }
