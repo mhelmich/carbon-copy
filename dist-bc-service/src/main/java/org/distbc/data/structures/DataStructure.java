@@ -244,10 +244,7 @@ abstract class DataStructure implements Persistable {
 
     @Override
     public final int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + ((getId() == -1) ? 0 : (int) (getId() % Integer.MAX_VALUE));
-        return result;
+        return 31 + ((getId() == -1) ? 0 : (int) (getId() % Integer.MAX_VALUE));
     }
 
     @Override
