@@ -20,7 +20,7 @@ public class GalaxyBTreeTest {
     private TxnManager txnManager;
 
     @Test
-    public void testBasic() throws IOException {
+    public void testBasicWithOneNode() throws IOException {
         long treeId;
         Txn txn = txnManager.beginTransaction();
         BTree<String, String> t = dsFactory.newBTree(txn);
@@ -34,5 +34,25 @@ public class GalaxyBTreeTest {
         assertEquals("value_2", t2.get("key_2"));
         assertEquals("value_3", t2.get("key_3"));
         assertEquals("value_1", t2.get("key_1"));
+    }
+
+    @Test
+    public void testBasicWithMultipleNodes() throws IOException {
+        long treeId;
+        int count = 10;
+        Txn txn = txnManager.beginTransaction();
+        BTree<Integer, String> t = dsFactory.newBTree(txn);
+        for (int i = 0; i < count; i++) {
+            t.put(i, "value_" + i, txn);
+        }
+        treeId = t.getId();
+        txn.commit();
+        System.err.println(t.dump());
+
+        BTree<Integer, String> t2 = dsFactory.loadBTree(treeId);
+        System.err.println(t2.dump());
+        for (int i = 0; i < count; i++) {
+            assertEquals("value_" + i, t2.get(i));
+        }
     }
 }
