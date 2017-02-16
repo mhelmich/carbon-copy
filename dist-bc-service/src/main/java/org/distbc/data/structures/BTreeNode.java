@@ -27,6 +27,17 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         asyncLoadForReads(this);
     }
 
+    BTreeNode(Store store, DataStructureFactory dsFactory, long id, boolean shouldLoad) {
+        super(store, id);
+        Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
+        v.setSize(BTree.MAX_NODE_SIZE);
+        entries = new ArrayList<>(v);
+        this.dsFactory = dsFactory;
+        if (shouldLoad) {
+            asyncLoadForReads(this);
+        }
+    }
+
     BTreeNode(Store store, DataStructureFactory dsFactory, int numChildren, Txn txn) {
         super(store);
         Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
@@ -65,6 +76,16 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         return entries.get(idx);
     }
 
+    //
+    // assumes we always pass in an index that actually has a child
+    // so no null checks in calling code
+    //
+    BTreeNode<Key, Value> getChildNodeAt(int idx) {
+        BTreeNode<Key, Value> node = entries.get(idx).getChildNode();
+        node.asyncLoadForReads();
+        return node;
+    }
+
     BTreeNode<Key, Value> getNext() {
         checkDataStructureRetrieved();
         return next;
@@ -93,6 +114,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
                 out.writeObject((n != null) ? n.getId() : null);
             }
         }
+        out.writeObject((next != null) ? next.getId() : null);
     }
 
     @SuppressWarnings("unchecked")
@@ -108,9 +130,14 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
                 Value value = (Value) in.readObject();
                 Long id = (Long) in.readObject();
 
-                BTreeNode<Key, Value> node = (id != null) ? dsFactory.loadBTreeNode(id) : null;
+                BTreeNode<Key, Value> node = (id != null) ? dsFactory.loadBTreeNodeProxy(id) : null;
                 BTreeEntry<Key, Value> entry = new BTreeEntry<>(key, value, node);
                 entries.set(i, entry);
+            }
+
+            Long nextId = (Long) in.readObject();
+            if (nextId != null) {
+                next = dsFactory.loadBTreeNodeProxy(nextId);
             }
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);

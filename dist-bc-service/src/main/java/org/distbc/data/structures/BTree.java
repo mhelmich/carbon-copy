@@ -70,6 +70,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             public Key next() {
                 if (idx >= node.getNumChildren()) {
                     node = node.getNext();
+                    node.asyncLoadForReads();
                     idx = 0;
                 }
 
@@ -119,12 +120,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     private Value search(BTreeNode<Key, Value> x, Key key, int height) {
+        x.checkDataStructureRetrieved();
         if (height > 0) {
             // internal node
             // find the right child node to descend to
             for (int j = 0; j < x.getNumChildren(); j++) {
                 if (j + 1 == x.getNumChildren() || lessThan(key, x.getEntryAt(j + 1).getKey())) {
-                    return search(x.getEntryAt(j).getChildNode(), key, height - 1);
+                    return search(x.getChildNodeAt(j), key, height - 1);
                 }
             }
         } else {
@@ -190,8 +192,8 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     private BTreeNode<Key, Value> depthFirstSearch(BTreeNode<Key, Value> node, int height) {
-        BTreeNode<Key, Value> child = node.getEntryAt(0).getChildNode();
-        if (height > 0 && child != null) {
+        if (height > 0 && node.getNumChildren() > 0) {
+            BTreeNode<Key, Value> child = node.getChildNodeAt(0);
             return depthFirstSearch(child, height - 1);
         } else {
             return node;
@@ -200,6 +202,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private String dump(BTreeNode<Key, Value> x, int height, String indent) {
         StringBuilder sb = new StringBuilder();
+        x.checkDataStructureRetrieved();
 
         if (height == 0) {
             for (int j = 0; j < x.getNumChildren(); j++) {
@@ -211,7 +214,9 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
                     sb.append(indent).append("(").append(x.getEntryAt(j).getKey()).append(" _ ").append(x.toString()).append(")\n");
                 }
 
-                sb.append(dump(x.getEntryAt(j).getChildNode(), height - 1, indent + "     "));
+                BTreeNode<Key, Value> node = x.getEntryAt(j).getChildNode();
+                node.asyncLoadForReads();
+                sb.append(dump(node, height - 1, indent + "     "));
             }
         }
         return sb.toString();

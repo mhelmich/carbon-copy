@@ -47,6 +47,24 @@ public class GalaxyBTreeTest {
         }
         treeId = t.getId();
         txn.commit();
+
+        BTree<Integer, String> t2 = dsFactory.loadBTree(treeId);
+        for (int i = 0; i < count; i++) {
+            assertEquals("value_" + i, t2.get(i));
+        }
+    }
+
+    @Test
+    public void testBasicWithMultipleNodesReadInViaDump() throws IOException {
+        long treeId;
+        int count = 10;
+        Txn txn = txnManager.beginTransaction();
+        BTree<Integer, String> t = dsFactory.newBTree(txn);
+        for (int i = 0; i < count; i++) {
+            t.put(i, "value_" + i, txn);
+        }
+        treeId = t.getId();
+        txn.commit();
         System.err.println(t.dump());
 
         BTree<Integer, String> t2 = dsFactory.loadBTree(treeId);
@@ -54,5 +72,27 @@ public class GalaxyBTreeTest {
         for (int i = 0; i < count; i++) {
             assertEquals("value_" + i, t2.get(i));
         }
+    }
+
+    @Test
+    public void testValueIterationWithMultipleNodes() throws IOException {
+        long treeId;
+        int count = 10;
+        Txn txn = txnManager.beginTransaction();
+        BTree<Integer, String> t = dsFactory.newBTree(txn);
+        for (int i = 0; i < count; i++) {
+            t.put(i, "value_" + i, txn);
+        }
+        treeId = t.getId();
+        txn.commit();
+
+        BTree<Integer, String> t2 = dsFactory.loadBTree(treeId);
+        int assertionCount = 0;
+        for (Integer i : t2.keys()) {
+            assertEquals(Integer.valueOf(assertionCount), i);
+            assertionCount++;
+        }
+
+        assertEquals(count, assertionCount);
     }
 }
