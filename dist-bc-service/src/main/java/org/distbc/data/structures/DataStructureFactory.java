@@ -17,6 +17,7 @@ public interface DataStructureFactory {
 
     <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNode(int numChildren, Txn txn);
     <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> loadBTreeNode(long id);
+    <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> loadBTreeNodeProxy(long id);
 
     <Key extends Comparable<Key>, Value> BTree<Key, Value> newBTree(Txn txn);
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTree(long id);

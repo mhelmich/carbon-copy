@@ -65,6 +65,7 @@ abstract class DataStructure implements Persistable {
     private ListenableFuture<Persistable> dataFuture = null;
     private ListenableFuture<Long> creationFuture = null;
     private int currentObjectSize = 0;
+    private boolean isLoaded = false;
 
     DataStructure(Store store) {
         this(store, -1);
@@ -90,14 +91,28 @@ abstract class DataStructure implements Persistable {
         return id;
     }
 
+    private boolean isLoaded() {
+        return isLoaded;
+    }
+
+    void asyncLoadForReads() {
+        asyncLoadForReads(this);
+    }
+
     <T extends DataStructure> void asyncLoadForReads(T o) {
+        if (isLoaded()) return;
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
         dataFuture = getAsync(getId(), o);
     }
 
+    void asyncLoadForWrites(Txn txn) {
+        asyncLoadForWrites(this, txn);
+    }
+
     <T extends DataStructure> void asyncLoadForWrites(T o, Txn txn) {
+        if (isLoaded()) return;
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
@@ -107,6 +122,10 @@ abstract class DataStructure implements Persistable {
         } else {
             dataFuture = getxAsync(getId(), o, txn);
         }
+    }
+
+    void asyncUpsert(Txn txn) {
+        asyncUpsert(this, txn);
     }
 
     <T extends DataStructure> void asyncUpsert(T o, Txn txn) {
@@ -121,27 +140,33 @@ abstract class DataStructure implements Persistable {
         }
     }
 
-    void checkDataStructureRetrieved() {
+    boolean checkDataStructureRetrieved() {
         if (creationFuture != null) {
             try {
                 Long id = creationFuture.get(5, TimeUnit.SECONDS);
                 if (id != null && creationFuture.isDone()) {
                     this.id = id;
                     creationFuture = null;
+                    isLoaded = true;
+                    return true;
                 }
             } catch (Exception xcp) {
                 throw new RuntimeException(xcp);
             }
         } else if (dataFuture != null) {
             try {
-                Persistable persistable = dataFuture.get(5, TimeUnit.SECONDS);
-                if (persistable != null && dataFuture.isDone()) {
+                dataFuture.get(5, TimeUnit.SECONDS);
+                if (dataFuture.isDone()) {
                     dataFuture = null;
+                    isLoaded = true;
+                    return true;
                 }
             } catch (Exception xcp) {
                 throw new RuntimeException(xcp);
             }
         }
+
+        return false;
     }
 
     // there is some sort of overhead included

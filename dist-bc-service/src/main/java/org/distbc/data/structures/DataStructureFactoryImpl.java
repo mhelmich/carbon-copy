@@ -54,7 +54,12 @@ public class DataStructureFactoryImpl implements DataStructureFactory {
 
     @Override
     public <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> loadBTreeNode(long id) {
-        return new BTreeNode<>(store, this, id);
+        return new BTreeNode<>(store, this, id, true);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> loadBTreeNodeProxy(long id) {
+        return new BTreeNode<>(store, this, id, false);
     }
 
     @Override
