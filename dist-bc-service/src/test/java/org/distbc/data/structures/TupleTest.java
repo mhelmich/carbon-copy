@@ -1,8 +1,6 @@
 package org.distbc.data.structures;
 
-import co.paralleluniverse.galaxy.Store;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 
@@ -24,7 +22,6 @@ public class TupleTest {
     }
 
     private Tuple newTuple(int size) {
-        Store s = Mockito.mock(Store.class);
-        return new Tuple(s, size);
+        return new Tuple(size);
     }
 }
