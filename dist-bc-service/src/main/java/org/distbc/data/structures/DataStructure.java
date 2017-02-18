@@ -26,21 +26,7 @@ import java.util.concurrent.TimeUnit;
  * easy addition of new data structures without going through the hassle
  * of setting up galaxy, worry about serialization, etc.
  */
-abstract class DataStructure implements Persistable {
-    static final int MAX_BYTE_SIZE = 32768;
-
-    // actually there's a +1 is for the kryo byte to identify the class
-    // however I hope that compression and not having the +1
-    // even out in the long run :)
-    private static final int LONG_FIELD_SIZE     = 8;
-    private static final int INT_FIELD_SIZE      = 4;
-    private static final int SHORT_FIELD_SIZE    = 2;
-    private static final int CHAR_FIELD_SIZE     = 2;
-    private static final int BYTE_FIELD_SIZE     = 1;
-    private static final int BOOLEAN_FIELD_SIZE  = 1;
-    private static final int DOUBLE_FIELD_SIZE   = 8;
-    private static final int FLOAT_FIELD_SIZE    = 4;
-
+abstract class DataStructure extends Sizable implements Persistable {
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
         kryo.setRegistrationRequired(true);
@@ -70,7 +56,6 @@ abstract class DataStructure implements Persistable {
     private long id = -1;
     private ListenableFuture<Persistable> dataFuture = null;
     private ListenableFuture<Long> creationFuture = null;
-    private int currentObjectSize = 0;
     private boolean isLoaded = false;
 
     DataStructure(Store store) {
@@ -83,14 +68,6 @@ abstract class DataStructure implements Persistable {
     DataStructure(Store store, long id) {
         this.store = store;
         this.id = id;
-    }
-
-    boolean isUnderMaxByteSize(int addSize) {
-        return currentObjectSize + addSize <= getMaxByteSize();
-    }
-
-    int getMaxByteSize() {
-        return MAX_BYTE_SIZE;
     }
 
     long getId() {
@@ -175,25 +152,6 @@ abstract class DataStructure implements Persistable {
         return false;
     }
 
-    // there is some sort of overhead included
-    // I suppose that has to do with leading magic bytes
-    // this needs to be a fairly performant method though
-    // since it's called during serialization ... twice ... unnecessarily
-    @Override
-    public final int size() {
-        //  8: for general compression and kryo overhead
-        // 16: for a few leading bytes to put the number of elements in the object somewhere
-        return 8 + 16 + currentObjectSize;
-    }
-
-    void addObjectToObjectSize(Object o) {
-        currentObjectSize += sizeOfObject(o);
-    }
-
-    void subtractObjectToObjectSize(Object o) {
-        currentObjectSize = Math.max(0, currentObjectSize - sizeOfObject(o));
-    }
-
     public void write(ByteBuffer compressedBB) {
         ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
         try (SerializerOutputStream out = new SerializerOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
@@ -244,34 +202,6 @@ abstract class DataStructure implements Persistable {
 
     abstract void serialize(SerializerOutputStream out);
     abstract void deserialize(SerializerInputStream in);
-
-    int sizeOfObject(Object o) {
-        if (o == null) return 0;
-        Class type = o.getClass();
-        if (Integer.class.equals(type)) {
-            return INT_FIELD_SIZE;
-        } else if (String.class.equals(type)) {
-            return ((String)o).getBytes().length;
-        } else if (Long.class.equals(type)) {
-            return LONG_FIELD_SIZE;
-        } else if (Short.class.equals(type)) {
-            return SHORT_FIELD_SIZE;
-        } else if (Byte.class.equals(type)) {
-            return BYTE_FIELD_SIZE;
-        } else if (Boolean.class.equals(type)) {
-            return BOOLEAN_FIELD_SIZE;
-        } else if (Character.class.equals(type)) {
-            return CHAR_FIELD_SIZE;
-        } else if (Double.class.equals(type)) {
-            return DOUBLE_FIELD_SIZE;
-        } else if (Float.class.equals(type)) {
-            return FLOAT_FIELD_SIZE;
-        } else if (Persistable.class.isAssignableFrom(o.getClass())) {
-            return ((Persistable)o).size();
-        } else {
-            throw new IllegalArgumentException ("unrecognized type: " + o.getClass());
-        }
-    }
 
     @Override
     public final int hashCode() {
