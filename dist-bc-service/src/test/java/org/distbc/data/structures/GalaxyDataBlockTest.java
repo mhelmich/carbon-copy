@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -101,5 +102,24 @@ public class GalaxyDataBlockTest {
         assertNull(db4.get(123));
         assertEquals(Long.valueOf(124), db4.get(124));
         assertNull(db4.get(127));
+    }
+
+    @Test
+    public void testUUIDSerialization() throws IOException {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID uuid3 = UUID.randomUUID();
+
+        Txn t = txnManager.beginTransaction();
+        DataBlock<UUID, String> db = dsFactory.newDataBlock(t);
+        db.put(uuid1, uuid1.toString(), t);
+        db.put(uuid3, uuid3.toString(), t);
+        db.put(uuid2, uuid2.toString(), t);
+        t.commit();
+
+        DataBlock<UUID, String> db2 = dsFactory.loadDataBlock(db.getId());
+        assertEquals(uuid3.toString(), db2.get(uuid3));
+        assertEquals(uuid2.toString(), db2.get(uuid2));
+        assertEquals(uuid1.toString(), db2.get(uuid1));
     }
 }

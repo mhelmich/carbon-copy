@@ -2,6 +2,8 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.common.io.Persistable;
 
+import java.util.UUID;
+
 abstract class Sizable {
     static final int MAX_BYTE_SIZE = 32768;
 
@@ -54,9 +56,11 @@ abstract class Sizable {
             return DOUBLE_FIELD_SIZE;
         } else if (Float.class.equals(type)) {
             return FLOAT_FIELD_SIZE;
-        } else if (Persistable.class.isAssignableFrom(o.getClass())) {
+        } else if (UUID.class.equals(type)) {
+            return LONG_FIELD_SIZE * 2;
+        } else if (Persistable.class.isAssignableFrom(type)) {
             return ((Persistable)o).size();
-        } else if (Sizable.class.isAssignableFrom(o.getClass())) {
+        } else if (Sizable.class.isAssignableFrom(type)) {
             return ((Sizable)o).size();
         } else {
             throw new IllegalArgumentException ("unrecognized type: " + o.getClass());

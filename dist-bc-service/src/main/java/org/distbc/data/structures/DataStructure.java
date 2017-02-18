@@ -11,12 +11,14 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.util.concurrent.ListenableFuture;
+import de.javakaffee.kryoserializers.UUIDSerializer;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,6 +43,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         kryo.register(ChainingHash.class, 12);
         kryo.register(BTreeNode.class, 13);
         kryo.register(BTree.class, 14);
+        kryo.register(UUID.class, new UUIDSerializer(), 15);
 
         return kryo;
     };
