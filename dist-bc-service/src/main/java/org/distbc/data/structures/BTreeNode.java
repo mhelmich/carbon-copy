@@ -133,12 +133,17 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
                 Value value = (Value) in.readObject();
                 Long id = (Long) in.readObject();
 
+                addObjectToObjectSize(key);
+                addObjectToObjectSize(value);
+                addObjectToObjectSize(id);
+
                 BTreeNode<Key, Value> node = (id != null) ? dsFactory.loadBTreeNodeProxy(id) : null;
                 BTreeEntry<Key, Value> entry = new BTreeEntry<>(key, value, node);
                 entries.set(i, entry);
             }
 
             Long nextId = (Long) in.readObject();
+            addObjectToObjectSize(nextId);
             if (nextId != null) {
                 next = dsFactory.loadBTreeNodeProxy(nextId);
             }
