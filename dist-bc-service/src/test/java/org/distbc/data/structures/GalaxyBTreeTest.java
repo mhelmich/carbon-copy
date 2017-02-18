@@ -3,7 +3,6 @@ package org.distbc.data.structures;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -98,7 +97,6 @@ public class GalaxyBTreeTest {
     }
 
     @Test
-    @Ignore
     public void testCreateReadWriteRead() throws IOException {
         long treeId;
         int count = BTree.MAX_NODE_SIZE * 3;
