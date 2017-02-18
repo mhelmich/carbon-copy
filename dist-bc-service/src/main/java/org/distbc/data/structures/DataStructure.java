@@ -55,6 +55,12 @@ abstract class DataStructure implements Persistable {
         // [0=[0, int], 9=[9, void], 8=[8, double], 7=[7, long], 6=[6, short], 5=[5, char],
         //  4=[4, byte], 3=[3, boolean], 2=[2, float], 1=[1, String]]
 
+        kryo.register(DataBlock.class, 10);
+        kryo.register(Tuple.class, 11);
+        kryo.register(ChainingHash.class, 12);
+        kryo.register(BTreeNode.class, 13);
+        kryo.register(BTree.class, 14);
+
         return kryo;
     };
 
