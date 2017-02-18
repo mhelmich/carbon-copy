@@ -5,7 +5,7 @@ package org.distbc.data.structures;
  * I was dancing around for two days and it didn't line up for me until I decided
  * to innerPut this factory together myself and move on with my life
  */
-public interface InternalDataStructureFactory {
+public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock(Txn txn);
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlock(long id);
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlockForWrites(long id, Txn txn);
