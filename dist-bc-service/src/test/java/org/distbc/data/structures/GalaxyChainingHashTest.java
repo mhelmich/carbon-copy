@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class GalaxyChainingHashTest {
     @Inject
-    private DataStructureFactory dsFactory;
+    private InternalDataStructureFactory dsFactory;
 
     @Inject
     private TxnManager txnManager;

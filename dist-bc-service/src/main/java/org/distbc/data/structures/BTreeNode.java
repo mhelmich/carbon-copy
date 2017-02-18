@@ -16,9 +16,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     // next node
     private BTreeNode<Key, Value> next;
 
-    private final DataStructureFactory dsFactory;
+    private final InternalDataStructureFactory dsFactory;
 
-    BTreeNode(Store store, DataStructureFactory dsFactory, long id) {
+    BTreeNode(Store store, InternalDataStructureFactory dsFactory, long id) {
         super(store, id);
         Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
         v.setSize(BTree.MAX_NODE_SIZE);
@@ -27,7 +27,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         asyncLoadForReads(this);
     }
 
-    BTreeNode(Store store, DataStructureFactory dsFactory, long id, boolean shouldLoad) {
+    BTreeNode(Store store, InternalDataStructureFactory dsFactory, long id, boolean shouldLoad) {
         super(store, id);
         Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
         v.setSize(BTree.MAX_NODE_SIZE);
@@ -38,7 +38,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
-    BTreeNode(Store store, DataStructureFactory dsFactory, int numChildren, Txn txn) {
+    BTreeNode(Store store, InternalDataStructureFactory dsFactory, int numChildren, Txn txn) {
         super(store);
         Vector<BTreeEntry<Key, Value>> v = new Vector<>(BTree.MAX_NODE_SIZE);
         v.setSize(BTree.MAX_NODE_SIZE);
