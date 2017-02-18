@@ -3,6 +3,7 @@ package org.distbc.data.structures;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,7 +40,7 @@ public class GalaxyBTreeTest {
     @Test
     public void testBasicWithMultipleNodes() throws IOException {
         long treeId;
-        int count = 10;
+        int count = BTree.MAX_NODE_SIZE * 3;
         Txn txn = txnManager.beginTransaction();
         BTree<Integer, String> t = dsFactory.newBTree(txn);
         for (int i = 0; i < count; i++) {
@@ -57,7 +58,7 @@ public class GalaxyBTreeTest {
     @Test
     public void testBasicWithMultipleNodesReadInViaDump() throws IOException {
         long treeId;
-        int count = 10;
+        int count = BTree.MAX_NODE_SIZE * 3;
         Txn txn = txnManager.beginTransaction();
         BTree<Integer, String> t = dsFactory.newBTree(txn);
         for (int i = 0; i < count; i++) {
@@ -77,7 +78,7 @@ public class GalaxyBTreeTest {
     @Test
     public void testValueIterationWithMultipleNodes() throws IOException {
         long treeId;
-        int count = 10;
+        int count = BTree.MAX_NODE_SIZE * 3;
         Txn txn = txnManager.beginTransaction();
         BTree<Integer, String> t = dsFactory.newBTree(txn);
         for (int i = 0; i < count; i++) {
@@ -94,5 +95,36 @@ public class GalaxyBTreeTest {
         }
 
         assertEquals(count, assertionCount);
+    }
+
+    @Test
+    @Ignore
+    public void testCreateReadWriteRead() throws IOException {
+        long treeId;
+        int count = BTree.MAX_NODE_SIZE * 3;
+        Txn txn1 = txnManager.beginTransaction();
+
+        BTree<Integer, String> t1 = dsFactory.newBTree(txn1);
+        for (int i = 0; i < count; i++) {
+            t1.put(i, "value_" + i, txn1);
+        }
+        treeId = t1.getId();
+        txn1.commit();
+        System.err.println(t1.dump());
+
+
+        Txn txn2 = txnManager.beginTransaction();
+        BTree<Integer, String> t2 = dsFactory.loadBTreeForWrites(treeId, txn2);
+        for (int i = 0; i < count; i++) {
+            t2.put(i, "value_" + (-i), txn2);
+        }
+        txn2.commit();
+        System.err.println(t2.dump());
+
+        BTree<Integer, String> t3 = dsFactory.loadBTree(treeId);
+        System.err.println(t3.dump());
+        for (int i = 0; i < count; i++) {
+            assertEquals("value_" + (-i), t3.get(i));
+        }
     }
 }
