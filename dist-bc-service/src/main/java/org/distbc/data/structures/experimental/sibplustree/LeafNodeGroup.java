@@ -1,4 +1,4 @@
-package org.distbc.data.structures.sibplustree;
+package org.distbc.data.structures.experimental.sibplustree;
 
 import org.apache.commons.lang3.StringUtils;
 

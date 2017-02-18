@@ -1,4 +1,4 @@
-package org.distbc.data.structures.sibplustree;
+package org.distbc.data.structures.experimental.sibplustree;
 
 class NodeIdxAndIdx {
     static NodeIdxAndIdx INVALID = NodeIdxAndIdx.of(-1, -1);
