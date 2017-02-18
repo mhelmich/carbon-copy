@@ -6,7 +6,7 @@ import co.paralleluniverse.galaxy.StoreTransaction;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.google.inject.Inject;
-import org.distbc.data.structures.SkipList;
+import org.distbc.data.structures.experimental.SkipList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

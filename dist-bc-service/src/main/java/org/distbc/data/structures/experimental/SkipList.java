@@ -1,4 +1,4 @@
-package org.distbc.data.structures;
+package org.distbc.data.structures.experimental;
 
 import com.google.common.base.Optional;
 

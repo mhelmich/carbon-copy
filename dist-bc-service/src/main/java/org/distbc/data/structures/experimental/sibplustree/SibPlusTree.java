@@ -1,4 +1,4 @@
-package org.distbc.data.structures.sibplustree;
+package org.distbc.data.structures.experimental.sibplustree;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

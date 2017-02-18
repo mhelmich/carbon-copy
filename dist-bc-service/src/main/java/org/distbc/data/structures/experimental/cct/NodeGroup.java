@@ -1,4 +1,4 @@
-package org.distbc.data.structures.cct;
+package org.distbc.data.structures.experimental.cct;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.tuple.Pair;

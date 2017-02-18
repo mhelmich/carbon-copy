@@ -1,8 +1,9 @@
-package org.distbc.data.structures;
+package org.distbc.data.structures.experimental;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.google.common.base.Optional;
+import org.distbc.data.structures.experimental.SkipList;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
