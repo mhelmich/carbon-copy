@@ -68,7 +68,19 @@ public class BTreeTest {
         t.put(5, "narf_5", txn);
         t.put(5, "narf_6", txn);
 
-        assertEquals("narf_5", t.get(5));
+        assertEquals("narf_6", t.get(5));
+    }
+
+    @Test
+    public void testDupsMultipleNodes() {
+        BTree<Integer, String> t = newTree();
+        Txn txn = Mockito.mock(Txn.class);
+
+        for (int i = 0; i < BTree.MAX_NODE_SIZE * 3; i++) {
+            t.put(5, "narf_" + i, txn);
+        }
+
+        assertEquals("narf_" + (BTree.MAX_NODE_SIZE * 3 - 1), t.get(5));
     }
 
     @Test

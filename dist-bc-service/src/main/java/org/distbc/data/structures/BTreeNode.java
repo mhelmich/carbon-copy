@@ -67,6 +67,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
             addObjectToObjectSize(entry.getKey());
             addObjectToObjectSize(entry.getValue());
             addObjectToObjectSize((entry.getChildNode() != null) ? entry.getChildNode().getId() : null);
+        } else {
+            subtractObjectToObjectSize(entries.get(idx).getValue());
+            addObjectToObjectSize(entry.getValue());
         }
         entries.set(idx, entry);
     }

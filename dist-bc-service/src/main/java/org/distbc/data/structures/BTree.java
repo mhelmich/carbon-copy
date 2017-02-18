@@ -144,12 +144,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     private BTreeNode<Key, Value> insert(BTreeNode<Key, Value> x, Key key, Value value, int height, Txn txn) {
         int j;
         BTreeEntry<Key, Value> entryToInsert = newEntry(key, value);
+        x.checkDataStructureRetrieved();
 
         if (height > 0 ) {
             // internal node
             for (j = 0; j < x.getNumChildren(); j++) {
                 if ((j + 1 == x.getNumChildren()) || lessThan(key, x.getEntryAt(j + 1).getKey())) {
-                    BTreeNode<Key, Value> insertedNode = insert(x.getEntryAt(j++).getChildNode(), key, value, height - 1, txn);
+                    BTreeNode<Key, Value> insertedNode = insert(x.getChildNodeAt(j++), key, value, height - 1, txn);
                     // we're done, bubble up through recursion
                     if (insertedNode == null) return null;
                     entryToInsert.setKey(insertedNode.getEntryAt(0).getKey());
@@ -160,19 +161,24 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         } else {
             // leaf node
             for (j = 0; j < x.getNumChildren(); j++) {
-                if (lessThan(key, x.getEntryAt(j).getKey())) {
+                if (lessThan(key, x.getEntryAt(j).getKey()) || equal(key, x.getEntryAt(j).getKey())) {
                     break;
                 }
             }
         }
 
-        // move all children over one slot
-        for (int i = x.getNumChildren(); i > j; i--) {
-            x.setEntryAt(i, x.getEntryAt(i - 1), txn);
+        if (height == 0 && x.getEntryAt(j) != null && equal(key, x.getEntryAt(j).getKey())) {
+            x.setEntryAt(j, entryToInsert, txn);
+        } else {
+            // move all children over one slot
+            for (int i = x.getNumChildren(); i > j; i--) {
+                x.setEntryAt(i, x.getEntryAt(i - 1), txn);
+            }
+            // drop the new one into the right spot
+            x.setEntryAt(j, entryToInsert, txn);
+            x.setNumChildren(x.getNumChildren() + 1);
         }
-        // drop the new one into the right spot
-        x.setEntryAt(j, entryToInsert, txn);
-        x.setNumChildren(x.getNumChildren() + 1);
+
         // if we have space, end recursion
         // if not, split the node
         return (x.getNumChildren() < MAX_NODE_SIZE) ? null : split(x, height, txn);
