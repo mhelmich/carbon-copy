@@ -31,11 +31,6 @@ abstract class DataStructure extends Sizable implements Persistable {
         Kryo kryo = new Kryo();
         kryo.setRegistrationRequired(true);
         // configure kryo instance, customize settings
-//        kryo.register(Integer.class, 0);
-//        kryo.register(String.class, 1);
-//        kryo.register(SkipList.class);
-//        kryo.register(BTree.class);
-
         // the first few integers are taken (0 .. 9)
         // these are obviously kryo internals and subject to change at any point in time
         // [0=[0, int], 9=[9, void], 8=[8, double], 7=[7, long], 6=[6, short], 5=[5, char],
