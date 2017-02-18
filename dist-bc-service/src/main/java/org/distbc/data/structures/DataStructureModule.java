@@ -28,6 +28,6 @@ public class DataStructureModule extends AbstractModule {
         bind(Cluster.class).toInstance(g.cluster());
         bind(Messenger.class).toInstance(g.messenger());
 
-        bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
+        bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
     }
 }

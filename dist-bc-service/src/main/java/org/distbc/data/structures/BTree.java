@@ -15,13 +15,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     // this is gotta be >= 4
     static final int MAX_NODE_SIZE = 4;
 
-    private final DataStructureFactory dsFactory;
+    private final InternalDataStructureFactory dsFactory;
     private BTreeNode<Key, Value> root;
 
     // height of the tree
     private int height;
 
-    BTree(Store store, DataStructureFactory dsFactory, Txn txn) {
+    BTree(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         super(store);
         this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
@@ -29,13 +29,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         addObjectToObjectSize(height);
     }
 
-    BTree(Store store, DataStructureFactory dsFactory, long id) {
+    BTree(Store store, InternalDataStructureFactory dsFactory, long id) {
         super(store, id);
         this.dsFactory = dsFactory;
         asyncLoadForReads(this);
     }
 
-    BTree(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
+    BTree(Store store, InternalDataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
         this.dsFactory = dsFactory;
         asyncLoadForWrites(this, txn);

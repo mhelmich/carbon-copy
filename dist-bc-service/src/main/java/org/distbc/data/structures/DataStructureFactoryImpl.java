@@ -3,7 +3,7 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 
-public class DataStructureFactoryImpl implements DataStructureFactory {
+public class DataStructureFactoryImpl implements InternalDataStructureFactory {
 
     private final Store store;
 

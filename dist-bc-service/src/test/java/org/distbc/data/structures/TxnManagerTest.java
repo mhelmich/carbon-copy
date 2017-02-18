@@ -20,7 +20,7 @@ import static org.junit.Assert.assertNull;
 public class TxnManagerTest {
 
     @Inject
-    private DataStructureFactory dsFactory;
+    private InternalDataStructureFactory dsFactory;
 
     @Inject
     private TxnManager txnManager;

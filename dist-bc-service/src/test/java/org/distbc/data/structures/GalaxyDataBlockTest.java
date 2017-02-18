@@ -16,7 +16,7 @@ import static org.junit.Assert.fail;
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class GalaxyDataBlockTest {
     @Inject
-    private DataStructureFactory dsFactory;
+    private InternalDataStructureFactory dsFactory;
 
     @Inject
     private TxnManager txnManager;

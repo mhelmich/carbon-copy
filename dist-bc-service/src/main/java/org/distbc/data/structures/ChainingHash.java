@@ -14,13 +14,13 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     private int hashTableSize;
     private ArrayList<DataBlock<Key, Value>> hashTable;
 
-    private final DataStructureFactory dsFactory;
+    private final InternalDataStructureFactory dsFactory;
 
-    ChainingHash(Store store, DataStructureFactory dsFactory, Txn txn) {
+    ChainingHash(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         this(store, dsFactory, DEFAULT_NUM_BUCKETS, txn);
     }
 
-    ChainingHash(Store store, DataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
+    ChainingHash(Store store, InternalDataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
         super(store);
         this.dsFactory = dsFactory;
         asyncUpsert(this, txn);
@@ -35,14 +35,14 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
-    ChainingHash(Store store, DataStructureFactory dsFactory, long id) {
+    ChainingHash(Store store, InternalDataStructureFactory dsFactory, long id) {
         super(store, id);
         this.dsFactory = dsFactory;
         // load data for reads aggressively
         asyncLoadForReads(this);
     }
 
-    ChainingHash(Store store, DataStructureFactory dsFactory, long id, Txn txn) {
+    ChainingHash(Store store, InternalDataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
         this.dsFactory = dsFactory;
         // load data for writes aggressively too

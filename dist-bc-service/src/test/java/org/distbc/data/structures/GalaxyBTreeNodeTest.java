@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class GalaxyBTreeNodeTest {
     @Inject
-    private DataStructureFactory dsFactory;
+    private InternalDataStructureFactory dsFactory;
 
     @Inject
     private TxnManager txnManager;
