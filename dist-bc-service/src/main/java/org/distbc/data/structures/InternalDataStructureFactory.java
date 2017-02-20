@@ -8,6 +8,7 @@ package org.distbc.data.structures;
 public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock(Txn txn);
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlock(long id);
+    <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlockProxy(long id);
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlockForWrites(long id, Txn txn);
 
     <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash(Txn txn);

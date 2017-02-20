@@ -19,7 +19,12 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
 
     @Override
     public <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlock(long id) {
-        return new DataBlock<>(store, id);
+        return new DataBlock<>(store, id, true);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> DataBlock<Key, Value> loadDataBlockProxy(long id) {
+        return new DataBlock<>(store, id, false);
     }
 
     @Override
