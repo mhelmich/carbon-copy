@@ -31,7 +31,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         // increment object (this is the hash) since we allocate
         // a DataBlock pointer (which is a Long)
         for (int i = 0; i < initNumBuckets; i++) {
-            addObjectToObjectSize(123L);
+            addObjectToObjectSize(Long.MAX_VALUE);
         }
     }
 
@@ -101,7 +101,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
 
         int i = hash(key);
-        DataBlock<Key, Value> db = getDataBlock(i);
+        DataBlock<Key, Value> db = getDataBlock(i, txn);
         if (db == null) {
             DataBlock<Key, Value> newDB = newDataBlock(txn);
             newDB.put(key, val, txn);
@@ -117,7 +117,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     private boolean innerDelete(Key key, Txn txn) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         int i = hash(key);
-        DataBlock<Key, Value> db = getDataBlock(i);
+        DataBlock<Key, Value> db = getDataBlock(i, txn);
         boolean didDelete = (db != null) && db.innerDelete(key);
         if (db != null && didDelete) {
             txn.addToChangedObjects(db);
@@ -136,6 +136,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
                 db.keys().forEach(k -> temp.put(k, db.get(k), txn));
+                db.asyncDelete(txn);
             }
         }
 
@@ -143,9 +144,19 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         this.hashTable = temp.hashTable;
     }
 
-    private DataBlock<Key, Value> getDataBlock(int i) {
-        DataBlock<Key, Value> db = hashTable.get(i);
+    private DataBlock<Key, Value> getDataBlock(int hash, Txn txn) {
+        DataBlock<Key, Value> db = hashTable.get(hash);
         if (db != null) {
+            db.asyncLoadForWrites(txn);
+            db.checkDataStructureRetrieved();
+        }
+        return db;
+    }
+
+    private DataBlock<Key, Value> getDataBlock(int hash) {
+        DataBlock<Key, Value> db = hashTable.get(hash);
+        if (db != null) {
+            db.asyncLoadForReads();
             db.checkDataStructureRetrieved();
         }
         return db;
@@ -183,9 +194,9 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
             for (int i = 0; i < hashTableSize && in.available() > 0; i++) {
                 Long id = (Long) in.readObject();
-                DataBlock<Key, Value> db = (id != null) ? dsFactory.loadDataBlock(id) : null;
+                DataBlock<Key, Value> db = (id != null) ? dsFactory.loadDataBlockProxy(id) : null;
                 hashTable.set(i, db);
-                addObjectToObjectSize(123L);
+                addObjectToObjectSize(id);
             }
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
