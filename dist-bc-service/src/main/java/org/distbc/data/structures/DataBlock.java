@@ -29,10 +29,12 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         asyncUpsert(this, txn);
     }
 
-    DataBlock(Store store, long id) {
+    DataBlock(Store store, long id, boolean shouldLoad) {
         super(store, id);
-        // load data for reads aggressively
-        asyncLoadForReads(this);
+        if (shouldLoad) {
+            // load data for reads aggressively
+            asyncLoadForReads(this);
+        }
     }
 
     DataBlock(Store store, long id, Txn txn) {
