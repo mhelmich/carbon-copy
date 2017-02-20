@@ -121,6 +121,18 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
+    <T extends DataStructure> void asyncDelete(Txn txn) {
+        if (getId() > -1) {
+            deleteAsync(this, txn);
+        }
+    }
+
+    <T extends DataStructure> void asyncDelete(T o, Txn txn) {
+        if (getId() > -1) {
+            deleteAsync(o, txn);
+        }
+    }
+
     boolean checkDataStructureRetrieved() {
         if (creationFuture != null) {
             try {
@@ -196,6 +208,10 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     private <T extends DataStructure> ListenableFuture<Long> putAsync(T o, Txn txn) {
         return store.putAsync(o, txn.getStoreTransaction());
+    }
+
+    private <T extends DataStructure> void deleteAsync(T o, Txn txn) {
+        store.delAsync(o.getId(), txn.getStoreTransaction());
     }
 
     abstract void serialize(SerializerOutputStream out);
