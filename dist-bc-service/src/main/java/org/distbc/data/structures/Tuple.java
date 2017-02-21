@@ -13,6 +13,7 @@ import java.util.Vector;
 
 @DefaultSerializer(Tuple.TupleSerializer.class)
 class Tuple extends Sizable {
+    private GUID guid;
     // some sort of tuple metadata
     // a mapping of column name to index
     // and tuple size
@@ -20,7 +21,8 @@ class Tuple extends Sizable {
     private ArrayList<Object> data;
 
     @SuppressWarnings("unused")
-    private Tuple(ArrayList<Object> data, int tupleSize) {
+    private Tuple(GUID guid, ArrayList<Object> data, int tupleSize) {
+        this.guid = guid;
         this.data = data;
         this.tupleSize = tupleSize;
     }
@@ -30,6 +32,11 @@ class Tuple extends Sizable {
         Vector<Object> v = new Vector<>(tupleSize);
         v.setSize(tupleSize);
         data = new ArrayList<>(v);
+        guid = GUID.randomGUID();
+    }
+
+    GUID getGuid() {
+        return guid;
     }
 
     Object get(int idx) {
@@ -46,7 +53,7 @@ class Tuple extends Sizable {
     }
 
     Tuple immutableCopy() {
-        return new Tuple(new ArrayList<>(data), tupleSize) {
+        return new Tuple(guid, new ArrayList<>(data), tupleSize) {
             @Override
             void put(int idx, Object o) { }
         };
@@ -55,6 +62,7 @@ class Tuple extends Sizable {
     public final static class TupleSerializer extends Serializer<Tuple> {
         @Override
         public void write(Kryo kryo, Output output, Tuple tuple) {
+            kryo.writeClassAndObject(output, tuple.guid);
             output.writeInt(tuple.data.size());
             for (int i = 0; i < tuple.data.size(); i++) {
                 kryo.writeClassAndObject(output, tuple.data.get(i));
@@ -63,6 +71,7 @@ class Tuple extends Sizable {
 
         @Override
         public Tuple read(Kryo kryo, Input input, Class<Tuple> aClass) {
+            GUID guid = (GUID) kryo.readClassAndObject(input);
             int size = input.readInt();
             Vector<Object> v = new Vector<>(size);
             v.setSize(size);
@@ -72,9 +81,9 @@ class Tuple extends Sizable {
             }
 
             try {
-                Constructor<Tuple> ctor = aClass.getDeclaredConstructor(ArrayList.class, int.class);
+                Constructor<Tuple> ctor = aClass.getDeclaredConstructor(GUID.class, ArrayList.class, int.class);
                 ctor.setAccessible(true);
-                return ctor.newInstance(data, size);
+                return ctor.newInstance(guid, data, size);
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }

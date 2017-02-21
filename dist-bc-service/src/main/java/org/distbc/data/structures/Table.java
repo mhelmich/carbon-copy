@@ -3,14 +3,13 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Table extends DataStructure {
     private final InternalDataStructureFactory dsFactory;
-    private ChainingHash<UUID, Tuple> hash;
+    private ChainingHash<GUID, Tuple> hash;
 
     Table(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         super(store);
@@ -37,21 +36,20 @@ public class Table extends DataStructure {
         asyncLoadForWrites(txn);
     }
 
-    public UUID insert(Tuple tuple, Txn txn) {
+    public GUID insert(Tuple tuple, Txn txn) {
         checkDataStructureRetrieved();
-        UUID uuid = UUID.randomUUID();
-        hash.put(uuid, tuple, txn);
-        return uuid;
+        hash.put(tuple.getGuid(), tuple, txn);
+        return tuple.getGuid();
     }
 
-    public Tuple get(UUID uuid) {
+    public Tuple get(GUID guid) {
         checkDataStructureRetrieved();
-        return hash.get(uuid);
+        return hash.get(guid);
     }
 
     public Set<Tuple> scan(Predicate<Tuple> predicate) {
         return StreamSupport.stream(hash.keys().spliterator(), false)
-                .map(uuid -> hash.get(uuid))
+                .map(guid -> hash.get(guid))
                 .filter(predicate)
                 .map(Tuple::immutableCopy)
                 .collect(Collectors.toSet());
