@@ -18,6 +18,9 @@ import java.util.UUID;
 public class GUID extends Sizable implements Comparable<GUID> {
     private final UUID internalId;
 
+    /**
+     * Private ctor for serializer use only.
+     */
     @SuppressWarnings("unused")
     private GUID(UUID uuid) {
         this.internalId = uuid;
@@ -29,7 +32,10 @@ public class GUID extends Sizable implements Comparable<GUID> {
         addObjectToObjectSize(internalId.getLeastSignificantBits());
     }
 
-    public static GUID randomGUID() {
+    /**
+     * This should be the only way to generate a new GUID.
+     */
+    static GUID randomGUID() {
         return new GUID();
     }
 

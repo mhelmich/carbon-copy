@@ -20,6 +20,9 @@ class Tuple extends Sizable {
     private int tupleSize;
     private ArrayList<Object> data;
 
+    /**
+     * Private ctor for serializer use only.
+     */
     @SuppressWarnings("unused")
     private Tuple(GUID guid, ArrayList<Object> data, int tupleSize) {
         this.guid = guid;
