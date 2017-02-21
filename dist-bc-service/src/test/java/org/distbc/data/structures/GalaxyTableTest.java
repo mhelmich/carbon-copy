@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,15 +39,15 @@ public class GalaxyTableTest {
         tup3.put(1, "moep");
         tup3.put(2, "tup3_foo");
 
-        UUID uuid1 = table1.insert(tup1, t);
-        UUID uuid2 = table1.insert(tup2, t);
-        UUID uuid3 = table1.insert(tup3, t);
+        GUID guid1 = table1.insert(tup1, t);
+        GUID guid2 = table1.insert(tup2, t);
+        GUID guid3 = table1.insert(tup3, t);
         t.commit();
 
         long tableId = table1.getId();
 
         Table table2 = dsFactory.loadTable(tableId);
-        Tuple tuple2 = table2.get(uuid2);
+        Tuple tuple2 = table2.get(guid2);
         assertEquals("tup2_narf", tuple2.get(0));
     }
 }

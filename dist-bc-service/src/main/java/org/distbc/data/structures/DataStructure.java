@@ -44,6 +44,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         kryo.register(BTreeNode.class, 13);
         kryo.register(BTree.class, 14);
         kryo.register(UUID.class, new UUIDSerializer(), 15);
+        kryo.register(GUID.class, 16);
 
         return kryo;
     };
