@@ -81,4 +81,19 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
     public <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTreeForWrites(long id, Txn txn) {
         return new BTree<>(store, this, id, txn);
     }
+
+    @Override
+    public Table newTable(Txn txn) {
+        return new Table(store, this, txn);
+    }
+
+    @Override
+    public Table loadTable(long id) {
+        return new Table(store, this, id);
+    }
+
+    @Override
+    public Table loadTableForWrites(long id, Txn txn) {
+        return new Table(store, this, id, txn);
+    }
 }
