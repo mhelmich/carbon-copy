@@ -24,7 +24,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         v.setSize(BTree.MAX_NODE_SIZE);
         entries = new ArrayList<>(v);
         this.dsFactory = dsFactory;
-        asyncLoadForReads(this);
+        asyncLoadForReads();
     }
 
     BTreeNode(Store store, InternalDataStructureFactory dsFactory, long id, boolean shouldLoad) {
@@ -34,7 +34,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         entries = new ArrayList<>(v);
         this.dsFactory = dsFactory;
         if (shouldLoad) {
-            asyncLoadForReads(this);
+            asyncLoadForReads();
         }
     }
 
@@ -45,7 +45,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         entries = new ArrayList<>(v);
         this.numChildren = numChildren;
         this.dsFactory = dsFactory;
-        asyncUpsert(this, txn);
+        asyncUpsert(txn);
 
         // happens after upsert is kicked off
         addObjectToObjectSize(numChildren);
