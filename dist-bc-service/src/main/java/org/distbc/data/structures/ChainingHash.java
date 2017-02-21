@@ -23,7 +23,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
         super(store);
         this.dsFactory = dsFactory;
-        asyncUpsert(this, txn);
+        asyncUpsert(txn);
         this.hashTableSize = initNumBuckets;
         Vector<DataBlock<Key, Value>> v = new Vector<>(initNumBuckets);
         v.setSize(initNumBuckets);
@@ -39,14 +39,14 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         super(store, id);
         this.dsFactory = dsFactory;
         // load data for reads aggressively
-        asyncLoadForReads(this);
+        asyncLoadForReads();
     }
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
         this.dsFactory = dsFactory;
         // load data for writes aggressively too
-        asyncLoadForWrites(this, txn);
+        asyncLoadForWrites(txn);
     }
 
     public Value get(Key key) {

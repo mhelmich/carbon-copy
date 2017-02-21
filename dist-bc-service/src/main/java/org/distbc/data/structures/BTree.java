@@ -24,7 +24,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     BTree(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         super(store);
         this.dsFactory = dsFactory;
-        asyncUpsert(this, txn);
+        asyncUpsert(txn);
         root = newNode(0, txn);
         addObjectToObjectSize(height);
     }
@@ -32,13 +32,13 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     BTree(Store store, InternalDataStructureFactory dsFactory, long id) {
         super(store, id);
         this.dsFactory = dsFactory;
-        asyncLoadForReads(this);
+        asyncLoadForReads();
     }
 
     BTree(Store store, InternalDataStructureFactory dsFactory, long id, Txn txn) {
         super(store, id);
         this.dsFactory = dsFactory;
-        asyncLoadForWrites(this, txn);
+        asyncLoadForWrites(txn);
     }
 
     public Value get(Key key) {
@@ -85,7 +85,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         put(key, null, txn);
     }
 
-    public String dump() {
+    String dump() {
         return dump(root, height, "") + "\n";
     }
 

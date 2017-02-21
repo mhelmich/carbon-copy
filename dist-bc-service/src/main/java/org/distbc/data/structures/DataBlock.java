@@ -26,21 +26,21 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
 
     DataBlock(Store store, Txn txn) {
         super(store);
-        asyncUpsert(this, txn);
+        asyncUpsert(txn);
     }
 
     DataBlock(Store store, long id, boolean shouldLoad) {
         super(store, id);
         if (shouldLoad) {
             // load data for reads aggressively
-            asyncLoadForReads(this);
+            asyncLoadForReads();
         }
     }
 
     DataBlock(Store store, long id, Txn txn) {
         super(store, id);
         // load data for writes aggressively too
-        asyncLoadForWrites(this, txn);
+        asyncLoadForWrites(txn);
     }
 
     public Value get(Key key) {
