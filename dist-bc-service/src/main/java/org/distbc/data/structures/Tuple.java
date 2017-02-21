@@ -45,6 +45,13 @@ class Tuple extends Sizable {
         data.set(idx, o);
     }
 
+    Tuple immutableCopy() {
+        return new Tuple(new ArrayList<>(data), tupleSize) {
+            @Override
+            void put(int idx, Object o) { }
+        };
+    }
+
     public final static class TupleSerializer extends Serializer<Tuple> {
         @Override
         public void write(Kryo kryo, Output output, Tuple tuple) {
@@ -60,7 +67,7 @@ class Tuple extends Sizable {
             Vector<Object> v = new Vector<>(size);
             v.setSize(size);
             ArrayList<Object> data = new ArrayList<>(v);
-            for(int i = 0; i < size; i++) {
+            for (int i = 0; i < size; i++) {
                 data.set(i, kryo.readClassAndObject(input));
             }
 
