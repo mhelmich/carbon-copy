@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -12,19 +13,19 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 @DefaultSerializer(Tuple.TupleSerializer.class)
-class Tuple extends Sizable {
+class Tuple extends Sizable implements Comparable<Tuple> {
     private GUID guid;
     // some sort of tuple metadata
     // a mapping of column name to index
     // and tuple size
     private int tupleSize;
-    private ArrayList<Object> data;
+    private ArrayList<Comparable> data;
 
     /**
      * Private ctor for serializer use only.
      */
     @SuppressWarnings("unused")
-    private Tuple(GUID guid, ArrayList<Object> data, int tupleSize) {
+    private Tuple(GUID guid, ArrayList<Comparable> data, int tupleSize) {
         this.guid = guid;
         this.data = data;
         this.tupleSize = tupleSize;
@@ -32,7 +33,7 @@ class Tuple extends Sizable {
 
     Tuple(int size) {
         tupleSize = size;
-        Vector<Object> v = new Vector<>(tupleSize);
+        Vector<Comparable> v = new Vector<>(tupleSize);
         v.setSize(tupleSize);
         data = new ArrayList<>(v);
         guid = GUID.randomGUID();
@@ -46,7 +47,7 @@ class Tuple extends Sizable {
         return data.get(idx);
     }
 
-    void put(int idx, Object o) {
+    void put(int idx, Comparable o) {
         Object existingO = data.get(idx);
         if (existingO != null) {
             subtractObjectToObjectSize(existingO);
@@ -58,8 +59,34 @@ class Tuple extends Sizable {
     Tuple immutableCopy() {
         return new Tuple(guid, new ArrayList<>(data), tupleSize) {
             @Override
-            void put(int idx, Object o) { }
+            void put(int idx, Comparable o) { }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public int compareTo(Tuple o) {
+        for (int i = 0; i < tupleSize; i++) {
+            if (data.get(i) != null && o.data.get(i) != null) {
+                int cmp = data.get(i).compareTo(o.data.get(i));
+                if (cmp != 0) {
+                    return cmp;
+                }
+            // the last two if clauses will sort nulls to the back
+            } else if (data.get(i) != null) {
+                return -1;
+            } else if (o.data.get(i) != null) {
+                return 1;
+            }
+        }
+
+        // this happens when all items of a tuple are null
+        return 0;
+    }
+
+    @Override
+    public String toString() {
+        return StringUtils.join(data, " - ");
     }
 
     public final static class TupleSerializer extends Serializer<Tuple> {

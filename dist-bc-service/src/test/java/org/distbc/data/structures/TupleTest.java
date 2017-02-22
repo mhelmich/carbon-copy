@@ -2,6 +2,10 @@ package org.distbc.data.structures;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 
 public class TupleTest {
@@ -19,6 +23,95 @@ public class TupleTest {
         assertEquals(Long.MAX_VALUE, t.get(2));
         assertEquals("narf_2", t.get(3));
         assertEquals("MrMoep", t.get(4));
+    }
+
+    @Test
+    public void testCompare() {
+        List<Tuple> ts = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Tuple t = newTuple(1);
+            t.put(0, i);
+            ts.add(t);
+        }
+
+        Collections.shuffle(ts);
+        Collections.sort(ts);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(i, ts.get(i).get(0));
+        }
+    }
+
+    @Test
+    public void testCompareMultipleDimensions() {
+        List<Tuple> ts = new ArrayList<>();
+
+        Tuple t = newTuple(2);
+        t.put(0, "AAA");
+        t.put(1, 2);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "AAA");
+        t.put(1, 1);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "BBB");
+        t.put(1, 3);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "BBB");
+        t.put(1, 2);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "BB");
+        t.put(1, 2);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "AA");
+        t.put(1, null);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, "AAA");
+        t.put(1, null);
+        ts.add(t);
+
+        t = newTuple(2);
+        t.put(0, null);
+        t.put(1, 1);
+        ts.add(t);
+
+        Collections.shuffle(ts);
+        Collections.sort(ts);
+
+        assertEquals("AA", ts.get(0).get(0));
+        assertEquals(null, ts.get(0).get(1));
+
+        assertEquals("AAA", ts.get(1).get(0));
+        assertEquals(1, ts.get(1).get(1));
+
+        assertEquals("AAA", ts.get(2).get(0));
+        assertEquals(2, ts.get(2).get(1));
+
+        assertEquals("AAA", ts.get(3).get(0));
+        assertEquals(null, ts.get(3).get(1));
+
+        assertEquals("BB", ts.get(4).get(0));
+        assertEquals(2, ts.get(4).get(1));
+
+        assertEquals("BBB", ts.get(5).get(0));
+        assertEquals(2, ts.get(5).get(1));
+
+        assertEquals("BBB", ts.get(6).get(0));
+        assertEquals(3, ts.get(6).get(1));
+
+        assertEquals(null, ts.get(7).get(0));
+        assertEquals(1, ts.get(7).get(1));
     }
 
     private Tuple newTuple(int size) {
