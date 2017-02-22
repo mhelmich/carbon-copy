@@ -5,11 +5,14 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class ChainingHashTest {
@@ -135,8 +138,68 @@ public class ChainingHashTest {
         }
     }
 
+    @Test
+    public void testKeysWithLastBucketBeingNull() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Map<String, String> m = new HashMap<>();
+        Txn txn = Mockito.mock(Txn.class);
+        when(txn.getStoreTransaction()).thenReturn(null);
+        ChainingHash<String, String> h = newChainingHash(txn);
+
+        for (int i = 0; i < 7; i++) {
+            String value = getValueForNotLastBucket();
+            m.put(value, value);
+            h.put(value, value, txn);
+        }
+
+        int count = 0;
+        for (String k : h.keys()) {
+            assertTrue(m.containsKey(k));
+            count++;
+        }
+
+        assertEquals(7, count);
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void testEmptyHash() {
+        Txn txn = Mockito.mock(Txn.class);
+        when(txn.getStoreTransaction()).thenReturn(null);
+        ChainingHash<String, String> h = newChainingHash(txn);
+
+        int count = 0;
+        for (String k : h.keys()) {
+            count++;
+        }
+
+        assertEquals(0, count);
+    }
+
     private <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash(Txn txn) {
         Store s = Mockito.mock(Store.class);
         return new ChainingHash<>(s, new DataStructureFactoryImpl(s), txn);
+    }
+
+    private String getValueForNotLastBucket() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        int count = 27;
+        int i = 0;
+        do {
+            String value = UUID.randomUUID().toString();
+            int bucket = getHashForValue(value);
+            if (bucket != 4) {
+                return value;
+            }
+            i++;
+        } while (i < count);
+        return null;
+    }
+
+    private <Key extends Comparable<Key>, Value> int getHashForValue(Key k) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Txn txn = Mockito.mock(Txn.class);
+        when(txn.getStoreTransaction()).thenReturn(null);
+        ChainingHash<Key, Value> h = newChainingHash(txn);
+        Method m = h.getClass().getDeclaredMethod("hash", Comparable.class);
+        m.setAccessible(true);
+        return (Integer) m.invoke(h, k);
     }
 }
