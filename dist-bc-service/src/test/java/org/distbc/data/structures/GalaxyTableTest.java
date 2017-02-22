@@ -7,8 +7,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
@@ -47,7 +50,24 @@ public class GalaxyTableTest {
         long tableId = table1.getId();
 
         Table table2 = dsFactory.loadTable(tableId);
-        Tuple tuple2 = table2.get(guid2);
-        assertEquals("tup2_narf", tuple2.get(0));
+        assertEquals("tup2_narf", table2.get(guid2).get(0));
+        assertEquals("moep", table2.get(guid1).get(1));
+        assertEquals("tup3_foo", table2.get(guid3).get(2));
+
+        Set<Tuple> rs = table2.scan(tuple -> tuple.getGuid().equals(guid1));
+        assertEquals(1, rs.size());
+        Tuple readTuple = rs.iterator().next();
+        assertEquals(guid1, readTuple.getGuid());
+
+        rs = table2.scan(tuple -> tuple.get(1).equals("moep"));
+        assertEquals(2, rs.size());
+        Set<GUID> expectedResultSet = new HashSet<>();
+        expectedResultSet.add(guid1);
+        expectedResultSet.add(guid3);
+        for (Tuple rt : rs) {
+            assertTrue(expectedResultSet.contains(rt.getGuid()));
+            assertTrue(expectedResultSet.removeIf(guid -> guid.equals(rt.getGuid())));
+        }
+        assertTrue(expectedResultSet.isEmpty());
     }
 }

@@ -76,18 +76,26 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
             @Override
             public boolean hasNext() {
-                return i < hashTableSize || dbIter.hasNext();
+                if (dbIter == null || !dbIter.hasNext()) {
+                    while (i < hashTableSize && (dbIter == null || !dbIter.hasNext())) {
+                        DataBlock<Key, Value> db = getDataBlock(i);
+                        i++;
+                        if (db != null) {
+                            dbIter = db.keys().iterator();
+                            if (dbIter.hasNext()) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                } else {
+                    return true;
+                }
             }
 
             @Override
             public Key next() {
-                while (dbIter == null || !dbIter.hasNext()) {
-                    DataBlock<Key, Value> db = hashTable.get(i);
-                    if (db != null) {
-                        dbIter = db.keys().iterator();
-                    }
-                    i++;
-                }
                 return dbIter.next();
             }
         };
