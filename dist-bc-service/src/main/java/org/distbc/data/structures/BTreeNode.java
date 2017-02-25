@@ -89,6 +89,9 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
         return node;
     }
 
+    /**
+     * Does not load the next node! The caller is responsible to do so.
+     */
     BTreeNode<Key, Value> getNext() {
         checkDataStructureRetrieved();
         return next;
