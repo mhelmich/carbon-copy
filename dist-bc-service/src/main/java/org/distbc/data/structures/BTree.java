@@ -1,6 +1,7 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Iterator;
 
@@ -44,7 +45,71 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     public Value get(Key key) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
         checkDataStructureRetrieved();
-        return search(root, key, height);
+        Pair<BTreeNode<Key, Value>, Integer> pair = search(root, key, height);
+        if (pair != null) {
+            return pair.getLeft().getEntryAt(pair.getRight()).getValue();
+        } else {
+            return null;
+        }
+    }
+
+    public Iterable<Value> get(Key fromKey, Key toKey) {
+        Pair<BTreeNode<Key, Value>, Integer> pair = search(root, fromKey, height);
+        if (pair != null) {
+            return () -> new Iterator<Value>() {
+                private BTreeNode<Key, Value> node = pair.getLeft();
+                private int idx = pair.getRight();
+
+                @Override
+                public boolean hasNext() {
+                    final boolean lessOrEqual;
+                    // true if there is a next and the next is less than toKey
+                    if (idx < node.getNumChildren()) {
+                        // iterate inside a tree node
+                        lessOrEqual = lessOrEqual(node.getEntryAt(idx).getKey(), toKey);
+                    } else {
+                        // iterate to the next tree node
+                        BTreeNode<Key, Value> next = node.getNext();
+                        if (next != null) {
+                            next.asyncLoadForReads();
+                            // if there is a next, next has children, and the first childrens key
+                            // is lessOrEqual then my toKey
+                            lessOrEqual = next.getNumChildren() > 0 && lessOrEqual(next.getEntryAt(0).getKey(), toKey);
+                        } else {
+                            lessOrEqual = false;
+                        }
+                    }
+
+                    return lessOrEqual;
+                }
+
+                @Override
+                public Value next() {
+                    if (idx >= node.getNumChildren()) {
+                        node = node.getNext();
+                        node.asyncLoadForReads();
+                        idx = 0;
+                    }
+
+                    node.checkDataStructureRetrieved();
+                    Value v = node.getEntryAt(idx).getValue();
+                    idx++;
+                    return v;
+                }
+            };
+        } else {
+            return () -> new Iterator<Value>() {
+                @Override
+                public boolean hasNext() {
+                    return false;
+                }
+
+                @Override
+                public Value next() {
+                    return null;
+                }
+            };
+        }
     }
 
     public void put(Key key, Value value, Txn txn) {
@@ -119,7 +184,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         return new BTreeEntry<>(key, next);
     }
 
-    private Value search(BTreeNode<Key, Value> x, Key key, int height) {
+    private Pair<BTreeNode<Key, Value>, Integer> search(BTreeNode<Key, Value> x, Key key, int height) {
         x.checkDataStructureRetrieved();
         if (height > 0) {
             // internal node
@@ -134,7 +199,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
             // find the right key (if it's there) and return it
             for (int j = 0; j < x.getNumChildren(); j++) {
                 if (equal(key, x.getEntryAt(j).getKey())) {
-                    return x.getEntryAt(j).getValue();
+                    return Pair.of(x, j);
                 }
             }
         }
@@ -234,6 +299,10 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private boolean equal(Key k1, Key k2) {
         return k1.compareTo(k2) == 0;
+    }
+
+    private boolean lessOrEqual(Key k1, Key k2) {
+        return k1.compareTo(k2) <= 0;
     }
 
     /////////////////////////////////////////////////////////////
