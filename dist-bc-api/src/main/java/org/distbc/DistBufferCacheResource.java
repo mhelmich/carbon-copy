@@ -3,6 +3,7 @@ package org.distbc;
 import com.codahale.metrics.annotation.Timed;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -14,8 +15,8 @@ public interface DistBufferCacheResource {
     @Timed
     String feedData(@PathParam("index") String index);
 
-    @GET
+    @POST
     @Path("/query")
     @Timed
-    String query(@QueryParam("name") String name);
+    String query(@QueryParam("query") String query);
 }

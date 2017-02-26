@@ -67,7 +67,7 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
         return "ok";
     }
 
-    public String query(String name) {
+    public String query(String query) {
         return "all zeros";
     }
 }
