@@ -25,7 +25,23 @@ public class GalaxyTableTest {
     @Test
     public void testBasic() throws IOException {
         Txn t = txnManager.beginTransaction();
-        Table table1 = dsFactory.newTable(t);
+
+        Tuple col1 = new Tuple(3);
+        col1.put(0, "tup_num");
+        col1.put(1, 0);
+        col1.put(2, String.class.getCanonicalName());
+
+        Tuple col2 = new Tuple(3);
+        col2.put(0, "moep");
+        col2.put(1, 0);
+        col2.put(2, String.class.getCanonicalName());
+
+        Tuple col3 = new Tuple(3);
+        col3.put(0, "foo");
+        col3.put(1, 0);
+        col3.put(2, String.class.getCanonicalName());
+
+        Table table1 = dsFactory.newTable(t, col1, col2, col3);
 
         Tuple tup1 = new Tuple(3);
         tup1.put(0, "tup1_narf");
