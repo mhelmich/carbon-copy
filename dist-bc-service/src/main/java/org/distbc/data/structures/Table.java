@@ -2,6 +2,8 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -31,9 +33,9 @@ public class Table extends DataStructure {
         asyncUpsert(txn);
     }
 
-    Table(Store store, InternalDataStructureFactory dsFactory, Txn txn, Tuple... columns) {
+    Table(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
         this(store, dsFactory, txn);
-        addColumns(txn, columns);
+        addColumns(txn, builder.getColumnMetadata());
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, long id) {
@@ -124,6 +126,27 @@ public class Table extends DataStructure {
                 || !String.class.equals(tuple.get(2).getClass())
             ) {
             throw new IllegalArgumentException();
+        }
+    }
+
+    public static class Builder {
+        private List<Tuple> columnMetadata = new ArrayList<>();
+
+        public Builder withColumn(String name, int index, Class type) {
+            Tuple col = new Tuple(3);
+            col.put(0, name);
+            col.put(1, index);
+            col.put(2, type.getCanonicalName());
+            columnMetadata.add(col);
+            return this;
+        }
+
+        public Builder withColumn(String name, Class type) {
+            return withColumn(name, columnMetadata.size(), type);
+        }
+
+        private Tuple[] getColumnMetadata() {
+            return columnMetadata.toArray(new Tuple[columnMetadata.size()]);
         }
     }
 
