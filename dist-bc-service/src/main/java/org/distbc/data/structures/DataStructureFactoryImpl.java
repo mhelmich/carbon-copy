@@ -96,4 +96,19 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
     public Table loadTableForWrites(long id, Txn txn) {
         return new Table(store, this, id, txn);
     }
+
+    @Override
+    public Index newIndex(Index.Builder builder, Txn txn) {
+        return new Index(store, this, builder, txn);
+    }
+
+    @Override
+    public Index loadIndex(long id) {
+        return new Index(store, this, id);
+    }
+
+    @Override
+    public Index loadIndexForWrites(long id, Txn txn) {
+        return new Index(store, this, id, txn);
+    }
 }
