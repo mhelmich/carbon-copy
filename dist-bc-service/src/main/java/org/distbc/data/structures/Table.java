@@ -31,6 +31,8 @@ public class Table extends DataStructure {
         columns.checkDataStructureRetrieved();
         // only then upsert yourself
         asyncUpsert(txn);
+        addObjectToObjectSize(data.getId());
+        addObjectToObjectSize(columns.getId());
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
@@ -81,6 +83,7 @@ public class Table extends DataStructure {
     }
 
     public Set<Tuple> scan(Predicate<Tuple> predicate) {
+        checkDataStructureRetrieved();
         return StreamSupport.stream(data.keys().spliterator(), false)
                 .map(guid -> data.get(guid))
                 .filter(predicate)
@@ -89,6 +92,7 @@ public class Table extends DataStructure {
     }
 
     public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
+        checkDataStructureRetrieved();
         if (projection != null) {
             return StreamSupport.stream(data.keys().spliterator(), false)
                     .map(guid -> data.get(guid))
@@ -107,9 +111,9 @@ public class Table extends DataStructure {
      *  |-------+--------------------------+----------|
      *  |  0    | column name              | String   |
      *  |  1    | index of column in table | Int      |
-     *  |  2    | data type of column      | Class ?? |
+     *  |  2    | data type name of column | String   |
      */
-    public void addColumns(Txn txn, Tuple... columns) {
+    private void addColumns(Txn txn, Tuple... columns) {
         checkDataStructureRetrieved();
         for (Tuple column : columns) {
             verifyAddColumnTypes(column);
@@ -120,7 +124,7 @@ public class Table extends DataStructure {
 
     private void verifyAddColumnTypes(Tuple tuple) {
         if (
-                tuple.getTupleSize() != 3
+                   tuple.getTupleSize() != 3
                 || !String.class.equals(tuple.get(0).getClass())
                 || !Integer.class.equals(tuple.get(1).getClass())
                 || !String.class.equals(tuple.get(2).getClass())
