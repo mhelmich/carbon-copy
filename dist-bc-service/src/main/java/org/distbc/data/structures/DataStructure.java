@@ -178,6 +178,8 @@ abstract class DataStructure extends Sizable implements Persistable {
                 compressedBB.position(compressedSize);
             } catch (IOException xcp) {
                 throw new RuntimeException(xcp);
+            } catch (IllegalArgumentException xcp) {
+                throw new IllegalArgumentException("Compressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed! uncompressedBB: " + uncompressedBB.capacity() + " compressedBB: " + compressedBB.capacity(), xcp);
             }
         }
     }
@@ -190,6 +192,8 @@ abstract class DataStructure extends Sizable implements Persistable {
             Snappy.uncompress(compressedBB, uncompressedBB);
         } catch (IOException xcp) {
             throw new RuntimeException(xcp);
+        } catch (IllegalArgumentException xcp) {
+            throw new IllegalArgumentException("Uncompressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed!", xcp);
         }
 
         try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
