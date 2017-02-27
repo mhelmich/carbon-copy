@@ -24,7 +24,7 @@ public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTree(long id);
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTreeForWrites(long id, Txn txn);
 
-    Table newTable(Txn txn, Tuple... columns);
+    Table newTable(Table.Builder builder, Txn txn);
     Table loadTable(long id);
     Table loadTableForWrites(long id, Txn txn);
 }
