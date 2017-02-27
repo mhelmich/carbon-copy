@@ -24,14 +24,14 @@ public class GalaxyTableTest {
 
     @Test
     public void testBasic() throws IOException {
-        Txn t = txnManager.beginTransaction();
+        Txn txn = txnManager.beginTransaction();
 
         Table.Builder tableBuilder = new Table.Builder()
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
 
-        Table table1 = dsFactory.newTable(tableBuilder, t);
+        Table table1 = dsFactory.newTable(tableBuilder, txn);
 
         Tuple tup1 = new Tuple(3);
         tup1.put(0, "tup1_narf");
@@ -48,10 +48,10 @@ public class GalaxyTableTest {
         tup3.put(1, "moep");
         tup3.put(2, "tup3_foo");
 
-        GUID guid1 = table1.insert(tup1, t);
-        GUID guid2 = table1.insert(tup2, t);
-        GUID guid3 = table1.insert(tup3, t);
-        t.commit();
+        GUID guid1 = table1.insert(tup1, txn);
+        GUID guid2 = table1.insert(tup2, txn);
+        GUID guid3 = table1.insert(tup3, txn);
+        txn.commit();
 
         long tableId = table1.getId();
 
