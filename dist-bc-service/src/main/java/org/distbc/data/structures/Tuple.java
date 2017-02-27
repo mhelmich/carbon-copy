@@ -103,6 +103,28 @@ class Tuple extends Sizable implements Comparable<Tuple> {
         return StringUtils.join(data, " - ");
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private ArrayList<Comparable> data = new ArrayList<>();
+        private Builder() {}
+
+        public Builder add(Comparable item) {
+            data.add(item);
+            return this;
+        }
+
+        public Tuple build() {
+            Tuple t = new Tuple(data.size());
+            for (int i = 0; i < data.size(); i++) {
+                t.put(i, data.get(i));
+            }
+            return t;
+        }
+    }
+
     public final static class TupleSerializer extends Serializer<Tuple> {
         @Override
         public void write(Kryo kryo, Output output, Tuple tuple) {
