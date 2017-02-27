@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -56,6 +57,19 @@ class Tuple extends Sizable implements Comparable<Tuple> {
         data.set(idx, o);
     }
 
+    int getTupleSize() {
+        return tupleSize;
+    }
+
+    Tuple subTuple(int from, int to) {
+        int size = to - from;
+        Tuple newTuple = new Tuple(size);
+        for (int i = 0; i < size; i++) {
+            newTuple.put(i, data.get(i + from));
+        }
+        return newTuple;
+    }
+
     Tuple immutableCopy() {
         return new Tuple(guid, new ArrayList<>(data), tupleSize) {
             @Override
@@ -65,7 +79,7 @@ class Tuple extends Sizable implements Comparable<Tuple> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public int compareTo(Tuple o) {
+    public int compareTo(@Nonnull Tuple o) {
         for (int i = 0; i < tupleSize; i++) {
             if (data.get(i) != null && o.data.get(i) != null) {
                 int cmp = data.get(i).compareTo(o.data.get(i));

@@ -83,8 +83,8 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
     }
 
     @Override
-    public Table newTable(Txn txn) {
-        return new Table(store, this, txn);
+    public Table newTable(Txn txn, Tuple... columns) {
+        return new Table(store, this, txn, columns);
     }
 
     @Override

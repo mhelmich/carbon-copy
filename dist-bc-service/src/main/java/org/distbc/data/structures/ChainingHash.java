@@ -112,6 +112,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         DataBlock<Key, Value> db = getDataBlock(i, txn);
         if (db == null) {
             DataBlock<Key, Value> newDB = newDataBlock(txn);
+            // I could use putIfPossible here as well
             newDB.put(key, val, txn);
             hashTable.set(i, newDB);
         } else {
