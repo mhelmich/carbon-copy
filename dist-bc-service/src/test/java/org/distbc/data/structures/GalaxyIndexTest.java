@@ -64,7 +64,7 @@ public class GalaxyIndexTest {
         assertEquals(assertionGUIDs.get(2), loadedIdx.get(tup3));
 
         Tuple fromTup = Tuple.builder()
-                .add(123)
+                .add(100)
                 .add(tup1.get(1).toString())
                 .build();
 

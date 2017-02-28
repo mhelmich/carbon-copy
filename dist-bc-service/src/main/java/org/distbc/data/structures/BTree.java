@@ -54,7 +54,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     public Iterable<Value> get(Key fromKey, Key toKey) {
-        Pair<BTreeNode<Key, Value>, Integer> pair = search(root, fromKey, height);
+        Pair<BTreeNode<Key, Value>, Integer> pair = searchFirstLessThan(root, fromKey, height);
         if (pair != null) {
             return () -> new Iterator<Value>() {
                 private BTreeNode<Key, Value> node = pair.getLeft();
@@ -206,6 +206,41 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         return null;
     }
 
+    private Pair<BTreeNode<Key, Value>, Integer> searchFirstLessThan(BTreeNode<Key, Value> x, Key key, int height) {
+        x.checkDataStructureRetrieved();
+        if (height > 0) {
+            // internal node
+            // find the right child node to descend to
+            for (int j = 0; j < x.getNumChildren(); j++) {
+                if (j + 1 == x.getNumChildren() || lessThan(key, x.getEntryAt(j + 1).getKey())) {
+                    return searchFirstLessThan(x.getChildNodeAt(j), key, height - 1);
+                }
+            }
+        } else {
+            // leaf node
+            // find the right key (if it's there) and return it
+            for (int j = 0; j < x.getNumChildren(); j++) {
+                if (lessOrEqual(key, x.getEntryAt(j).getKey())) {
+                    return Pair.of(x, j);
+                }
+            }
+
+            // yea, alright
+            // if "key" happens to be the first entry in a node,
+            // then we need to search all the way through the previous node
+            // just to see that we don't find what we're looking for in the previous node
+            // in this case we allow this code to recursively call itself once (and only once) more
+            // in the extra recursion we will find that "key" is the first node and
+            // greater than what we're looking for
+            if (height > -1) {
+                BTreeNode<Key, Value> nextNode = x.getNext();
+                nextNode.asyncLoadForReads();
+                return searchFirstLessThan(nextNode, key, height - 1);
+            }
+        }
+        return null;
+    }
+
     private BTreeNode<Key, Value> insert(BTreeNode<Key, Value> x, Key key, Value value, int height, Txn txn) {
         int j;
         BTreeEntry<Key, Value> entryToInsert = newEntry(key, value);
@@ -226,7 +261,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         } else {
             // leaf node
             for (j = 0; j < x.getNumChildren(); j++) {
-                if (lessThan(key, x.getEntryAt(j).getKey()) || equal(key, x.getEntryAt(j).getKey())) {
+                if (lessOrEqual(key, x.getEntryAt(j).getKey())) {
                     break;
                 }
             }
