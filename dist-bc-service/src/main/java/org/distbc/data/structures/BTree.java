@@ -28,6 +28,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         asyncUpsert(txn);
         root = newNode(0, txn);
         addObjectToObjectSize(height);
+        root.checkDataStructureRetrieved();
     }
 
     BTree(Store store, InternalDataStructureFactory dsFactory, long id) {
