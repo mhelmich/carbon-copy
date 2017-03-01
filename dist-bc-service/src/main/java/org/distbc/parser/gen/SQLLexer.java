@@ -1,6 +1,6 @@
 // Generated from /Users/mhelmich/playground/projects/dist-bc/dist-bc-service/src/main/resources/SQLLexer.g4 by ANTLR 4.6
 
-package org.distbc.parser;
+package org.distbc.parser.gen;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
