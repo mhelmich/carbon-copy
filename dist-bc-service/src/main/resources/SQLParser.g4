@@ -2,7 +2,7 @@
 parser grammar SQLParser;
 
 @header {
-package org.distbc.parser;
+package org.distbc.parser.gen;
 }
 
 options

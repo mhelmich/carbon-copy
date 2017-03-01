@@ -1,7 +1,7 @@
 
 lexer grammar SQLLexer;
 @ header {
-package org.distbc.parser;
+package org.distbc.parser.gen;
 }
 
 SELECT
@@ -340,7 +340,7 @@ ON
 
 
 ID
-   : ( 'a' .. 'z' | 'A' .. 'Z' | '_' )+
+   : ( 'a' .. 'z' | 'A' .. 'Z' | '_' ) ( 'a' .. 'z' | 'A' .. 'Z' | '_' | INT)*
    ;
 
 
