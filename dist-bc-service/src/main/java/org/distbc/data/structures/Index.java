@@ -4,6 +4,7 @@ import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 public class Index extends DataStructure {
     private final InternalDataStructureFactory dsFactory;
@@ -11,6 +12,8 @@ public class Index extends DataStructure {
     private BTree<Tuple, GUID> bTree;
     // this data holds all column names to index
     private ChainingHash<String, Tuple> columns;
+    // this list holds the column names
+    private List<String> columnNames;
 
     Index(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
         super(store);
@@ -77,6 +80,22 @@ public class Index extends DataStructure {
         verifyDataColumnTypes(fromTuple);
         verifyDataColumnTypes(toTuple);
         return bTree.get(fromTuple, toTuple);
+    }
+
+    public List<String> getColumnNames() {
+        if (columnNames == null) {
+            Vector<String> v = new Vector<>(1);
+            v.setSize(1);
+            for (String name : columns.keys()) {
+                Tuple t = columns.get(name);
+                Integer idx = (Integer) t.get(0);
+                v.setSize(Math.max(v.size(), idx + 1));
+                v.set(idx, name);
+            }
+            columnNames = new ArrayList<>(v);
+        }
+
+        return columnNames;
     }
 
     /**
