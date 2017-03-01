@@ -81,4 +81,24 @@ public class GalaxyIndexTest {
 
         assertEquals(2, assertionCounter);
     }
+
+    @Test
+    public void testGetColumnNames() throws IOException {
+        Index.Builder indexBuilder = new Index.Builder()
+                .withColumn("number", Integer.class)
+                .withColumn("foo", String.class)
+                .withColumn("foobar", Long.class);
+
+        Txn txn = txnManager.beginTransaction();
+        Index idx = dsFactory.newIndex(indexBuilder, txn);
+        idx.checkDataStructureRetrieved();
+        long idxId = idx.getId();
+        txn.commit();
+
+        Index newAndShinyIndex = dsFactory.loadIndex(idxId);
+        List<String> columnNames = newAndShinyIndex.getColumnNames();
+        assertEquals("NUMBER", columnNames.get(0));
+        assertEquals("FOO", columnNames.get(1));
+        assertEquals("FOOBAR", columnNames.get(2));
+    }
 }
