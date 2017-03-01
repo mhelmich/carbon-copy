@@ -3,6 +3,8 @@ package org.distbc.parser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.distbc.parser.gen.SQLLexer;
+import org.distbc.parser.gen.SQLParser;
 import org.junit.Test;
 
 import java.util.List;
