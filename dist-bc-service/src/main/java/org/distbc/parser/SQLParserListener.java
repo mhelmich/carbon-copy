@@ -6,7 +6,7 @@ import org.distbc.parser.gen.SQLParserBaseListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SQLParserListener extends SQLParserBaseListener {
+class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     private List<String> tableNames = new ArrayList<>();
     private List<String> columnNames = new ArrayList<>();
@@ -21,10 +21,12 @@ public class SQLParserListener extends SQLParserBaseListener {
         columnNames.add(ctx.getText());
     }
 
+    @Override
     public List<String> getTableNames() {
         return tableNames;
     }
 
+    @Override
     public List<String> getColumnNames() {
         return columnNames;
     }
