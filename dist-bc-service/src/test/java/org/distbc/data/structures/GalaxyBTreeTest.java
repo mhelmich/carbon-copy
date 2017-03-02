@@ -112,7 +112,6 @@ public class GalaxyBTreeTest {
         }
         treeId = t1.getId();
         txn1.commit();
-        System.err.println(t1.dump());
 
 
         Txn txn2 = txnManager.beginTransaction();
@@ -121,10 +120,8 @@ public class GalaxyBTreeTest {
             t2.put(i, "value_" + (-i), txn2);
         }
         txn2.commit();
-        System.err.println(t2.dump());
 
         BTree<Integer, String> t3 = dsFactory.loadBTree(treeId);
-        System.err.println(t3.dump());
         for (int i = 0; i < count; i++) {
             assertEquals("value_" + (-i), t3.get(i));
         }
@@ -432,7 +429,6 @@ public class GalaxyBTreeTest {
         for (GUID guid : iter) {
             assertEquals(assertGUID.get(assertionIndex), guid);
             assertionIndex++;
-            System.err.println(guid);
             i++;
         }
         assertEquals(11, i);
