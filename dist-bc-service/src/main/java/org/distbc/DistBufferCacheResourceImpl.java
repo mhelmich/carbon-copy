@@ -6,11 +6,16 @@ import co.paralleluniverse.galaxy.StoreTransaction;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.google.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 import org.distbc.data.structures.experimental.SkipList;
+import org.distbc.parser.ParserUtil;
+import org.distbc.parser.ParsingResult;
+import org.distbc.planner.QueryPlannerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -67,7 +72,10 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
         return "ok";
     }
 
-    public String query(String query) {
-        return "all zeros";
+    public Set<Object> query(String query) {
+        ParsingResult pr = ParserUtil.get().parse(query);
+        logger.info("All the tables I want to access: {}", StringUtils.join(", ", pr.getTableNames()));
+        logger.info("All the columns I want to access: {}", StringUtils.join(", ", pr.getColumnNames()));
+        return QueryPlannerUtil.get().generateQueryPlan(pr).execute();
     }
 }

@@ -7,6 +7,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import java.util.Set;
 
 @Path("/distbc")
 public interface DistBufferCacheResource {
@@ -18,5 +19,5 @@ public interface DistBufferCacheResource {
     @POST
     @Path("/query")
     @Timed
-    String query(@QueryParam("query") String query);
+    Set<Object> query(@QueryParam("query") String query);
 }
