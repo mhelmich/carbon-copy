@@ -3,7 +3,7 @@ package org.distbc.data.structures;
 /**
  * Don't even try to use guice assisted injection
  * I was dancing around for two days and it didn't line up for me until I decided
- * to innerPut this factory together myself and move on with my life
+ * to put this factory together myself and move on with my life
  */
 public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock(Txn txn);
@@ -23,12 +23,4 @@ public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> BTree<Key, Value> newBTree(Txn txn);
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTree(long id);
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTreeForWrites(long id, Txn txn);
-
-    Table newTable(Table.Builder builder, Txn txn);
-    Table loadTable(long id);
-    Table loadTableForWrites(long id, Txn txn);
-
-    Index newIndex(Index.Builder builder, Txn txn);
-    Index loadIndex(long id);
-    Index loadIndexForWrites(long id, Txn txn);
 }
