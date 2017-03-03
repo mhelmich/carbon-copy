@@ -29,5 +29,6 @@ public class DataStructureModule extends AbstractModule {
         bind(Messenger.class).toInstance(g.messenger());
 
         bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
+        bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
     }
 }
