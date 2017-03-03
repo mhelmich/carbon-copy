@@ -7,14 +7,8 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.distbc.parser.gen.SQLLexer;
 import org.distbc.parser.gen.SQLParser;
 
-public class ParserUtil {
-    private final static ParserUtil instance = new ParserUtil();
-    private ParserUtil() {}
-
-    public static ParserUtil get() {
-        return instance;
-    }
-
+public class QueryParserImpl implements QueryParser {
+    @Override
     public ParsingResult parse(String query) {
         CharStream stream = new ANTLRInputStream(query);
         SQLLexer lex = new SQLLexer(stream);
