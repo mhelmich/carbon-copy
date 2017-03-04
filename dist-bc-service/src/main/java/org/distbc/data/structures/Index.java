@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-public class Index extends DataStructure {
+public class Index extends TopLevelDataStructure {
     private final InternalDataStructureFactory dsFactory;
     // this tree holds the index data
     private BTree<Tuple, GUID> bTree;

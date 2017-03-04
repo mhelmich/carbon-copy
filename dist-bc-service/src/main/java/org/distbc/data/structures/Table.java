@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class Table extends DataStructure {
+public class Table extends TopLevelDataStructure {
     private final InternalDataStructureFactory dsFactory;
     // this data holds all the data
     private ChainingHash<GUID, Tuple> data;
