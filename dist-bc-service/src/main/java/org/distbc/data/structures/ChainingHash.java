@@ -68,6 +68,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     public boolean delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         return innerDelete(key, txn);
     }
 
