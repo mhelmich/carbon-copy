@@ -27,7 +27,7 @@ class CatalogImpl implements Catalog {
     }
 
     @Override
-    public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) {
+    public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) throws IOException {
         try {
             Long id = getIdForName(name);
             if (id == -1L) {
@@ -35,15 +35,19 @@ class CatalogImpl implements Catalog {
             } else {
                 return loadById(id, klass);
             }
-        } catch (ExecutionException xcp) {
-            throw new RuntimeException(xcp);
+        } catch (ExecutionException | IOException | TimeoutException xcp) {
+            throw new IOException(xcp);
         }
     }
 
     @Override
-    public void create(String name, TopLevelDataStructure ds) throws InterruptedException, TimeoutException, IOException {
+    public void create(String name, TopLevelDataStructure ds) throws IOException {
         if (catalogRootId == null) {
-            initCatalogRootId();
+            try {
+                initCatalogRootId();
+            } catch (TimeoutException xcp) {
+                throw new IOException(xcp);
+            }
         }
 
         Txn txn = txnManager.beginTransaction();
@@ -54,10 +58,13 @@ class CatalogImpl implements Catalog {
         } catch (Exception xcp) {
             txn.rollback();
             txn.abort();
+            throw new IOException(xcp);
         }
     }
 
     private synchronized void initCatalogRootId() throws TimeoutException, IOException {
+        if (catalogRootId != null) return;
+
         Txn txn = txnManager.beginTransaction();
         StoreTransaction internalTxn = txn.getStoreTransaction();
         try {
@@ -81,13 +88,18 @@ class CatalogImpl implements Catalog {
         }
     }
 
-    private Long getIdForName(String name) throws ExecutionException {
+    private Long getIdForName(String name) throws ExecutionException, TimeoutException, IOException {
         if (namesToIds == null) {
+            if (catalogRootId == null) {
+                initCatalogRootId();
+            }
             namesToIds = dsFactory.loadChainingHash(catalogRootId);
         }
         return namesToIds.get(name);
     }
 
+    // I don't really like this code but this should be ok for now
+    // I gotta read up in Feign how they create implementations of interfaces
     private <T extends TopLevelDataStructure> T loadById(Long id, Class<T> klass) {
         TopLevelDataStructure ds;
         if (Index.class.equals(klass)) {
