@@ -66,6 +66,20 @@ public class GalaxyChainingHashTest {
         assertNull(hash4.get(111));
     }
 
+    @Test
+    public void testStoreReadEmptyHash() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash = dsFactory.newChainingHash(t);
+        hash.checkDataStructureRetrieved();
+        t.commit();
+
+        t = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash2 = dsFactory.loadChainingHash(hash.getId());
+        hash2.checkDataStructureRetrieved();
+        hash2.put(123, 123L, t);
+        t.commit();
+    }
+
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {
         for (int i = from; i < to; i++) {
             assertEquals(Long.valueOf(i), hash.get(i));
