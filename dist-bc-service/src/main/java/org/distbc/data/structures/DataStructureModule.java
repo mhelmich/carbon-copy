@@ -30,5 +30,7 @@ public class DataStructureModule extends AbstractModule {
 
         bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
         bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
+
+        bind(Catalog.class).to(CatalogImpl.class);
     }
 }
