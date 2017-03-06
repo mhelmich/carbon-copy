@@ -18,6 +18,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         this(store, dsFactory, DEFAULT_NUM_BUCKETS, txn);
+        txn.addToChangedObjects(this);
     }
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
@@ -51,6 +52,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     public Value get(Key key) {
         if (key == null) throw new IllegalArgumentException("Key cannot be null");
+        checkDataStructureRetrieved();
         int i = hash(key);
         DataBlock<Key, Value> db = getDataBlock(i);
         return (db != null) ? db.get(key) : null;
