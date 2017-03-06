@@ -30,10 +30,10 @@ class CatalogImpl implements Catalog {
     public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) throws IOException {
         try {
             Long id = getIdForName(name);
-            if (id == -1L) {
-                throw new IllegalArgumentException("Data structure with name " + name + " doesn't exist!");
-            } else {
+            if (id != null && id != -1L) {
                 return loadById(id, klass);
+            } else {
+                throw new IllegalArgumentException("Data structure with name " + name + " doesn't exist!");
             }
         } catch (ExecutionException | IOException | TimeoutException xcp) {
             throw new IOException(xcp);
@@ -41,7 +41,7 @@ class CatalogImpl implements Catalog {
     }
 
     @Override
-    public void create(String name, TopLevelDataStructure ds) throws IOException {
+    public void create(String name, TopLevelDataStructure ds, Txn txn) throws IOException {
         if (catalogRootId == null) {
             try {
                 initCatalogRootId();
@@ -50,16 +50,8 @@ class CatalogImpl implements Catalog {
             }
         }
 
-        Txn txn = txnManager.beginTransaction();
-        try {
-            ChainingHash<String, Long> namesToIds = dsFactory.loadChainingHashForWrites(catalogRootId, txn);
-            namesToIds.put(name, ds.getId(), txn);
-            txn.commit();
-        } catch (Exception xcp) {
-            txn.rollback();
-            txn.abort();
-            throw new IOException(xcp);
-        }
+        ChainingHash<String, Long> namesToIds = dsFactory.loadChainingHashForWrites(catalogRootId, txn);
+        namesToIds.put(name, ds.getId(), txn);
     }
 
     private synchronized void initCatalogRootId() throws TimeoutException, IOException {
