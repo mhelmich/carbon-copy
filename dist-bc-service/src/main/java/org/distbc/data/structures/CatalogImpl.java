@@ -88,17 +88,6 @@ class CatalogImpl implements Catalog {
         return namesToIds.get(name);
     }
 
-    private Long getIdForNameFromGalaxy(String name) throws TimeoutException, InterruptedException {
-        StoreTransaction txn = store.beginTransaction();
-        try {
-            Long id = store.getRoot(name, txn);
-            return store.isRootCreated(id, txn) ? id : -1L;
-        } finally {
-            store.rollback(txn);
-            store.abort(txn);
-        }
-    }
-
     private <T extends TopLevelDataStructure> T loadById(Long id, Class<T> klass) {
         TopLevelDataStructure ds;
         if (Index.class.equals(klass)) {
