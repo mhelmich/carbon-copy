@@ -69,7 +69,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         this.id = id;
     }
 
-    long getId() {
+    public long getId() {
         return id;
     }
 
