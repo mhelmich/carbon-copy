@@ -16,7 +16,7 @@ public class Index extends TopLevelDataStructure {
     private List<String> columnNames;
 
     Index(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
-        super(store);
+        super(store, builder.getName());
         this.dsFactory = dsFactory;
         // create new tree
         bTree = dsFactory.newBTree(txn);
@@ -128,6 +128,12 @@ public class Index extends TopLevelDataStructure {
 
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
+        private String name;
+
+        public Index.Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
 
         public Index.Builder withColumn(String name, int index, Class type) {
             Tuple col = new Tuple(3);
@@ -144,6 +150,10 @@ public class Index extends TopLevelDataStructure {
 
         private Tuple[] getColumnMetadata() {
             return columnMetadata.toArray(new Tuple[columnMetadata.size()]);
+        }
+
+        private String getName() {
+            return name;
         }
     }
 

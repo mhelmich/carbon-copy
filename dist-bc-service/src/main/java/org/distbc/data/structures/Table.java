@@ -17,8 +17,8 @@ public class Table extends TopLevelDataStructure {
     // this data holds all column names to index
     private ChainingHash<String, Tuple> columns;
 
-    private Table(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
-        super(store);
+    private Table(Store store, InternalDataStructureFactory dsFactory, Txn txn, String dsName) {
+        super(store, dsName);
         this.dsFactory = dsFactory;
         // create new data
         data = dsFactory.newChainingHash(txn);
@@ -36,7 +36,7 @@ public class Table extends TopLevelDataStructure {
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
-        this(store, dsFactory, txn);
+        this(store, dsFactory, txn, builder.getName());
         addColumns(txn, builder.getColumnMetadata());
     }
 
@@ -124,7 +124,7 @@ public class Table extends TopLevelDataStructure {
 
     private void verifyAddColumnTypes(Tuple tuple) {
         if (
-                   tuple.getTupleSize() != 3
+                    tuple.getTupleSize() != 3
                 || !String.class.equals(tuple.get(0).getClass())
                 || !Integer.class.equals(tuple.get(1).getClass())
                 || !String.class.equals(tuple.get(2).getClass())
@@ -135,6 +135,12 @@ public class Table extends TopLevelDataStructure {
 
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
+        private String name;
+
+        public Table.Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
 
         public Builder withColumn(String name, int index, Class type) {
             Tuple col = new Tuple(3);
@@ -151,6 +157,10 @@ public class Table extends TopLevelDataStructure {
 
         private Tuple[] getColumnMetadata() {
             return columnMetadata.toArray(new Tuple[columnMetadata.size()]);
+        }
+
+        private String getName() {
+            return name;
         }
     }
 
