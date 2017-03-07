@@ -1,7 +1,6 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
-import co.paralleluniverse.galaxy.TimeoutException;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
@@ -28,7 +27,7 @@ public class CatalogImplTest {
     private TxnManager txnManager;
 
     @Test
-    public void testBasic() throws TimeoutException, InterruptedException, IOException {
+    public void testBasic() throws IOException {
         String tableName = "table_" + System.currentTimeMillis();
         Txn txn = txnManager.beginTransaction();
         Table.Builder builder = new Table.Builder()
