@@ -70,6 +70,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     public long getId() {
+        checkDataStructureRetrieved();
         return id;
     }
 
