@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 @DefaultSerializer(Tuple.TupleSerializer.class)
-class Tuple extends Sizable implements Comparable<Tuple> {
+public class Tuple extends Sizable implements Comparable<Tuple> {
     private GUID guid;
     // some sort of tuple metadata
     // a mapping of column name to index
