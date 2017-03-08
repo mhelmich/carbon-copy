@@ -10,10 +10,6 @@ import org.distbc.planner.QueryPlannerModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Set;
-
-import static org.junit.Assert.assertTrue;
-
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
 public class DistBufferCacheResourceImplTest {
@@ -24,10 +20,9 @@ public class DistBufferCacheResourceImplTest {
     @Inject
     private QueryPlanner queryPlanner;
 
-    @Test
-    public void testBasic() {
+    @Test(expected = IllegalArgumentException.class)
+    public void testNoTablePresent() {
         DistBufferCacheResource r = new DistBufferCacheResourceImpl(null, queryParser, queryPlanner);
-        Set<Object> rs = r.query("select * from table1");
-        assertTrue(rs.size() == 0);
+        r.query("select * from table1");
     }
 }
