@@ -27,7 +27,7 @@ public class GalaxyIndexTest {
         List<GUID> assertionGUIDs = new ArrayList<>();
         Txn txn = txnManager.beginTransaction();
 
-        Index.Builder indexBuilder = new Index.Builder()
+        Index.Builder indexBuilder = Index.Builder.newBuilder("narf")
                 .withColumn("number", Integer.class)
                 .withColumn("foo", String.class);
 
@@ -84,7 +84,7 @@ public class GalaxyIndexTest {
 
     @Test
     public void testGetColumnNames() throws IOException {
-        Index.Builder indexBuilder = new Index.Builder()
+        Index.Builder indexBuilder = Index.Builder.newBuilder("narf")
                 .withColumn("number", Integer.class)
                 .withColumn("foo", String.class)
                 .withColumn("foobar", Long.class);

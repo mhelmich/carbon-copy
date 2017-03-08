@@ -64,7 +64,6 @@ class CatalogImpl implements Catalog {
             if (store.isRootCreated(id, internalTxn)) {
                 // I just created it for you
                 ChainingHash<String, Long> namesToIds = dsFactory.newChainingHash(txn);
-                namesToIds.checkDataStructureRetrieved();
                 byte[] catalogRoot = Longs.toByteArray(namesToIds.getId());
                 store.set(id, catalogRoot, internalTxn);
                 catalogRootId = namesToIds.getId();

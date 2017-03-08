@@ -30,7 +30,7 @@ public class CatalogImplTest {
     public void testBasic() throws IOException {
         String tableName = "table_" + System.currentTimeMillis();
         Txn txn = txnManager.beginTransaction();
-        Table.Builder builder = new Table.Builder()
+        Table.Builder builder = Table.Builder.newBuilder("moep")
                 .withColumn("narf", Integer.class);
         Table table = dsFactory.newTable(builder, txn);
 
@@ -47,7 +47,7 @@ public class CatalogImplTest {
         String tableName = "table_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
-        Table.Builder builder = new Table.Builder()
+        Table.Builder builder = Table.Builder.newBuilder("moep")
                 .withColumn("narf", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
@@ -65,7 +65,7 @@ public class CatalogImplTest {
         String tableName = "table_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
-        Table.Builder builder = new Table.Builder()
+        Table.Builder builder = Table.Builder.newBuilder("moep")
                 .withColumn("narf", Integer.class);
 
         Txn txn = txnManager.beginTransaction();

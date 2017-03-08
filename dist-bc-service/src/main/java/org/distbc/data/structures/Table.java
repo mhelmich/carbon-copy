@@ -3,6 +3,7 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -10,7 +11,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class Table extends TopLevelDataStructure {
+public class Table extends TopLevelDataStructure implements Queryable {
     private final InternalDataStructureFactory dsFactory;
     // this data holds all the data
     private ChainingHash<GUID, Tuple> data;
@@ -82,6 +83,7 @@ public class Table extends TopLevelDataStructure {
         return (t != null) ? t.immutableCopy() : null;
     }
 
+    @Override
     public Set<Tuple> scan(Predicate<Tuple> predicate) {
         checkDataStructureRetrieved();
         return StreamSupport.stream(data.keys().spliterator(), false)
@@ -91,6 +93,7 @@ public class Table extends TopLevelDataStructure {
                 .collect(Collectors.toSet());
     }
 
+    @Override
     public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
         checkDataStructureRetrieved();
         if (projection != null) {
@@ -103,6 +106,11 @@ public class Table extends TopLevelDataStructure {
         } else {
             return scan(predicate);
         }
+    }
+
+    @Override
+    public List<String> getColumnNames() {
+        return Collections.emptyList();
     }
 
     /**
@@ -135,11 +143,14 @@ public class Table extends TopLevelDataStructure {
 
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
-        private String name;
+        private final String name;
 
-        public Table.Builder withName(String name) {
+        private Builder(String name) {
             this.name = name;
-            return this;
+        }
+
+        public static Table.Builder newBuilder(String name) {
+            return new Builder(name);
         }
 
         public Builder withColumn(String name, int index, Class type) {

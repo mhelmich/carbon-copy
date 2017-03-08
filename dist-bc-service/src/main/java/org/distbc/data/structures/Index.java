@@ -3,10 +3,14 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class Index extends TopLevelDataStructure {
+public class Index extends TopLevelDataStructure implements Queryable {
     private final InternalDataStructureFactory dsFactory;
     // this tree holds the index data
     private BTree<Tuple, GUID> bTree;
@@ -82,6 +86,7 @@ public class Index extends TopLevelDataStructure {
         return bTree.get(fromTuple, toTuple);
     }
 
+    @Override
     public List<String> getColumnNames() {
         if (columnNames == null) {
             Vector<String> v = new Vector<>(1);
@@ -96,6 +101,16 @@ public class Index extends TopLevelDataStructure {
         }
 
         return columnNames;
+    }
+
+    @Override
+    public Set<Tuple> scan(Predicate<Tuple> predicate) {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
+        return Collections.emptySet();
     }
 
     /**
@@ -128,11 +143,14 @@ public class Index extends TopLevelDataStructure {
 
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
-        private String name;
+        private final String name;
 
-        public Index.Builder withName(String name) {
+        private Builder(String name) {
             this.name = name;
-            return this;
+        }
+
+        public static Index.Builder newBuilder(String name) {
+            return new Builder(name);
         }
 
         public Index.Builder withColumn(String name, int index, Class type) {
