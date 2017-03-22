@@ -10,6 +10,7 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     private List<String> tableNames = new ArrayList<>();
     private List<String> columnNames = new ArrayList<>();
+    private List<String> whereClauses = new ArrayList<>();
 
     @Override
     public void enterTable_name(SQLParser.Table_nameContext ctx) {
@@ -21,6 +22,10 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
         columnNames.add(ctx.getText());
     }
 
+    @Override public void enterSimple_expression(SQLParser.Simple_expressionContext ctx) {
+        whereClauses.add(ctx.getText());
+    }
+
     @Override
     public List<String> getTableNames() {
         return tableNames;
@@ -29,5 +34,10 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     @Override
     public List<String> getColumnNames() {
         return columnNames;
+    }
+
+    @Override
+    public List<String> getWhereClauses() {
+        return whereClauses;
     }
 }
