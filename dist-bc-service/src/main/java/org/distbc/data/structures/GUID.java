@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 
 /**
- * This the public interface of a global unique id.
+ * This is the public "interface" of a global unique id.
  * Right now it's just a wrapper around a java UUID. This might change in the future.
  */
 @DefaultSerializer(GUID.GUIDSerializer.class)
