@@ -3,7 +3,7 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -110,7 +110,11 @@ public class Table extends TopLevelDataStructure implements Queryable {
 
     @Override
     public List<String> getColumnNames() {
-        return Collections.emptyList();
+        return StreamSupport.stream(columns.keys().spliterator(), false)
+                .map(cn -> columns.get(cn))
+                .sorted(Comparator.comparingInt(o -> (Integer) o.get(1)))
+                .map(t -> (String) t.get(0))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -125,8 +129,8 @@ public class Table extends TopLevelDataStructure implements Queryable {
         checkDataStructureRetrieved();
         for (Tuple column : columns) {
             verifyAddColumnTypes(column);
-            Tuple newTuple = column.subTuple(1, column.getTupleSize());
-            this.columns.put(column.get(0).toString().toUpperCase(), newTuple, txn);
+            column.put(0, column.get(0).toString().toUpperCase());
+            this.columns.put(column.get(0).toString().toUpperCase(), column, txn);
         }
     }
 

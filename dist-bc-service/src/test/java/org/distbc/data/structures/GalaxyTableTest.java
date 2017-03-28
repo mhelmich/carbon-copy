@@ -8,6 +8,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -75,5 +76,28 @@ public class GalaxyTableTest {
             assertTrue(expectedResultSet.removeIf(guid -> guid.equals(rt.getGuid())));
         }
         assertTrue(expectedResultSet.isEmpty());
+    }
+
+    @Test
+    public void testColumnsAndAll() throws IOException {
+        Txn txn = txnManager.beginTransaction();
+
+        Table.Builder tableBuilder = Table.Builder.newBuilder("narf")
+                .withColumn("tup_num", String.class)
+                .withColumn("moep", Integer.class)
+                .withColumn("foo", String.class);
+
+        Table table1 = dsFactory.newTable(tableBuilder, txn);
+        txn.commit();
+        long t1Id = table1.getId();
+
+        Table table2 = dsFactory.loadTable(t1Id);
+        assertEquals(t1Id, table2.getId());
+
+        List<String> cols = table2.getColumnNames();
+        assertEquals(3, cols.size());
+        assertEquals("tup_num".toUpperCase(), cols.get(0));
+        assertEquals("moep".toUpperCase(), cols.get(1));
+        assertEquals("foo".toUpperCase(), cols.get(2));
     }
 }
