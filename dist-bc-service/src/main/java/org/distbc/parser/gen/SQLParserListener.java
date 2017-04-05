@@ -160,6 +160,16 @@ public interface SQLParserListener extends ParseTreeListener {
 	 */
 	void exitElement(SQLParser.ElementContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SQLParser#literal_value}.
+	 * @param ctx the parse tree
+	 */
+	void enterLiteral_value(SQLParser.Literal_valueContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SQLParser#literal_value}.
+	 * @param ctx the parse tree
+	 */
+	void exitLiteral_value(SQLParser.Literal_valueContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SQLParser#right_element}.
 	 * @param ctx the parse tree
 	 */
