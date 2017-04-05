@@ -9,8 +9,7 @@ import co.paralleluniverse.galaxy.Store;
  * users interact with are not generics (e.g. Index, Table).
  */
 public abstract class TopLevelDataStructure extends DataStructure {
-    // not private so that it can be set by implementors
-    String name;
+    private String name;
 
     TopLevelDataStructure(Store store, String name) {
         super(store);
