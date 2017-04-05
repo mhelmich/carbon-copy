@@ -76,6 +76,7 @@ public class GalaxyTableTest {
             assertTrue(expectedResultSet.removeIf(guid -> guid.equals(rt.getGuid())));
         }
         assertTrue(expectedResultSet.isEmpty());
+        assertEquals("narf", table2.getName());
         assertEquals(table2.getName(), table1.getName());
     }
 
