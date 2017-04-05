@@ -4,15 +4,20 @@ import com.google.inject.Inject;
 import org.distbc.data.structures.Catalog;
 import org.distbc.data.structures.Table;
 import org.distbc.data.structures.TopLevelDataStructure;
-import org.distbc.data.structures.Tuple;
 import org.distbc.parser.ParsingResult;
 
-import java.io.IOException;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * While every sensible query plan can be imagined as a tree this query planner thinks of as a series of independent
+ * query plans (swim lanes) that merge together at some point.
+ * Therefore, it starts looking at every table independently and tries to figure out how it can mutate each table.
+ * At some point two of these swim lanes merge and become one.
+ */
 class QueryPlannerImpl implements QueryPlanner {
 
     private final Catalog catalog;
@@ -24,24 +29,52 @@ class QueryPlannerImpl implements QueryPlanner {
 
     @Override
     public QueryPlan generateQueryPlan(ParsingResult parsingResult) {
-        List<Table> tables = parsingResult.getTableNames().stream()
-                .map(tableName -> {
-                    try {
-                        return catalog.get(tableName, Table.class);
-                    } catch (IOException xcp) {
-                        throw new RuntimeException(xcp);
-                    }
-                })
-                .sorted(Comparator.comparing(TopLevelDataStructure::getName))
-                .collect(Collectors.toList());
-
-        Predicate<Tuple> p = null;
+        List<Table> tables = orderTablesInExecutionOrder(parsingResult);
+        Map<String, QueryPlanSwimLane> tableNameToSwimLand = new HashMap<>(tables.size());
         QueryPlanImpl qp = new QueryPlanImpl();
 
-        for (Table table : tables) {
-            qp.addQueryableAndPredicate(table, p);
-        }
+        tables.forEach(table -> {
+            QueryPlanSwimLane sl = new QueryPlanSwimLane(table);
+            // figure out projections first
+            sl.addOperation(generateProjectionForTable(table, parsingResult));
+            // then do selections
+            if (parsingResult.getWhereClauses().size() > 0) {
+                sl.addOperation(generateSelectionForTable(table, parsingResult));
+            }
+            qp.addSwimLane(sl);
+            tableNameToSwimLand.put(table.getName(), sl);
+        });
+
+        // each of these swim lanes can be kicked off already
+        // but we don't do that...
+        // then determine how tables feed into joins
+        parsingResult.getJoinClauses().forEach(joinClause -> {
+            // TODO: get both tables out of the joinClause
+            // potentially parse the string again ... not crazy cool but gets us there :)
+            // create new swim lane from child swim lanes
+            // let's see how this goes for us :)
+            qp.addSwimLane(generateJoinForSwimLanes(tableNameToSwimLand.get(""), tableNameToSwimLand.get(""), parsingResult));
+        });
 
         return qp;
+    }
+
+    private List<Table> orderTablesInExecutionOrder(ParsingResult parsingResult) {
+        return parsingResult.getTableNames().stream()
+                .map(tableName -> catalog.get(tableName, Table.class))
+                .sorted(Comparator.comparing(TopLevelDataStructure::getName))
+                .collect(Collectors.toList());
+    }
+
+    private Operation generateProjectionForTable(Table table, ParsingResult parsingResult) {
+        return new Projection(parsingResult.getColumnNames(), table.getColumnNames());
+    }
+
+    private Operation generateSelectionForTable(Table table, ParsingResult parsingResult) {
+        return null;
+    }
+
+    private QueryPlanSwimLane generateJoinForSwimLanes(QueryPlanSwimLane sl1, QueryPlanSwimLane sl2, ParsingResult parsingResult) {
+        return null;
     }
 }
