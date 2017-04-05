@@ -4,16 +4,36 @@ import org.distbc.data.structures.Queryable;
 import org.distbc.data.structures.Tuple;
 
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
-public class QueryPlanImpl implements QueryPlan {
+class QueryPlanImpl implements QueryPlan {
+    List<QueryPlanSwimLane> swimLanes = new LinkedList<>();
 
-    void addQueryableAndPredicate(Queryable queryable, Predicate<Tuple> predicate) {
+    void addSwimLane(QueryPlanSwimLane sl) {
+        swimLanes.add(sl);
     }
 
     @Override
-    public Set<Object> execute() {
+    public Set<Tuple> execute() {
+        TempTable tt;
+        ExecutorService es = Executors.newFixedThreadPool(swimLanes.size());
+
+        try {
+            while (!swimLanes.isEmpty()) {
+                Set<Future<Queryable>> futures = swimLanes.stream()
+                        .map(es::submit)
+                        .collect(Collectors.toSet());
+            }
+        } finally {
+            es.shutdown();
+        }
+
         return Collections.emptySet();
     }
 }
