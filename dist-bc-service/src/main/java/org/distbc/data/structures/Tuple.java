@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 @DefaultSerializer(Tuple.TupleSerializer.class)
@@ -40,15 +41,15 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
         guid = GUID.randomGUID();
     }
 
-    GUID getGuid() {
+    public GUID getGuid() {
         return guid;
     }
 
-    Object get(int idx) {
+    public Object get(int idx) {
         return data.get(idx);
     }
 
-    void put(int idx, Comparable o) {
+    public void put(int idx, Comparable o) {
         Object existingO = data.get(idx);
         if (existingO != null) {
             subtractObjectToObjectSize(existingO);
@@ -57,7 +58,7 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
         data.set(idx, o);
     }
 
-    int getTupleSize() {
+    public int getTupleSize() {
         return tupleSize;
     }
 
@@ -70,10 +71,18 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
         return newTuple;
     }
 
+    public Tuple subTuple(List<Integer> indexes) {
+        Tuple t = new Tuple(indexes.size());
+        for (int i = 0; i < indexes.size(); i++) {
+            t.put(i, data.get(indexes.get(i)));
+        }
+        return t;
+    }
+
     Tuple immutableCopy() {
         return new Tuple(guid, new ArrayList<>(data), tupleSize) {
             @Override
-            void put(int idx, Comparable o) { }
+            public void put(int idx, Comparable o) { }
         };
     }
 
