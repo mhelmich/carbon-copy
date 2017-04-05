@@ -15,6 +15,7 @@ public abstract class TopLevelDataStructure extends DataStructure {
     TopLevelDataStructure(Store store, String name) {
         super(store);
         this.name = name;
+        addObjectToObjectSize(name);
     }
 
     TopLevelDataStructure(Store store, long id) {
@@ -26,8 +27,12 @@ public abstract class TopLevelDataStructure extends DataStructure {
     }
 
     @Override
-    abstract void serialize(SerializerOutputStream out);
+    void serialize(SerializerOutputStream out) {
+        out.writeObject(name);
+    }
 
     @Override
-    abstract void deserialize(SerializerInputStream in);
+    void deserialize(SerializerInputStream in) {
+        this.name = (String) in.readObject();
+    }
 }

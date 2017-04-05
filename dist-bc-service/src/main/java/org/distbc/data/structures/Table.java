@@ -16,24 +16,24 @@ public class Table extends TopLevelDataStructure implements Queryable {
     // this data holds all the data
     private ChainingHash<GUID, Tuple> data;
     // this data holds all column names to index
-    private ChainingHash<String, Tuple> columns;
+    private ChainingHash<String, Tuple> columnMetadata;
 
     private Table(Store store, InternalDataStructureFactory dsFactory, Txn txn, String dsName) {
         super(store, dsName);
         this.dsFactory = dsFactory;
         // create new data
         data = dsFactory.newChainingHash(txn);
-        columns = dsFactory.newChainingHash(txn);
+        columnMetadata = dsFactory.newChainingHash(txn);
         txn.addToChangedObjects(data);
-        txn.addToChangedObjects(columns);
+        txn.addToChangedObjects(columnMetadata);
         // wait for it to be upserted and
         // have an id
         data.checkDataStructureRetrieved();
-        columns.checkDataStructureRetrieved();
+        columnMetadata.checkDataStructureRetrieved();
+        addObjectToObjectSize(data.getId());
+        addObjectToObjectSize(columnMetadata.getId());
         // only then upsert yourself
         asyncUpsert(txn);
-        addObjectToObjectSize(data.getId());
-        addObjectToObjectSize(columns.getId());
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, Builder builder, Txn txn) {
@@ -61,10 +61,10 @@ public class Table extends TopLevelDataStructure implements Queryable {
     }
 
     private void verifyDataColumnTypes(Tuple dataTuple) {
-        for (String columnName : columns.keys()) {
-            Tuple metadataTuple = columns.get(columnName);
-            Integer idx = (Integer) metadataTuple.get(0);
-            String klassName = (String) metadataTuple.get(1);
+        for (String columnName : columnMetadata.keys()) {
+            Tuple metadataTuple = columnMetadata.get(columnName);
+            Integer idx = (Integer) metadataTuple.get(1);
+            String klassName = (String) metadataTuple.get(2);
             Class klass;
             try {
                 klass = Class.forName(klassName);
@@ -109,9 +109,17 @@ public class Table extends TopLevelDataStructure implements Queryable {
     }
 
     @Override
+    public Set<Tuple> project(Function<Tuple, Tuple> projection) {
+        return StreamSupport.stream(data.keys().spliterator(), false)
+                .map(guid -> data.get(guid))
+                .map(projection)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
     public List<String> getColumnNames() {
-        return StreamSupport.stream(columns.keys().spliterator(), false)
-                .map(cn -> columns.get(cn))
+        return StreamSupport.stream(columnMetadata.keys().spliterator(), false)
+                .map(cn -> columnMetadata.get(cn))
                 .sorted(Comparator.comparingInt(o -> (Integer) o.get(1)))
                 .map(t -> (String) t.get(0))
                 .collect(Collectors.toList());
@@ -130,7 +138,7 @@ public class Table extends TopLevelDataStructure implements Queryable {
         for (Tuple column : columns) {
             verifyAddColumnTypes(column);
             column.put(0, column.get(0).toString().toUpperCase());
-            this.columns.put(column.get(0).toString().toUpperCase(), column, txn);
+            this.columnMetadata.put(column.get(0).toString().toUpperCase(), column, txn);
         }
     }
 
@@ -185,17 +193,19 @@ public class Table extends TopLevelDataStructure implements Queryable {
 
     @Override
     void serialize(SerializerOutputStream out) {
-        if (data != null && columns != null) {
+        super.serialize(out);
+        if (data != null && columnMetadata != null) {
             out.writeObject(data.getId());
-            out.writeObject(columns.getId());
+            out.writeObject(columnMetadata.getId());
         }
     }
 
     @Override
     void deserialize(SerializerInputStream in) {
+        super.deserialize(in);
         Long tmp = (Long) in.readObject();
         data = dsFactory.loadChainingHash(tmp);
         tmp = (Long) in.readObject();
-        columns = dsFactory.loadChainingHash(tmp);
+        columnMetadata = dsFactory.loadChainingHash(tmp);
     }
 }
