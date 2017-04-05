@@ -31,10 +31,10 @@ public class Index extends TopLevelDataStructure implements Queryable {
         // have an id
         bTree.checkDataStructureRetrieved();
         columns.checkDataStructureRetrieved();
-        // only then upsert yourself
-        asyncUpsert(txn);
         addObjectToObjectSize(bTree.getId());
         addObjectToObjectSize(columns.getId());
+        // only then upsert yourself
+        asyncUpsert(txn);
         addColumns(txn, builder.getColumnMetadata());
     }
 
@@ -105,6 +105,11 @@ public class Index extends TopLevelDataStructure implements Queryable {
 
     @Override
     public Set<Tuple> scan(Predicate<Tuple> predicate) {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Tuple> project(Function<Tuple, Tuple> projection) {
         return Collections.emptySet();
     }
 
@@ -181,6 +186,7 @@ public class Index extends TopLevelDataStructure implements Queryable {
 
     @Override
     void serialize(SerializerOutputStream out) {
+        super.serialize(out);
         if (bTree != null && columns != null) {
             out.writeObject(bTree.getId());
             out.writeObject(columns.getId());
@@ -189,6 +195,7 @@ public class Index extends TopLevelDataStructure implements Queryable {
 
     @Override
     void deserialize(SerializerInputStream in) {
+        super.deserialize(in);
         Long tmp = (Long) in.readObject();
         bTree = dsFactory.loadBTree(tmp);
         tmp = (Long) in.readObject();
