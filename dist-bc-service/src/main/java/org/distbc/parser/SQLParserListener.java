@@ -23,7 +23,8 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
         columnNames.add(ctx.getText());
     }
 
-    @Override public void enterSimple_expression(SQLParser.Simple_expressionContext ctx) {
+    @Override
+    public void enterSimple_expression(SQLParser.Simple_expressionContext ctx) {
         whereClauses.add(ctx.getText());
     }
 

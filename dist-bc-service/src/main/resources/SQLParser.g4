@@ -65,7 +65,11 @@ expression
    ;
 
 element
-   : USER_VAR | ID | ( '|' ID '|' ) | INT | column_name
+   : literal_value | USER_VAR | ID | ( '|' ID '|' ) | INT | column_name
+   ;
+
+literal_value
+   : QUOTED_LITERAL | INT | NULL
    ;
 
 right_element
