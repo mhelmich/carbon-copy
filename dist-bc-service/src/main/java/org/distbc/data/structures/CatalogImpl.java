@@ -27,7 +27,7 @@ class CatalogImpl implements Catalog {
     }
 
     @Override
-    public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) throws IOException {
+    public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) {
         try {
             Long id = getIdForName(name);
             if (id != null && id != -1L) {
@@ -36,7 +36,7 @@ class CatalogImpl implements Catalog {
                 throw new IllegalArgumentException("Data structure with name " + name + " doesn't exist!");
             }
         } catch (ExecutionException | IOException | TimeoutException xcp) {
-            throw new IOException(xcp);
+            throw new RuntimeException(xcp);
         }
     }
 
