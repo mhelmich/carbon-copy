@@ -11,6 +11,7 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     private List<String> tableNames = new ArrayList<>();
     private List<String> columnNames = new ArrayList<>();
     private List<String> whereClauses = new ArrayList<>();
+    private List<String> joinClauses = new ArrayList<>();
 
     @Override
     public void enterTable_name(SQLParser.Table_nameContext ctx) {
@@ -39,5 +40,10 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     @Override
     public List<String> getWhereClauses() {
         return whereClauses;
+    }
+
+    @Override
+    public List<String> getJoinClauses() {
+        return joinClauses;
     }
 }
