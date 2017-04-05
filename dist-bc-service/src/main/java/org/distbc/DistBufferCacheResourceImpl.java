@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
+import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.experimental.SkipList;
 import org.distbc.parser.ParsingResult;
 import org.distbc.parser.QueryParser;
@@ -14,6 +15,7 @@ import org.distbc.planner.QueryPlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -79,6 +81,8 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
         ParsingResult pr = queryParser.parse(query);
         logger.info("All the tables I want to access: {}", StringUtils.join(", ", pr.getTableNames()));
         logger.info("All the columns I want to access: {}", StringUtils.join(", ", pr.getColumnNames()));
-        return queryPlanner.generateQueryPlan(pr).execute();
+        Set<Tuple> tuples = queryPlanner.generateQueryPlan(pr).execute();
+        logger.info("#tuples {}", tuples.size());
+        return Collections.emptySet();
     }
 }
