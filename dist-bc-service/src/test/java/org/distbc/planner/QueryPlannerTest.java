@@ -88,11 +88,11 @@ public class QueryPlannerTest {
 
     /**
      * This test executes a query like this:
-     * SELECT t1_narf FROM t1 WHERE t1_narf = 'void'
+     * SELECT t2_narf FROM t2 WHERE t2_narf = 'void'
      */
     @Test
     public void testSelectionAndProjection() throws Exception {
-        List<String> tablesNames = ImmutableList.of("t1");
+        List<String> tablesNames = ImmutableList.of("t2");
         createTable(tablesNames);
 
         QueryPlanner planner = new QueryPlannerImpl(catalog);
@@ -104,12 +104,12 @@ public class QueryPlannerTest {
 
             @Override
             public List<String> getProjectionColumnNames() {
-                return ImmutableList.of("t1_narf");
+                return ImmutableList.of("t2_narf");
             }
 
             @Override
             public List<String> getWhereClauses() {
-                return ImmutableList.of("t1_narf = 'void'");
+                return ImmutableList.of("t2_narf = 'void'");
             }
 
             @Override
