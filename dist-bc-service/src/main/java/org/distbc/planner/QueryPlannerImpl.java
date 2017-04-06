@@ -84,7 +84,8 @@ class QueryPlannerImpl implements QueryPlanner {
         // get all where clauses that are interesting for the table in question
         // convert the tree into a series of strings
         // selections with literals only
-        return new Selection(bos);
+//        return new Selection(bos);
+        return null;
     }
 
     private QueryPlanSwimLane generateJoinForSwimLanes(QueryPlanSwimLane sl1, QueryPlanSwimLane sl2, ParsingResult parsingResult) {
