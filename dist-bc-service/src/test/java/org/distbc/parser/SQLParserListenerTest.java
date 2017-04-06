@@ -20,8 +20,8 @@ public class SQLParserListenerTest {
         String input = "select * from narf";
         SQLParserListener listener = parse(input);
 
-        assertEquals(1, listener.getColumnNames().size());
-        assertEquals("*", listener.getColumnNames().get(0));
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("*", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
         assertEquals("narf", listener.getTableNames().get(0));
     }
@@ -31,9 +31,9 @@ public class SQLParserListenerTest {
         String input = "select col1, col2,col3 , col4 from narf";
         SQLParserListener listener = parse(input);
 
-        assertEquals(4, listener.getColumnNames().size());
-        for (int i = 0; i < listener.getColumnNames().size(); i++) {
-            assertEquals("col" + (i + 1), listener.getColumnNames().get(i));
+        assertEquals(4, listener.getProjectionColumnNames().size());
+        for (int i = 0; i < listener.getProjectionColumnNames().size(); i++) {
+            assertEquals("col" + (i + 1), listener.getProjectionColumnNames().get(i));
         }
         assertEquals(1, listener.getTableNames().size());
         assertEquals("narf", listener.getTableNames().get(0));
@@ -44,8 +44,8 @@ public class SQLParserListenerTest {
         String input = "select col from tab1,tab2, tab3 , tab4";
         SQLParserListener listener = parse(input);
 
-        assertEquals(1, listener.getColumnNames().size());
-        assertEquals("col", listener.getColumnNames().get(0));
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(4, listener.getTableNames().size());
         for (int i = 0; i < listener.getTableNames().size(); i++) {
             assertEquals("tab" + (i + 1), listener.getTableNames().get(i));
@@ -57,8 +57,8 @@ public class SQLParserListenerTest {
         String input = "select col from tab1 where col2 = 13";
         SQLParserListener listener = parse(input);
 
-        assertEquals(1, listener.getColumnNames().size());
-        assertEquals("col", listener.getColumnNames().get(0));
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
         assertEquals(1, listener.getWhereClauses().size());
         assertEquals("col2=13", listener.getWhereClauses().get(0));
