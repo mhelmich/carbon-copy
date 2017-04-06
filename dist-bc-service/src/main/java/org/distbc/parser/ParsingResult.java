@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface ParsingResult {
     List<String> getTableNames();
-    List<String> getColumnNames();
+    List<String> getProjectionColumnNames();
     List<String> getWhereClauses();
     List<String> getJoinClauses();
 }

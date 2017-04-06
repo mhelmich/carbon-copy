@@ -9,22 +9,22 @@ import java.util.List;
 class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     private List<String> tableNames = new ArrayList<>();
-    private List<String> columnNames = new ArrayList<>();
+    private List<String> projectionColumnNames = new ArrayList<>();
     private List<String> whereClauses = new ArrayList<>();
     private List<String> joinClauses = new ArrayList<>();
 
     @Override
-    public void enterTable_name(SQLParser.Table_nameContext ctx) {
+    public void exitTable_name(SQLParser.Table_nameContext ctx) {
         tableNames.add(ctx.getText());
     }
 
     @Override
-    public void enterColumn_name(SQLParser.Column_nameContext ctx) {
-        columnNames.add(ctx.getText());
+    public void exitColumn_name(SQLParser.Column_nameContext ctx) {
+        projectionColumnNames.add(ctx.getText());
     }
 
     @Override
-    public void enterSimple_expression(SQLParser.Simple_expressionContext ctx) {
+    public void exitSimple_expression(SQLParser.Simple_expressionContext ctx) {
         whereClauses.add(ctx.getText());
     }
 
@@ -34,8 +34,8 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
-    public List<String> getColumnNames() {
-        return columnNames;
+    public List<String> getProjectionColumnNames() {
+        return projectionColumnNames;
     }
 
     @Override
