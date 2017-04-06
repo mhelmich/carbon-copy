@@ -17,6 +17,10 @@ import java.util.stream.Collectors;
  * query plans (swim lanes) that merge together at some point.
  * Therefore, it starts looking at every table independently and tries to figure out how it can mutate each table.
  * At some point two of these swim lanes merge and become one.
+ *
+ * Limitations:
+ *    - column names need to be unique
+ *    - only lower case keywords
  */
 class QueryPlannerImpl implements QueryPlanner {
 
@@ -67,11 +71,20 @@ class QueryPlannerImpl implements QueryPlanner {
     }
 
     private Operation generateProjectionForTable(Table table, ParsingResult parsingResult) {
-        return new Projection(parsingResult.getColumnNames(), table.getColumnNames());
+        return new Projection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
     }
 
     private Operation generateSelectionForTable(Table table, ParsingResult parsingResult) {
-        return null;
+        List<String> columnsOnTable = table.getColumnNames();
+//        List<String> allWhereClauses = parsingResult.getWhereClauses();
+        List<ParsingResult.BinaryOperation> bos = parsingResult.getBinaryOperations();
+        bos = bos.stream()
+                .filter(bo -> columnsOnTable.indexOf(bo.operand1) >= 0)
+                .collect(Collectors.toList());
+        // get all where clauses that are interesting for the table in question
+        // convert the tree into a series of strings
+        // selections with literals only
+        return new Selection(bos);
     }
 
     private QueryPlanSwimLane generateJoinForSwimLanes(QueryPlanSwimLane sl1, QueryPlanSwimLane sl2, ParsingResult parsingResult) {
