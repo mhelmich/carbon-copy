@@ -80,7 +80,7 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
     public Set<Object> query(String query) {
         ParsingResult pr = queryParser.parse(query);
         logger.info("All the tables I want to access: {}", StringUtils.join(", ", pr.getTableNames()));
-        logger.info("All the columns I want to access: {}", StringUtils.join(", ", pr.getColumnNames()));
+        logger.info("All the columns I want to access: {}", StringUtils.join(", ", pr.getProjectionColumnNames()));
         Set<Tuple> tuples = queryPlanner.generateQueryPlan(pr).execute();
         logger.info("#tuples {}", tuples.size());
         return Collections.emptySet();
