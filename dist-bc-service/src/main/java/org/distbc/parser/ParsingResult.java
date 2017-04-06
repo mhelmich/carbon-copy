@@ -20,9 +20,9 @@ public interface ParsingResult {
     }
 
     class BinaryOperation {
-        final String operand1;
-        final String operand2;
-        final String operation;
+        public final String operand1;
+        public final String operand2;
+        public final String operation;
 
         BinaryOperation(String operand1, String operation, String operand2) {
             this.operand1 = operand1;
