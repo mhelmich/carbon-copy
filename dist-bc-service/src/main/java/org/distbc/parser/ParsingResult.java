@@ -7,4 +7,27 @@ public interface ParsingResult {
     List<String> getProjectionColumnNames();
     List<String> getWhereClauses();
     List<String> getJoinClauses();
+    List<BinaryOperation> getBinaryOperations();
+
+    class UnaryOperation {
+        final String operand1;
+        final String operation;
+
+        UnaryOperation(String operand1, String operation) {
+            this.operand1 = operand1;
+            this.operation = operation;
+        }
+    }
+
+    class BinaryOperation {
+        final String operand1;
+        final String operand2;
+        final String operation;
+
+        BinaryOperation(String operand1, String operation, String operand2) {
+            this.operand1 = operand1;
+            this.operand2 = operand2;
+            this.operation = operation;
+        }
+    }
 }

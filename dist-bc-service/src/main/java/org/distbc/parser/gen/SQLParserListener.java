@@ -70,6 +70,16 @@ public interface SQLParserListener extends ParseTreeListener {
 	 */
 	void exitColumn_name(SQLParser.Column_nameContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SQLParser#column_name_in_where_clause}.
+	 * @param ctx the parse tree
+	 */
+	void enterColumn_name_in_where_clause(SQLParser.Column_name_in_where_clauseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SQLParser#column_name_in_where_clause}.
+	 * @param ctx the parse tree
+	 */
+	void exitColumn_name_in_where_clause(SQLParser.Column_name_in_where_clauseContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SQLParser#column_name_alias}.
 	 * @param ctx the parse tree
 	 */
