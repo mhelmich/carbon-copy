@@ -90,6 +90,18 @@ public class SQLParserBaseListener implements SQLParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterColumn_name_in_where_clause(SQLParser.Column_name_in_where_clauseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitColumn_name_in_where_clause(SQLParser.Column_name_in_where_clauseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterColumn_name_alias(SQLParser.Column_name_aliasContext ctx) { }
 	/**
 	 * {@inheritDoc}

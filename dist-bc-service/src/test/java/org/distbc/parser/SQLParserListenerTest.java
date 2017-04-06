@@ -86,6 +86,33 @@ public class SQLParserListenerTest {
         assertEquals("col2=\"string\"", listener.getWhereClauses().get(0));
     }
 
+    @Test
+    public void testBinaryOperations() {
+        SQLParserListener listener = parse("select col from tab1 where col2 = 13");
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(1, listener.getTableNames().size());
+        assertEquals(1, listener.getWhereClauses().size());
+        assertEquals("col2=13", listener.getWhereClauses().get(0));
+        assertEquals(1, listener.getBinaryOperations().size());
+        ParsingResult.BinaryOperation bo = listener.getBinaryOperations().get(0);
+        assertEquals("col2", bo.operand1);
+        assertEquals("=", bo.operation);
+        assertEquals("13", bo.operand2);
+
+        listener = parse("select col from tab1 where 13 = col2");
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(1, listener.getTableNames().size());
+        assertEquals(1, listener.getWhereClauses().size());
+        assertEquals("13=col2", listener.getWhereClauses().get(0));
+        assertEquals(1, listener.getBinaryOperations().size());
+        bo = listener.getBinaryOperations().get(0);
+        assertEquals("col2", bo.operand1);
+        assertEquals("=", bo.operation);
+        assertEquals("13", bo.operand2);
+    }
+
     private SQLParserListener parse(String query) {
         CharStream stream = new ANTLRInputStream(query);
         SQLLexer lex = new SQLLexer(stream);

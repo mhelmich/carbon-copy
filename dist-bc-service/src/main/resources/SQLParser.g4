@@ -32,6 +32,10 @@ column_name
    : ( ( schema_name DOT )? ID DOT )? ID ( column_name_alias )? | ( table_alias DOT )? ID | USER_VAR ( column_name_alias )? | ASTERISK
    ;
 
+column_name_in_where_clause
+   : ( ( schema_name DOT )? ID DOT )? ID ( column_name_alias )? | ( table_alias DOT )? ID | USER_VAR ( column_name_alias )? | ASTERISK
+   ;
+
 column_name_alias
    : ID
    ;
@@ -57,7 +61,7 @@ expression
    ;
 
 element
-   : literal_value | USER_VAR | ID | ( '|' ID '|' ) | INT | column_name
+   : literal_value | column_name_in_where_clause | USER_VAR | ( '|' ID '|' )
    ;
 
 literal_value
@@ -93,7 +97,9 @@ is_or_is_not
    ;
 
 simple_expression
-   : left_element relational_op right_element | target_element between_op left_element AND right_element | target_element is_or_is_not NULL
+   : left_element relational_op right_element
+   | target_element between_op left_element AND right_element
+   | target_element is_or_is_not NULL
    ;
 
 table_references
@@ -101,7 +107,8 @@ table_references
    ;
 
 table_reference
-   : table_factor1 | table_atom
+   : table_factor1
+   | table_atom
    ;
 
 table_factor1
