@@ -1,6 +1,7 @@
 package org.distbc.planner;
 
 import org.distbc.data.structures.Queryable;
+import org.distbc.data.structures.TempTable;
 import org.distbc.data.structures.Tuple;
 
 import java.util.Collections;

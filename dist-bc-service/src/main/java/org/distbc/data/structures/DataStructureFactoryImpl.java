@@ -111,4 +111,14 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
     public Index loadIndexForWrites(long id, Txn txn) {
         return new Index(store, this, id, txn);
     }
+
+    @Override
+    public TempTable newTempTableFromTable(Table table, Txn txn) {
+        return new TempTable(store, this, table, txn);
+    }
+
+    @Override
+    public TempTable loadTempTableFromId(long id, Txn txn) {
+        return new TempTable(store, this, id, txn);
+    }
 }
