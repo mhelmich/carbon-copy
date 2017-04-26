@@ -1,11 +1,9 @@
 package org.distbc.planner;
 
-import org.distbc.data.structures.Queryable;
-import org.distbc.data.structures.Tuple;
+import org.distbc.data.structures.TempTable;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 class Projection implements Operation {
     private final List<String> columnNamesToProjectTo;
@@ -17,10 +15,10 @@ class Projection implements Operation {
     }
 
     @Override
-    public Queryable apply(Queryable queryable) {
+    public TempTable apply(TempTable tempTable) {
         List<Integer> indexesToFilerOn = new LinkedList<>();
         columnNamesToProjectTo.forEach(columnName -> indexesToFilerOn.add(columnsAvailableInTuple.indexOf(columnName)));
-        Set<Tuple> tuples = queryable.project(tuple -> tuple.subTuple(indexesToFilerOn));
-        return new TempTable(tuples);
+//        tempTable.project(tuple -> tuple.subTuple(indexesToFilerOn));
+        return tempTable;
     }
 }

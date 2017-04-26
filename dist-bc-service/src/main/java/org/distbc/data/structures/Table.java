@@ -3,35 +3,27 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class Table extends TopLevelDataStructure implements Queryable {
-    private final InternalDataStructureFactory dsFactory;
     // this data holds all the data
     private ChainingHash<GUID, Tuple> data;
-    // this data holds all column names to index
-    private ChainingHash<String, Tuple> columnMetadata;
 
     private Table(Store store, InternalDataStructureFactory dsFactory, Txn txn, String dsName) {
-        super(store, dsName);
-        this.dsFactory = dsFactory;
+        super(store, dsFactory, txn, dsName);
         // create new data
         data = dsFactory.newChainingHash(txn);
-        columnMetadata = dsFactory.newChainingHash(txn);
         txn.addToChangedObjects(data);
-        txn.addToChangedObjects(columnMetadata);
         // wait for it to be upserted and
         // have an id
         data.checkDataStructureRetrieved();
-        columnMetadata.checkDataStructureRetrieved();
         addObjectToObjectSize(data.getId());
-        addObjectToObjectSize(columnMetadata.getId());
         // only then upsert yourself
         asyncUpsert(txn);
     }
@@ -42,14 +34,12 @@ public class Table extends TopLevelDataStructure implements Queryable {
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, long id) {
-        super(store, id);
-        this.dsFactory = dsFactory;
+        super(store, dsFactory, id);
         asyncLoadForReads();
     }
 
     Table(Store store, InternalDataStructureFactory dsFactory, long id, Txn txn) {
-        super(store, id);
-        this.dsFactory = dsFactory;
+        super(store, dsFactory, id);
         asyncLoadForWrites(txn);
     }
 
@@ -60,27 +50,18 @@ public class Table extends TopLevelDataStructure implements Queryable {
         return tuple.getGuid();
     }
 
-    private void verifyDataColumnTypes(Tuple dataTuple) {
-        for (String columnName : columnMetadata.keys()) {
-            Tuple metadataTuple = columnMetadata.get(columnName);
-            Integer idx = (Integer) metadataTuple.get(1);
-            String klassName = (String) metadataTuple.get(2);
-            Class klass;
-            try {
-                klass = Class.forName(klassName);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException(e);
-            }
-            if (!klass.equals(dataTuple.get(idx).getClass())) {
-                throw new IllegalArgumentException();
-            }
-        }
+    public Stream<GUID> keys() {
+        return StreamSupport.stream(data.keys().spliterator(), false);
     }
 
     public Tuple get(GUID guid) {
-        checkDataStructureRetrieved();
-        Tuple t = data.get(guid);
+        Tuple t = getMutable(guid);
         return (t != null) ? t.immutableCopy() : null;
+    }
+
+    Tuple getMutable(GUID guid) {
+        checkDataStructureRetrieved();
+        return data.get(guid);
     }
 
     @Override
@@ -114,43 +95,6 @@ public class Table extends TopLevelDataStructure implements Queryable {
                 .map(guid -> data.get(guid))
                 .map(projection)
                 .collect(Collectors.toSet());
-    }
-
-    @Override
-    public List<String> getColumnNames() {
-        return StreamSupport.stream(columnMetadata.keys().spliterator(), false)
-                .map(cn -> columnMetadata.get(cn))
-                .sorted(Comparator.comparingInt(o -> (Integer) o.get(1)))
-                .map(t -> (String) t.get(0))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Tuple structure:
-     *  | index | description              | type     |
-     *  |-------+--------------------------+----------|
-     *  |  0    | column name              | String   |
-     *  |  1    | index of column in table | Int      |
-     *  |  2    | data type name of column | String   |
-     */
-    private void addColumns(Txn txn, Tuple... columns) {
-        checkDataStructureRetrieved();
-        for (Tuple column : columns) {
-            verifyAddColumnTypes(column);
-            column.put(0, column.get(0).toString().toUpperCase());
-            this.columnMetadata.put(column.get(0).toString().toUpperCase(), column, txn);
-        }
-    }
-
-    private void verifyAddColumnTypes(Tuple tuple) {
-        if (
-                    tuple.getTupleSize() != 3
-                || !String.class.equals(tuple.get(0).getClass())
-                || !Integer.class.equals(tuple.get(1).getClass())
-                || !String.class.equals(tuple.get(2).getClass())
-            ) {
-            throw new IllegalArgumentException();
-        }
     }
 
     public static class Builder {
@@ -194,9 +138,8 @@ public class Table extends TopLevelDataStructure implements Queryable {
     @Override
     void serialize(SerializerOutputStream out) {
         super.serialize(out);
-        if (data != null && columnMetadata != null) {
+        if (data != null) {
             out.writeObject(data.getId());
-            out.writeObject(columnMetadata.getId());
         }
     }
 
@@ -205,7 +148,5 @@ public class Table extends TopLevelDataStructure implements Queryable {
         super.deserialize(in);
         Long tmp = (Long) in.readObject();
         data = dsFactory.loadChainingHash(tmp);
-        tmp = (Long) in.readObject();
-        columnMetadata = dsFactory.loadChainingHash(tmp);
     }
 }

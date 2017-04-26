@@ -2,10 +2,15 @@ package org.distbc.planner;
 
 import com.google.inject.Inject;
 import org.distbc.data.structures.Catalog;
+import org.distbc.data.structures.DataStructureFactory;
 import org.distbc.data.structures.Table;
+import org.distbc.data.structures.TempTable;
 import org.distbc.data.structures.TopLevelDataStructure;
+import org.distbc.data.structures.Txn;
+import org.distbc.data.structures.TxnManager;
 import org.distbc.parser.ParsingResult;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -25,10 +30,14 @@ import java.util.stream.Collectors;
 class QueryPlannerImpl implements QueryPlanner {
 
     private final Catalog catalog;
+    private final DataStructureFactory dsFactory;
+    private final TxnManager txnManager;
 
     @Inject
-    QueryPlannerImpl(Catalog catalog) {
+    QueryPlannerImpl(Catalog catalog, DataStructureFactory dsFactory, TxnManager txnManager) {
         this.catalog = catalog;
+        this.dsFactory = dsFactory;
+        this.txnManager = txnManager;
     }
 
     @Override
@@ -36,18 +45,28 @@ class QueryPlannerImpl implements QueryPlanner {
         List<Table> tables = orderTablesInExecutionOrder(parsingResult);
         Map<String, QueryPlanSwimLane> tableNameToSwimLand = new HashMap<>(tables.size());
         QueryPlanImpl qp = new QueryPlanImpl();
+        Txn txn = txnManager.beginTransaction();
 
-        tables.forEach(table -> {
-            QueryPlanSwimLane sl = new QueryPlanSwimLane(table);
-            // figure out projections first
-            sl.addOperation(generateProjectionForTable(table, parsingResult));
-            // then do selections
-            if (parsingResult.getWhereClauses().size() > 0) {
-                sl.addOperation(generateSelectionForTable(table, parsingResult));
+        try {
+            try {
+                tables.forEach(table -> {
+                    TempTable tt = dsFactory.newTempTableFromTable(table, txn);
+                    QueryPlanSwimLane sl = new QueryPlanSwimLane(tt);
+                    // figure out projections first
+                    sl.addOperation(generateProjectionForTable(table, parsingResult));
+                    // then do selections
+                    if (parsingResult.getWhereClauses().size() > 0) {
+                        sl.addOperation(generateSelectionForTable(table, parsingResult));
+                    }
+                    qp.addSwimLane(sl);
+                    tableNameToSwimLand.put(table.getName(), sl);
+                });
+            } finally {
+                txn.commit();
             }
-            qp.addSwimLane(sl);
-            tableNameToSwimLand.put(table.getName(), sl);
-        });
+        } catch (IOException xcp) {
+            throw new RuntimeException(xcp);
+        }
 
         // each of these swim lanes can be kicked off already
         // but we don't do that...

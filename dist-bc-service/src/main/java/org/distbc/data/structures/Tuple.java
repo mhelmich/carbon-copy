@@ -103,8 +103,25 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
             }
         }
 
-        // this happens when all items of a tuple are null
+        // this happens when all items of a tuple are equal...or null
         return 0;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (!Tuple.class.isAssignableFrom(other.getClass())) return false;
+        Tuple o = (Tuple) other;
+        return compareTo(o) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        for (int i = 0; i < tupleSize; i++) {
+            hash += 51 * (data.get(i) != null ? data.get(i).hashCode() : 0);
+        }
+        return hash;
     }
 
     @Override

@@ -8,4 +8,7 @@ public interface DataStructureFactory {
     Index newIndex(Index.Builder builder, Txn txn);
     Index loadIndex(long id);
     Index loadIndexForWrites(long id, Txn txn);
+
+    TempTable newTempTableFromTable(Table table, Txn txn);
+    TempTable loadTempTableFromId(long id, Txn txn);
 }
