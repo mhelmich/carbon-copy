@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -55,6 +56,53 @@ public class GalaxyTempTableTest {
         });
 
         assertEquals(3, i.get());
+    }
+
+    @Test
+    public void testRemoveColumnNames() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        txn = txnManager.beginTransaction();
+        tt.removeColumnWithName("foo".toUpperCase(), txn);
+        txn.commit();
+
+        List<Tuple> columns = tt.getColumnMetadata();
+        assertEquals(2, columns.size());
+        assertEquals("tup_num".toUpperCase(), columns.get(0).get(0));
+        assertEquals("moep".toUpperCase(), columns.get(1).get(0));
+    }
+
+    @Test
+    public void testSaveLoad() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        txn = txnManager.beginTransaction();
+        TempTable tt2 = dsFactory.loadTempTableFromId(tt.getId(), txn);
+        txn.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys()
+                .forEach(guid -> {
+                    assertNotNull(tt2.get(guid));
+                    i.getAndAdd(1);
+                });
+
+        assertEquals(3, i.get());
+
+        AtomicInteger i2 = new AtomicInteger(0);
+        tt2.keys()
+                .forEach(guid -> {
+                    assertNotNull(tt.get(guid));
+                    i2.getAndAdd(1);
+                });
+
+        assertEquals(3, i2.get());
     }
 
     private Table createDummyTable() throws IOException {
