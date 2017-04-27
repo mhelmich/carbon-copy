@@ -27,9 +27,11 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
@@ -73,6 +75,33 @@ public class GalaxyTempTableTest {
         assertEquals(2, columns.size());
         assertEquals("tup_num".toUpperCase(), columns.get(0).get(0));
         assertEquals("moep".toUpperCase(), columns.get(1).get(0));
+    }
+
+    @Test
+    public void testDelete() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        txn = txnManager.beginTransaction();
+        List<GUID> keys = tt.keys().collect(Collectors.toList());
+        tt.delete(keys.get(1), txn);
+        txn.commit();
+
+        keys.remove(1);
+
+        txn = txnManager.beginTransaction();
+        TempTable tt2 = dsFactory.loadTempTableFromId(tt.getId(), txn);
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt2.keys()
+                .forEach(guid -> {
+                    assertTrue(keys.contains(guid));
+                    i.getAndAdd(1);
+                });
+
+        assertEquals(2, i.get());
     }
 
     @Test
