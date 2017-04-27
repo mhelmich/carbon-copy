@@ -1,8 +1,8 @@
 package org.distbc.planner;
 
 import org.distbc.data.structures.TempTable;
+import org.distbc.data.structures.Txn;
 
-import java.util.function.Function;
-
-interface Operation extends Function<TempTable, TempTable> {
+interface Operation {
+    TempTable apply(TempTable tempTable, Txn txn);
 }

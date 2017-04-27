@@ -75,11 +75,6 @@ public class TempTable extends TopLevelDataStructure {
 //                .forEach(guid -> insert(indexToWrap.getMutable(guid), txn));
 //    }
 
-    @Override
-    public List<String> getColumnNames() {
-        return null;
-    }
-
     public void insert(Tuple tuple, Txn txn) {
         checkDataStructureRetrieved();
         verifyDataColumnTypes(tuple);
@@ -95,6 +90,22 @@ public class TempTable extends TopLevelDataStructure {
         checkDataStructureRetrieved();
         Tuple t = data.get(guid);
         return (t != null) ? t.immutableCopy() : null;
+    }
+
+    public void removeColumnWithName(String columnName, Txn txn) {
+        List<String> allColumnNames = getColumnNames();
+        int idx = allColumnNames.indexOf(columnName);
+        if (idx >= 0) {
+            idx++;
+            while (idx < allColumnNames.size()) {
+                Tuple metadata = getColumnMetadataByColumnName(allColumnNames.get(idx));
+                metadata.put(1, ((Integer)metadata.get(1) - 1));
+                columnMetadata.put(columnName, metadata, txn);
+                idx++;
+            }
+        }
+
+        columnMetadata.delete(columnName, txn);
     }
 
     /////////////////////////////////////////////////////////////

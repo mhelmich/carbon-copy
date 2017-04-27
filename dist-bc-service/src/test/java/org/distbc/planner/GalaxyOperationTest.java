@@ -1,20 +1,29 @@
-package org.distbc.data.structures;
+package org.distbc.planner;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
+import org.distbc.data.structures.DataStructureModule;
+import org.distbc.data.structures.InternalDataStructureFactory;
+import org.distbc.data.structures.Table;
+import org.distbc.data.structures.TempTable;
+import org.distbc.data.structures.Tuple;
+import org.distbc.data.structures.Txn;
+import org.distbc.data.structures.TxnManager;
+import org.distbc.data.structures.TxnManagerModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class GalaxyTempTableTest {
+public class GalaxyOperationTest {
     @Inject
     private InternalDataStructureFactory dsFactory;
 
@@ -22,21 +31,22 @@ public class GalaxyTempTableTest {
     private TxnManager txnManager;
 
     @Test
-    public void testBasic() throws IOException {
+    public void testProjection() throws IOException {
         Table t = createDummyTable();
         Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
+        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
         txn.commit();
 
-        AtomicInteger i = new AtomicInteger(0);
+        Projection p = new Projection(ImmutableList.of("tup_num".toUpperCase(), "foo".toUpperCase()), ttOld.getColumnNames());
+        Txn txn2 = txnManager.beginTransaction();
+        TempTable tt = p.apply(ttOld, txn2);
+        txn2.commit();
+
         t.keys().forEach(guid -> {
             assertNotNull(tt.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
-            i.getAndAdd(1);
+            assertNotEquals(t.get(guid), tt.get(guid));
         });
-
-        assertEquals(3, i.get());
     }
 
     private Table createDummyTable() throws IOException {

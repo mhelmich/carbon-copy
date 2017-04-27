@@ -33,7 +33,7 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
         this.tupleSize = tupleSize;
     }
 
-    Tuple(int size) {
+    public Tuple(int size) {
         tupleSize = size;
         Vector<Comparable> v = new Vector<>(tupleSize);
         v.setSize(tupleSize);
@@ -64,19 +64,19 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
 
     Tuple subTuple(int from, int to) {
         int size = to - from;
-        Tuple newTuple = new Tuple(size);
-        for (int i = 0; i < size; i++) {
-            newTuple.put(i, data.get(i + from));
+        ArrayList<Comparable> newData = new ArrayList<>(size);
+        for (int i = from; i < to; i++) {
+            newData.add(data.get(i));
         }
-        return newTuple;
+        return new Tuple(guid, newData, size);
     }
 
     public Tuple subTuple(List<Integer> indexes) {
-        Tuple t = new Tuple(indexes.size());
-        for (int i = 0; i < indexes.size(); i++) {
-            t.put(i, data.get(indexes.get(i)));
+        ArrayList<Comparable> newData = new ArrayList<>(indexes.size());
+        for (Integer index : indexes) {
+            newData.add(data.get(index));
         }
-        return t;
+        return new Tuple(guid, newData, indexes.size());
     }
 
     Tuple immutableCopy() {
