@@ -99,6 +99,11 @@ public class TempTable extends TopLevelDataStructure {
         data.put(tuple.getGuid(), tuple, txn);
     }
 
+    public void delete(GUID guid, Txn txn) {
+        checkDataStructureRetrieved();
+        data.delete(guid, txn);
+    }
+
     public Stream<GUID> keys() {
         checkDataStructureRetrieved();
         return StreamSupport.stream(data.keys().spliterator(), false);
