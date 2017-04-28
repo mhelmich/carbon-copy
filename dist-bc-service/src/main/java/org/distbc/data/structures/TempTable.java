@@ -65,33 +65,32 @@ public class TempTable extends TopLevelDataStructure {
         tableToWrap.getColumnNames().stream()
                 .map(tableToWrap::getColumnMetadataByColumnName)
                 .forEach(tuple -> addColumns(txn, tuple));
-        // this copies the data which is hugely inefficient but good for now
+        // TODO -- this copies the data which is hugely inefficient but good for now
         tableToWrap.keys()
                 .forEach(guid -> insert(tableToWrap.getMutable(guid), txn));
     }
 
-//    TempTable(Store store, InternalDataStructureFactory dsFactory, Index indexToWrap, Txn txn) {
-//        super(store, dsFactory, txn, "temp_" + indexToWrap.getId() + "_" + UUID.randomUUID().toString());
-//        // create new data
-//        data = dsFactory.newChainingHash(txn);
-//        txn.addToChangedObjects(data);
-//        // wait for it to be upserted and
-//        // have an id
-//        data.checkDataStructureRetrieved();
-//        addObjectToObjectSize(data.getId());
-//        // only then upsert yourself
-//        asyncUpsert(txn);
-//        checkDataStructureRetrieved();
-//        // make a copy of the underlying table...for now
-//        // this adds all columns of the original table in the temp table
-//        indexToWrap.getColumnNames().stream()
-//                .map(indexToWrap::getColumnMetadataByColumnName)
-//                .forEach(tuple -> addColumns(txn, tuple));
-//        // TODO
-//        // this copies the data which is hugely inefficient but good for now
-//        indexToWrap.keys()
-//                .forEach(guid -> insert(indexToWrap.getMutable(guid), txn));
-//    }
+    TempTable(Store store, InternalDataStructureFactory dsFactory, Index indexToWrap, Txn txn) {
+        super(store, dsFactory, txn, "temp_" + indexToWrap.getId() + "_" + UUID.randomUUID().toString());
+        // create new data
+        data = dsFactory.newChainingHash(txn);
+        txn.addToChangedObjects(data);
+        // wait for it to be upserted and
+        // have an id
+        data.checkDataStructureRetrieved();
+        addObjectToObjectSize(data.getId());
+        // only then upsert yourself
+        asyncUpsert(txn);
+        checkDataStructureRetrieved();
+        // make a copy of the underlying table...for now
+        // this adds all columns of the original table in the temp table
+        indexToWrap.getColumnNames().stream()
+                .map(indexToWrap::getColumnMetadataByColumnName)
+                .forEach(tuple -> addColumns(txn, tuple));
+        // TODO -- this copies the data which is hugely inefficient but good for now
+        indexToWrap.keys()
+                .forEach(tuple -> insert(tuple, txn));
+    }
 
     public void insert(Tuple tuple, Txn txn) {
         checkDataStructureRetrieved();

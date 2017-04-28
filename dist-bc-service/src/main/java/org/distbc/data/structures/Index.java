@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class Index extends TopLevelDataStructure implements Queryable {
     // this tree holds the index data
@@ -72,6 +74,10 @@ public class Index extends TopLevelDataStructure implements Queryable {
         verifyDataColumnTypes(fromTuple);
         verifyDataColumnTypes(toTuple);
         return bTree.get(fromTuple, toTuple);
+    }
+
+    public Stream<Tuple> keys() {
+        return StreamSupport.stream(bTree.keys().spliterator(), false);
     }
 
     @Override
