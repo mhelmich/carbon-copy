@@ -94,6 +94,81 @@ public class GalaxyOperationTest {
         assertEquals(2, i.get());
     }
 
+    @Test
+    public void testSelection2() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        Selection s = new Selection(ImmutableList.of(
+                new ParsingResult.BinaryOperation("moep", "=", "__moep__")
+        ));
+        Txn txn2 = txnManager.beginTransaction();
+        TempTable tt = s.apply(ttOld, txn2);
+        txn2.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys().forEach(guid -> {
+            assertNotNull(t.get(guid));
+            assertEquals(guid, tt.get(guid).getGuid());
+            assertEquals(t.get(guid), tt.get(guid));
+            i.getAndAdd(1);
+        });
+
+        assertEquals(1, i.get());
+    }
+
+    @Test
+    public void testSelection3() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        Selection s = new Selection(ImmutableList.of(
+                new ParsingResult.BinaryOperation("tup_num", "=", "tup3_narf")
+        ));
+        Txn txn2 = txnManager.beginTransaction();
+        TempTable tt = s.apply(ttOld, txn2);
+        txn2.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys().forEach(guid -> {
+            assertNotNull(t.get(guid));
+            assertEquals(guid, tt.get(guid).getGuid());
+            assertEquals(t.get(guid), tt.get(guid));
+            i.getAndAdd(1);
+        });
+
+        assertEquals(1, i.get());
+    }
+
+    @Test
+    public void testSelection4() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        Selection s = new Selection(ImmutableList.of(
+                new ParsingResult.BinaryOperation("tup_num", "<=", "tup3_narf")
+        ));
+        Txn txn2 = txnManager.beginTransaction();
+        TempTable tt = s.apply(ttOld, txn2);
+        txn2.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys().forEach(guid -> {
+            assertNotNull(t.get(guid));
+            assertEquals(guid, tt.get(guid).getGuid());
+            assertEquals(t.get(guid), tt.get(guid));
+            i.getAndAdd(1);
+        });
+
+        assertEquals(3, i.get());
+    }
+
     private Table createDummyTable() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
