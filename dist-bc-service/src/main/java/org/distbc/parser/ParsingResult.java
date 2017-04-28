@@ -42,7 +42,7 @@ public interface ParsingResult {
         public final String operand2;
         public final String operation;
 
-        BinaryOperation(String operand1, String operation, String operand2) {
+        public BinaryOperation(String operand1, String operation, String operand2) {
             this.operand1 = operand1;
             this.operand2 = operand2;
             this.operation = operation;

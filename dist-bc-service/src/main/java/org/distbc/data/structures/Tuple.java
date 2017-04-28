@@ -63,12 +63,12 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
         return guid;
     }
 
-    public Object get(int idx) {
+    public Comparable get(int idx) {
         return data.get(idx);
     }
 
     public void put(int idx, Comparable o) {
-        Object existingO = data.get(idx);
+        Comparable existingO = data.get(idx);
         if (existingO != null) {
             subtractObjectToObjectSize(existingO);
         }
