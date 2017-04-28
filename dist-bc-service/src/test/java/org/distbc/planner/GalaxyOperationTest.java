@@ -30,10 +30,12 @@ import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 import org.distbc.data.structures.TxnManagerModule;
+import org.distbc.parser.ParsingResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -65,6 +67,31 @@ public class GalaxyOperationTest {
             assertEquals(guid, tt.get(guid).getGuid());
             assertNotEquals(t.get(guid), tt.get(guid));
         });
+    }
+
+    @Test
+    public void testSelection() throws IOException {
+        Table t = createDummyTable();
+        Txn txn = txnManager.beginTransaction();
+        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
+        txn.commit();
+
+        Selection s = new Selection(ImmutableList.of(
+                new ParsingResult.BinaryOperation("moep", "=", "moep")
+        ));
+        Txn txn2 = txnManager.beginTransaction();
+        TempTable tt = s.apply(ttOld, txn2);
+        txn2.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys().forEach(guid -> {
+            assertNotNull(t.get(guid));
+            assertEquals(guid, tt.get(guid).getGuid());
+            assertEquals(t.get(guid), tt.get(guid));
+            i.getAndAdd(1);
+        });
+
+        assertEquals(2, i.get());
     }
 
     private Table createDummyTable() throws IOException {

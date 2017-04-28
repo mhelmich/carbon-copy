@@ -45,6 +45,7 @@ class Projection implements Operation {
         tmp.forEach(cn -> tempTable.removeColumnWithName(cn, txn));
 
         // remove columns out of data
+        // in the potentially most naive way known to human kind
         tempTable.keys()
                 .map(tempTable::get)
                 .map(tuple -> tuple.subTuple(indexesToFilerOn))
