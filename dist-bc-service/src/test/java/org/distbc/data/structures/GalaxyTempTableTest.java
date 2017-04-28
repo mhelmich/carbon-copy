@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -137,7 +138,7 @@ public class GalaxyTempTableTest {
     private Table createDummyTable() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis())
+        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis())
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
