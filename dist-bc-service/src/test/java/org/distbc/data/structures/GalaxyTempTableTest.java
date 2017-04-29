@@ -135,6 +135,29 @@ public class GalaxyTempTableTest {
         assertEquals(3, i2.get());
     }
 
+    @Test
+    public void testEmptyTable() throws IOException {
+        Txn txn = txnManager.beginTransaction();
+
+        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis())
+                .withColumn("tup_num", String.class)
+                .withColumn("moep", String.class)
+                .withColumn("foo", String.class);
+
+        Table table = dsFactory.newTable(tableBuilder, txn);
+        txn.commit();
+
+        txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTableFromTable(table, txn);
+        txn.commit();
+
+        AtomicInteger i = new AtomicInteger(0);
+        tt.keys()
+                .forEach(guid -> i.getAndAdd(1));
+
+        assertEquals(0, i.get());
+    }
+
     private Table createDummyTable() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
