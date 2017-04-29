@@ -140,4 +140,14 @@ public class GalaxyDataBlockTest {
         assertEquals(uuid2.toString(), db2.get(uuid2));
         assertEquals(uuid1.toString(), db2.get(uuid1));
     }
+
+    @Test
+    public void testEmpty() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        DataBlock<UUID, String> db = dsFactory.newDataBlock(t);
+        t.commit();
+
+        DataBlock<UUID, String> db2 = dsFactory.loadDataBlock(db.getId());
+        assertNull(db2.get(UUID.randomUUID()));
+    }
 }
