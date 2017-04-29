@@ -205,20 +205,26 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     public void read(ByteBuffer compressedBB) {
         ByteBuffer uncompressedBB;
-        try {
-            int uncompressedLength = Snappy.uncompressedLength(compressedBB);
-            uncompressedBB = ByteBuffer.allocateDirect(uncompressedLength);
-            Snappy.uncompress(compressedBB, uncompressedBB);
-        } catch (IOException xcp) {
-            throw new RuntimeException(xcp);
-        } catch (IllegalArgumentException xcp) {
-            throw new IllegalArgumentException("Uncompressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed!", xcp);
-        }
+        // snappy doesn't like it when you give it a ByteBuffer out of
+        // which it can't read data (aka remaining == 0)
+        // in that case we skip this code all together and don't call into
+        // deserialize of the data structure either
+        if (compressedBB.remaining() > 0) {
+            try {
+                int uncompressedLength = Snappy.uncompressedLength(compressedBB);
+                uncompressedBB = ByteBuffer.allocateDirect(uncompressedLength);
+                Snappy.uncompress(compressedBB, uncompressedBB);
+            } catch (IOException xcp) {
+                throw new RuntimeException(xcp);
+            } catch (IllegalArgumentException xcp) {
+                throw new IllegalArgumentException("Uncompressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed!", xcp);
+            }
 
-        try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
-            deserialize(in);
-        } catch (IOException xcp) {
-            throw new RuntimeException(xcp);
+            try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
+                deserialize(in);
+            } catch (IOException xcp) {
+                throw new RuntimeException(xcp);
+            }
         }
     }
 
