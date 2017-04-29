@@ -128,6 +128,15 @@ public abstract class TopLevelDataStructure extends DataStructure {
     }
 
     @Override
+    public String toString() {
+        return getName() + " - " + super.toString();
+    }
+
+    /////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // galaxy-specific serialization overrides
+
+    @Override
     void serialize(SerializerOutputStream out) {
         out.writeObject(name);
         out.writeObject(columnMetadata.getId());
