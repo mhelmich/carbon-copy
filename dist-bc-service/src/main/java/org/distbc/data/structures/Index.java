@@ -21,15 +21,11 @@ package org.distbc.data.structures;
 import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class Index extends TopLevelDataStructure implements Queryable {
+public class Index extends TopLevelDataStructure {
     // this tree holds the index data
     private BTree<Tuple, GUID> bTree;
 
@@ -78,21 +74,6 @@ public class Index extends TopLevelDataStructure implements Queryable {
 
     public Stream<Tuple> keys() {
         return StreamSupport.stream(bTree.keys().spliterator(), false);
-    }
-
-    @Override
-    public Set<Tuple> scan(Predicate<Tuple> predicate) {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Set<Tuple> project(Function<Tuple, Tuple> projection) {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
-        return Collections.emptySet();
     }
 
     public static class Builder {

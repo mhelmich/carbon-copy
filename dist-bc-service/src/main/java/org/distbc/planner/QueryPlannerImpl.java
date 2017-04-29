@@ -71,10 +71,10 @@ class QueryPlannerImpl implements QueryPlanner {
                     TempTable tt = dsFactory.newTempTableFromTable(table, txn);
                     QueryPlanSwimLane sl = new QueryPlanSwimLane(tt);
                     // figure out projections first
-                    sl.addOperation(generateProjectionForTable(table, parsingResult));
+                    sl.addOperation(generateProjectionForTable(tt, parsingResult));
                     // then do selections
                     if (parsingResult.getWhereClauses().size() > 0) {
-                        sl.addOperation(generateSelectionForTable(table, parsingResult));
+                        sl.addOperation(generateSelectionForTable(tt, parsingResult));
                     }
                     qp.addSwimLane(sl);
                     tableNameToSwimLand.put(table.getName(), sl);
@@ -107,11 +107,11 @@ class QueryPlannerImpl implements QueryPlanner {
                 .collect(Collectors.toList());
     }
 
-    private Operation generateProjectionForTable(Table table, ParsingResult parsingResult) {
+    private Operation generateProjectionForTable(TempTable table, ParsingResult parsingResult) {
         return new Projection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
     }
 
-    private Operation generateSelectionForTable(Table table, ParsingResult parsingResult) {
+    private Operation generateSelectionForTable(TempTable table, ParsingResult parsingResult) {
         List<String> columnsOnTable = table.getColumnNames();
 //        List<String> allWhereClauses = parsingResult.getWhereClauses();
         List<ParsingResult.BinaryOperation> bos = parsingResult.getBinaryOperations();
