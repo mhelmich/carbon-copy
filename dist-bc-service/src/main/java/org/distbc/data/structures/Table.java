@@ -22,14 +22,10 @@ import co.paralleluniverse.galaxy.Store;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class Table extends TopLevelDataStructure implements Queryable {
+public class Table extends TopLevelDataStructure {
     // this data holds all the data
     private ChainingHash<GUID, Tuple> data;
 
@@ -82,38 +78,38 @@ public class Table extends TopLevelDataStructure implements Queryable {
         return data.get(guid);
     }
 
-    @Override
-    public Set<Tuple> scan(Predicate<Tuple> predicate) {
-        checkDataStructureRetrieved();
-        return StreamSupport.stream(data.keys().spliterator(), false)
-                .map(guid -> data.get(guid))
-                .filter(predicate)
-                .map(Tuple::immutableCopy)
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
-        checkDataStructureRetrieved();
-        if (projection != null) {
-            return StreamSupport.stream(data.keys().spliterator(), false)
-                    .map(guid -> data.get(guid))
-                    .filter(predicate)
-                    .map(projection)
-                    .map(Tuple::immutableCopy)
-                    .collect(Collectors.toSet());
-        } else {
-            return scan(predicate);
-        }
-    }
-
-    @Override
-    public Set<Tuple> project(Function<Tuple, Tuple> projection) {
-        return StreamSupport.stream(data.keys().spliterator(), false)
-                .map(guid -> data.get(guid))
-                .map(projection)
-                .collect(Collectors.toSet());
-    }
+//    @Override
+//    public Set<Tuple> scan(Predicate<Tuple> predicate) {
+//        checkDataStructureRetrieved();
+//        return StreamSupport.stream(data.keys().spliterator(), false)
+//                .map(guid -> data.get(guid))
+//                .filter(predicate)
+//                .map(Tuple::immutableCopy)
+//                .collect(Collectors.toSet());
+//    }
+//
+//    @Override
+//    public Set<Tuple> scan(Predicate<Tuple> predicate, Function<Tuple, Tuple> projection) {
+//        checkDataStructureRetrieved();
+//        if (projection != null) {
+//            return StreamSupport.stream(data.keys().spliterator(), false)
+//                    .map(guid -> data.get(guid))
+//                    .filter(predicate)
+//                    .map(projection)
+//                    .map(Tuple::immutableCopy)
+//                    .collect(Collectors.toSet());
+//        } else {
+//            return scan(predicate);
+//        }
+//    }
+//
+//    @Override
+//    public Set<Tuple> project(Function<Tuple, Tuple> projection) {
+//        return StreamSupport.stream(data.keys().spliterator(), false)
+//                .map(guid -> data.get(guid))
+//                .map(projection)
+//                .collect(Collectors.toSet());
+//    }
 
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();

@@ -18,23 +18,18 @@
 
 package org.distbc.planner;
 
-import org.distbc.data.structures.Queryable;
 import org.distbc.data.structures.TempTable;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class QueryPlanSwimLane implements Callable<Queryable> {
-    private Queryable leaf;
+public class QueryPlanSwimLane implements Callable<TempTable> {
+    private TempTable base;
     private List<Operation> ops = new LinkedList<>();
 
-    QueryPlanSwimLane(TempTable leaf) {
-
-    }
-
-    QueryPlanSwimLane(Queryable leaf) {
-        this.leaf = leaf;
+    QueryPlanSwimLane(TempTable base) {
+        this.base = base;
     }
 
     void addOperation(Operation op) {
@@ -42,11 +37,11 @@ public class QueryPlanSwimLane implements Callable<Queryable> {
     }
 
     @Override
-    public Queryable call() throws Exception {
-        Queryable tempResult = leaf;
-//        for (Operation op : ops) {
-//            tempResult = op.apply(tempResult);
-//        }
+    public TempTable call() throws Exception {
+        TempTable tempResult = base;
+        for (Operation op : ops) {
+            tempResult = op.apply(tempResult, null);
+        }
         return tempResult;
     }
 }

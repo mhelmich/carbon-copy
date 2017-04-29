@@ -25,14 +25,14 @@ import org.distbc.GuiceModules;
 import org.distbc.data.structures.Catalog;
 import org.distbc.data.structures.DataStructureModule;
 import org.distbc.data.structures.InternalDataStructureFactory;
-import org.distbc.data.structures.Queryable;
 import org.distbc.data.structures.Table;
+import org.distbc.data.structures.TempTable;
+import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 import org.distbc.data.structures.TxnManagerModule;
 import org.distbc.parser.ParsingResult;
 import org.distbc.parser.QueryPaserModule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
@@ -62,7 +63,6 @@ public class QueryPlannerTest {
      * SELECT t1_narf FROM t1
      */
     @Test
-    @Ignore // TODO
     public void testProjection() throws Exception {
         List<String> tablesNames = ImmutableList.of("t1");
         createTable(tablesNames);
@@ -100,7 +100,7 @@ public class QueryPlannerTest {
         assertEquals(1, swimLanes.size());
         QueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
-//        assertEquals(t1.getId(), getLeaf(sl).getId());
+        assertNotEquals(t1.getId(), getBase(sl).getId());
         List<Operation> ops = getOperations(sl);
         assertEquals(1, ops.size());
         assertTrue(ops.get(0) instanceof Projection);
@@ -111,7 +111,6 @@ public class QueryPlannerTest {
      * SELECT t2_narf FROM t2 WHERE t2_narf = 'void'
      */
     @Test
-    @Ignore // TODO
     public void testSelectionAndProjection() throws Exception {
         List<String> tablesNames = ImmutableList.of("t2");
         createTable(tablesNames);
@@ -149,7 +148,7 @@ public class QueryPlannerTest {
         assertEquals(1, swimLanes.size());
         QueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
-//        assertEquals(t1.getId(), getLeaf(sl).getId());
+        assertNotEquals(t1.getId(), getBase(sl).getId());
         List<Operation> ops = getOperations(sl);
         assertEquals(2, ops.size());
         assertTrue(ops.get(0) instanceof Projection);
@@ -170,8 +169,9 @@ public class QueryPlannerTest {
         String tn = getTableName(tableName);
         Txn txn = txnManager.beginTransaction();
         Table.Builder builder = Table.Builder.newBuilder(tn)
-                .withColumn(tableName + "_narf", Integer.class)
-                .withColumn(tableName + "_moep", String.class);
+                .withColumn("tup_num", String.class)
+                .withColumn("moep", String.class)
+                .withColumn("foo", String.class);
         Table table = dsFactory.newTable(builder, txn);
 
         catalog.create(tn, table, txn);
@@ -179,6 +179,28 @@ public class QueryPlannerTest {
         long id = table.getId();
         Table readTable = catalog.get(tn, Table.class);
         assertEquals(id, readTable.getId());
+
+        txn = txnManager.beginTransaction();
+        table = dsFactory.newTable(builder, txn);
+        Tuple tup1 = new Tuple(3);
+        tup1.put(0, "tup1_narf");
+        tup1.put(1, "moep");
+        tup1.put(2, "tup1_foo");
+
+        Tuple tup2 = new Tuple(3);
+        tup2.put(0, "tup2_narf");
+        tup2.put(1, "__moep__");
+        tup2.put(2, "tup2_foo");
+
+        Tuple tup3 = new Tuple(3);
+        tup3.put(0, "tup3_narf");
+        tup3.put(1, "moep");
+        tup3.put(2, "tup3_foo");
+
+        table.insert(tup1, txn);
+        table.insert(tup2, txn);
+        table.insert(tup3, txn);
+        txn.commit();
     }
 
     private List<String> getTableNamesForNames(List<String> tableNames) {
@@ -201,10 +223,10 @@ public class QueryPlannerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Queryable getLeaf(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
-        Field field = swimLane.getClass().getDeclaredField("leaf");
+    private TempTable getBase(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
+        Field field = swimLane.getClass().getDeclaredField("base");
         field.setAccessible(true);
-        return (Queryable) field.get(swimLane);
+        return (TempTable) field.get(swimLane);
     }
 
     @SuppressWarnings("unchecked")
