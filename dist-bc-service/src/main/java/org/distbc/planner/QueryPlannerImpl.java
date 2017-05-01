@@ -113,7 +113,8 @@ class QueryPlannerImpl implements QueryPlanner {
 
     private Operation generateSelectionForTable(TempTable table, ParsingResult parsingResult) {
         List<String> columnsOnTable = table.getColumnNames();
-//        List<String> allWhereClauses = parsingResult.getWhereClauses();
+        // TODO -- this doesn't take care of bound clauses
+        // e.g. this AND that OR these
         List<ParsingResult.BinaryOperation> bos = parsingResult.getBinaryOperations();
         bos = bos.stream()
                 .filter(bo -> columnsOnTable.indexOf(bo.operand1) >= 0)
@@ -121,8 +122,7 @@ class QueryPlannerImpl implements QueryPlanner {
         // get all where clauses that are interesting for the table in question
         // convert the tree into a series of strings
         // selections with literals only
-//        return new Selection(bos);
-        return null;
+        return new Selection(bos);
     }
 
     private QueryPlanSwimLane generateJoinForSwimLanes(QueryPlanSwimLane sl1, QueryPlanSwimLane sl2, ParsingResult parsingResult) {
