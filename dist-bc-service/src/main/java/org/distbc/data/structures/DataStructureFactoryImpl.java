@@ -131,6 +131,11 @@ public class DataStructureFactoryImpl implements InternalDataStructureFactory {
     }
 
     @Override
+    public TempTable newTempTable(Txn txn) {
+        return new TempTable(store, this, txn);
+    }
+
+    @Override
     public TempTable newTempTableFromTable(Table table, Txn txn) {
         return new TempTable(store, this, table, txn);
     }

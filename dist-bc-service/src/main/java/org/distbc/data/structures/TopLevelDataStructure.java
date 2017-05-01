@@ -99,6 +99,14 @@ public abstract class TopLevelDataStructure extends DataStructure {
         }
     }
 
+    void addColumn(Txn txn, String name, Integer index, String dataType) {
+        Tuple t = new Tuple(3);
+        t.put(0, name);
+        t.put(1, index);
+        t.put(2, dataType);
+        addColumns(txn, t);
+    }
+
     private void verifyAddColumnTypes(Tuple tuple) {
         if (
                 tuple.getTupleSize() != 3
