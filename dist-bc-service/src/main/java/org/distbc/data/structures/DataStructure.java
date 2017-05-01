@@ -257,7 +257,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     // I saw this mostly in tests but never went to the bottom of it
     @Override
     public final int hashCode() {
-        return 31 + ((id == -1) ? 0 : (int) (id % Integer.MAX_VALUE));
+        return 31 + ((id == -1) ? super.hashCode() : (int) (id % Integer.MAX_VALUE));
     }
 
     ////////////////////////////////////////////////
