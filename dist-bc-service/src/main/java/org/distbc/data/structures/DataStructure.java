@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
  * of setting up galaxy, worry about serialization, etc.
  */
 abstract class DataStructure extends Sizable implements Persistable {
+    private static final int TIMEOUT_SECS = 5;
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
         kryo.setRegistrationRequired(true);
@@ -156,7 +157,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     boolean checkDataStructureRetrieved() {
         if (creationFuture != null) {
             try {
-                Long id = creationFuture.get(5, TimeUnit.SECONDS);
+                Long id = creationFuture.get(TIMEOUT_SECS, TimeUnit.SECONDS);
                 if (id != null && creationFuture.isDone()) {
                     this.id = id;
                     creationFuture = null;
@@ -168,7 +169,7 @@ abstract class DataStructure extends Sizable implements Persistable {
             }
         } else if (dataFuture != null) {
             try {
-                dataFuture.get(5, TimeUnit.SECONDS);
+                dataFuture.get(TIMEOUT_SECS, TimeUnit.SECONDS);
                 if (dataFuture.isDone()) {
                     dataFuture = null;
                     isLoaded = true;
@@ -247,23 +248,44 @@ abstract class DataStructure extends Sizable implements Persistable {
     abstract void serialize(SerializerOutputStream out);
     abstract void deserialize(SerializerInputStream in);
 
+    ////////////////////////////////////////////////
+    //////////////////////////////////
+    // this method is not allowed to call getId()
+    // directly because the transaction might step onto itself
+    // if the transaction is running and calls hashCode on a data structure,
+    // the transaction might block itself
+    // I saw this mostly in tests but never went to the bottom of it
     @Override
     public final int hashCode() {
-        return 31 + ((getId() == -1) ? 0 : (int) (getId() % Integer.MAX_VALUE));
+        return 31 + ((id == -1) ? 0 : (int) (id % Integer.MAX_VALUE));
     }
 
+    ////////////////////////////////////////////////
+    //////////////////////////////////
+    // this method is not allowed to call getId()
+    // directly because the transaction might step onto itself
+    // if the transaction is running and calls hashCode on a data structure,
+    // the transaction might block itself
+    // I saw this mostly in tests but never went to the bottom of it
     @Override
     public final boolean equals(final Object obj) {
         if (this == obj) return true;
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
         final DataStructure other = (DataStructure) obj;
-        return !(getId() == other.getId() && getId() == -1) && getId() == other.getId();
+        return !(id == other.id && id == -1) && id == other.id;
     }
 
+    ////////////////////////////////////////////////
+    //////////////////////////////////
+    // this method is not allowed to call getId()
+    // directly because the transaction might step onto itself
+    // if the transaction is running and calls hashCode on a data structure,
+    // the transaction might block itself
+    // I saw this mostly in tests but never went to the bottom of it
     @Override
     public String toString() {
-        return String.valueOf(getId());
+        return String.valueOf(id);
     }
 
     static class SerializerOutputStream extends OutputStream {
