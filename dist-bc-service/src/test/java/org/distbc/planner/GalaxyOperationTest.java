@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
 import org.distbc.data.structures.DataStructureModule;
+import org.distbc.data.structures.GUID;
 import org.distbc.data.structures.InternalDataStructureFactory;
 import org.distbc.data.structures.Table;
 import org.distbc.data.structures.TempTable;
@@ -35,7 +36,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -83,15 +87,13 @@ public class GalaxyOperationTest {
         TempTable tt = s.apply(ttOld, txn2);
         txn2.commit();
 
-        AtomicInteger i = new AtomicInteger(0);
         tt.keys().forEach(guid -> {
             assertNotNull(t.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
             assertEquals(t.get(guid), tt.get(guid));
-            i.getAndAdd(1);
         });
 
-        assertEquals(2, i.get());
+        assertEquals(2, tt.keys().count());
     }
 
     @Test
@@ -108,15 +110,13 @@ public class GalaxyOperationTest {
         TempTable tt = s.apply(ttOld, txn2);
         txn2.commit();
 
-        AtomicInteger i = new AtomicInteger(0);
         tt.keys().forEach(guid -> {
             assertNotNull(t.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
             assertEquals(t.get(guid), tt.get(guid));
-            i.getAndAdd(1);
         });
 
-        assertEquals(1, i.get());
+        assertEquals(1, tt.keys().count());
     }
 
     @Test
@@ -133,15 +133,13 @@ public class GalaxyOperationTest {
         TempTable tt = s.apply(ttOld, txn2);
         txn2.commit();
 
-        AtomicInteger i = new AtomicInteger(0);
         tt.keys().forEach(guid -> {
             assertNotNull(t.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
             assertEquals(t.get(guid), tt.get(guid));
-            i.getAndAdd(1);
         });
 
-        assertEquals(1, i.get());
+        assertEquals(1, tt.keys().count());
     }
 
     @Test
@@ -158,21 +156,130 @@ public class GalaxyOperationTest {
         TempTable tt = s.apply(ttOld, txn2);
         txn2.commit();
 
-        AtomicInteger i = new AtomicInteger(0);
         tt.keys().forEach(guid -> {
             assertNotNull(t.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
             assertEquals(t.get(guid), tt.get(guid));
-            i.getAndAdd(1);
         });
 
-        assertEquals(3, i.get());
+        assertEquals(3, tt.keys().count());
+    }
+
+    @Test
+    public void testOpMaterialized() throws IOException {
+        List<GUID> guids = new LinkedList<>();
+        Table t = createDummyTable(guids);
+        Txn txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTable(txn);
+        tt.addColumnWithName(txn, "tup_num", 0, String.class);
+        txn.commit();
+
+        Set<GUID> idsToKeep = new HashSet<GUID>() {{
+            add(guids.get(1));
+        }};
+
+        List<Integer> columnIndexesToKeep = new LinkedList<>();
+        columnIndexesToKeep.add(2);
+
+        OpMaterialize op = new OpMaterialize(t, tt, idsToKeep, columnIndexesToKeep);
+        txn = txnManager.beginTransaction();
+        TempTable res = op.apply(txn);
+        txn.commit();
+
+        assertEquals(tt.getId(), res.getId());
+
+        for (GUID guid : idsToKeep) {
+            assertNotNull(res.get(guid));
+            assertEquals(1, res.get(guid).getTupleSize());
+            assertEquals("tup2_foo", res.get(guid).get(0));
+        }
+
+        assertNotNull(tt.getColumnMetadataByColumnName("TUP_NUM"));
+    }
+
+    @Test
+    public void testOpProjection() throws IOException {
+        List<String> columnNamesToProjectTo = new LinkedList<String>() {{
+            add("moep");
+        }};
+        List<String> columnsAvailableInTuple = new LinkedList<String>() {{
+            add("tup_num");
+            add("moep");
+            add("foo");
+        }};
+
+        OpProjection op = new OpProjection(columnNamesToProjectTo, columnsAvailableInTuple);
+        List<Integer> indexToKeep = op.get();
+
+        assertEquals(1, indexToKeep.size());
+        assertEquals(Integer.valueOf(1), indexToKeep.get(0));
+    }
+
+    @Test
+    public void testOpSelection() throws IOException {
+        Table t = createDummyTable();
+
+        List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
+            add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
+        }};
+
+        OpSelection op = new OpSelection(bos, t);
+        Set<GUID> res = op.get();
+
+        assertEquals(2, res.size());
+        for (GUID guid : res) {
+            assertNotNull(t.get(guid));
+        }
+    }
+
+    @Test
+    public void testAllOpsTogether() throws IOException {
+        List<GUID> guids = new LinkedList<>();
+        Table t = createDummyTable(guids);
+
+        /////////////////////////////
+        ///////////////////////
+        // PROJECTION
+        List<String> columnNamesToProjectTo = new LinkedList<String>() {{
+            add("tup_num".toUpperCase());
+        }};
+        List<String> columnsAvailableInTuple = t.getColumnNames();
+        OpProjection pro = new OpProjection(columnNamesToProjectTo, columnsAvailableInTuple);
+        List<Integer> indexesToKeep = pro.get();
+
+        /////////////////////////////
+        ///////////////////////
+        // SELECTION
+        List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
+            add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
+        }};
+        OpSelection sel = new OpSelection(bos, t);
+        Set<GUID> res = sel.get();
+
+        /////////////////////////////
+        ///////////////////////
+        // MATERIALIZE
+        Txn txn = txnManager.beginTransaction();
+
+        TempTable tt = dsFactory.newTempTable(txn);
+        tt.addColumnWithName(txn, "tup_num", 0, String.class);
+
+        OpMaterialize mat = new OpMaterialize(t, tt, res, indexesToKeep);
+        txn = txnManager.beginTransaction();
+        TempTable resultSet = mat.apply(txn);
+        txn.commit();
+
+        assertEquals(2, resultSet.keys().count());
     }
 
     private Table createDummyTable() throws IOException {
+        return createDummyTable(null);
+    }
+
+    private Table createDummyTable(List<GUID> guids) throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis())
+        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis() + "_" + this.getClass().getName())
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
@@ -194,9 +301,16 @@ public class GalaxyOperationTest {
         tup3.put(1, "moep");
         tup3.put(2, "tup3_foo");
 
-        table.insert(tup1, txn);
-        table.insert(tup2, txn);
-        table.insert(tup3, txn);
+        if (guids == null) {
+            table.insert(tup1, txn);
+            table.insert(tup2, txn);
+            table.insert(tup3, txn);
+        } else {
+            guids.add(table.insert(tup1, txn));
+            guids.add(table.insert(tup2, txn));
+            guids.add(table.insert(tup3, txn));
+        }
+
         txn.commit();
 
         return table;

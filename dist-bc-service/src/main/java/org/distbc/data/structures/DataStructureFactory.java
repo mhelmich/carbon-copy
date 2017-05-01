@@ -27,6 +27,7 @@ public interface DataStructureFactory {
     Index loadIndex(long id);
     Index loadIndexForWrites(long id, Txn txn);
 
+    TempTable newTempTable(Txn txn);
     TempTable newTempTableFromTable(Table table, Txn txn);
     TempTable loadTempTableFromId(long id, Txn txn);
 }

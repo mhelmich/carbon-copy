@@ -43,6 +43,20 @@ public class TempTable extends TopLevelDataStructure {
         asyncLoadForWrites(txn);
     }
 
+    TempTable(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
+        super(store, dsFactory, txn, "temp_" + UUID.randomUUID().toString());
+        // create new data
+        data = dsFactory.newChainingHash(txn);
+        txn.addToChangedObjects(data);
+        // wait for it to be upserted and
+        // have an id
+        data.checkDataStructureRetrieved();
+        addObjectToObjectSize(data.getId());
+        // only then upsert yourself
+        asyncUpsert(txn);
+        checkDataStructureRetrieved();
+    }
+
     /**
      * This creates a new TempTable from an existing Table.
      * This is clearly different from the upper ctor where we want to load an existing result set or something.
@@ -112,6 +126,10 @@ public class TempTable extends TopLevelDataStructure {
         checkDataStructureRetrieved();
         Tuple t = data.get(guid);
         return (t != null) ? t.immutableCopy() : null;
+    }
+
+    public void addColumnWithName(Txn txn, String name, Integer index, Class dataType) {
+        addColumn(txn, name, index, dataType.getCanonicalName());
     }
 
     public void removeColumnWithName(String columnName, Txn txn) {
