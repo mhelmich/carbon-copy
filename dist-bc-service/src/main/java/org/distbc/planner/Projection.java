@@ -25,6 +25,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Naive implementation of a projection.
+ * It goes through the metadata and every single tuple to copy the columns it needs.
+ */
 class Projection implements Operation {
     private final List<String> columnNamesToProjectTo;
     private final List<String> columnsAvailableInTuple;
