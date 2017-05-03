@@ -20,7 +20,6 @@ package org.distbc.planner;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import org.apache.commons.lang3.StringUtils;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
 import org.distbc.data.structures.Catalog;
@@ -36,11 +35,11 @@ import org.distbc.parser.ParsingResult;
 import org.distbc.parser.QueryPaserModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -69,42 +68,9 @@ public class QueryPlannerTest {
         createTable(tablesNames);
 
         QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
-        ParsingResult pr = new ParsingResult() {
-            @Override
-            public List<String> getTableNames() {
-                return new ArrayList<>(getTableNamesForNames(tablesNames));
-            }
-
-            @Override
-            public List<String> getProjectionColumnNames() {
-                return ImmutableList.of("t1_narf");
-            }
-
-            @Override
-            public List<String> getWhereClauses() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public List<String> getJoinClauses() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public List<BinaryOperation> getSelections() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public String getExpressionText() {
-                return StringUtils.EMPTY;
-            }
-
-            @Override
-            public List<BinaryOperation> getJoins() {
-                return Collections.emptyList();
-            }
-        };
+        ParsingResult pr = Mockito.mock(ParsingResult.class);
+        Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
+        Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t1_narf"));
 
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
@@ -127,42 +93,10 @@ public class QueryPlannerTest {
         createTable(tablesNames);
 
         QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
-        ParsingResult pr = new ParsingResult() {
-            @Override
-            public List<String> getTableNames() {
-                return new ArrayList<>(getTableNamesForNames(tablesNames));
-            }
-
-            @Override
-            public List<String> getProjectionColumnNames() {
-                return ImmutableList.of("t2_narf");
-            }
-
-            @Override
-            public List<String> getWhereClauses() {
-                return ImmutableList.of("t2_narf = 'void'");
-            }
-
-            @Override
-            public List<String> getJoinClauses() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public List<BinaryOperation> getSelections() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public String getExpressionText() {
-                return StringUtils.EMPTY;
-            }
-
-            @Override
-            public List<BinaryOperation> getJoins() {
-                return Collections.emptyList();
-            }
-        };
+        ParsingResult pr = Mockito.mock(ParsingResult.class);
+        Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
+        Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t2_narf"));
+        Mockito.when(pr.getWhereClauses()).thenReturn(ImmutableList.of("t2_narf = 'void'"));
 
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
