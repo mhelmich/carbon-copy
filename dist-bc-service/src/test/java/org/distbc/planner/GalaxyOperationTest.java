@@ -223,7 +223,7 @@ public class GalaxyOperationTest {
             add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
         }};
 
-        OpSelection op = new OpSelection(bos, t);
+        OpSelection2 op = new OpSelection2(bos, t);
         Set<GUID> res = op.get();
 
         assertEquals(2, res.size());
@@ -253,7 +253,7 @@ public class GalaxyOperationTest {
         List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
             add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
         }};
-        OpSelection sel = new OpSelection(bos, t);
+        OpSelection2 sel = new OpSelection2(bos, t);
         Set<GUID> res = sel.get();
 
         /////////////////////////////
@@ -278,7 +278,7 @@ public class GalaxyOperationTest {
         Set<String> cns = new HashSet<String>() {{
             add("FOO");
         }};
-        OpSelection2 sel = new OpSelection2(cns, t, "FOO <= 'tup2_foo'");
+        OpSelection sel = new OpSelection(cns, t, "FOO <= 'tup2_foo'");
         Set<GUID> resultSet = sel.get();
         assertEquals(2, resultSet.size());
     }
@@ -290,7 +290,7 @@ public class GalaxyOperationTest {
             add("FOO");
             add("MOEP");
         }};
-        OpSelection2 sel = new OpSelection2(cns, t, "FOO <= 'tup2_foo' AND MOEP = '__moep__'");
+        OpSelection sel = new OpSelection(cns, t, "FOO <= 'tup2_foo' AND MOEP = '__moep__'");
         Set<GUID> resultSet = sel.get();
         assertEquals(1, resultSet.size());
     }
