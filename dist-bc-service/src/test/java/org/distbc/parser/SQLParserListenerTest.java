@@ -137,8 +137,8 @@ public class SQLParserListenerTest {
         assertEquals(1, listener.getTableNames().size());
         assertEquals(1, listener.getWhereClauses().size());
         assertEquals("col2=13", listener.getWhereClauses().get(0));
-        assertEquals(1, listener.getBinaryOperations().size());
-        ParsingResult.BinaryOperation bo = listener.getBinaryOperations().get(0);
+        assertEquals(1, listener.getSelections().size());
+        ParsingResult.BinaryOperation bo = listener.getSelections().get(0);
         assertEquals("col2", bo.operand1);
         assertEquals("=", bo.operation);
         assertEquals("13", bo.operand2);
@@ -149,11 +149,32 @@ public class SQLParserListenerTest {
         assertEquals(1, listener.getTableNames().size());
         assertEquals(1, listener.getWhereClauses().size());
         assertEquals("13=col2", listener.getWhereClauses().get(0));
-        assertEquals(1, listener.getBinaryOperations().size());
-        bo = listener.getBinaryOperations().get(0);
+        assertEquals(1, listener.getSelections().size());
+        bo = listener.getSelections().get(0);
         assertEquals("col2", bo.operand1);
         assertEquals("=", bo.operation);
         assertEquals("13", bo.operand2);
+    }
+
+    @Test
+    public void testJoins() {
+        SQLParserListener listener = parse("select col from tab1 t1, tab2 t2 where col2 = 13 AND t1.id = t2.id");
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(2, listener.getTableNames().size());
+        assertEquals(2, listener.getWhereClauses().size());
+        assertEquals("col2=13", listener.getWhereClauses().get(0));
+        assertEquals(1, listener.getSelections().size());
+        ParsingResult.BinaryOperation bo = listener.getSelections().get(0);
+        assertEquals("col2", bo.operand1);
+        assertEquals("=", bo.operation);
+        assertEquals("13", bo.operand2);
+
+        assertEquals(1, listener.getJoins().size());
+        ParsingResult.BinaryOperation join = listener.getJoins().get(0);
+        assertEquals("t1.id", join.operand1);
+        assertEquals("=", join.operation);
+        assertEquals("t2.id", join.operand2);
     }
 
     private SQLParserListener parse(String query) {

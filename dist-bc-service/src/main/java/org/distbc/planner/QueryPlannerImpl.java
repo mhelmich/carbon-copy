@@ -115,7 +115,7 @@ class QueryPlannerImpl implements QueryPlanner {
         List<String> columnsOnTable = table.getColumnNames();
         // TODO -- this doesn't take care of bound clauses
         // e.g. this AND that OR these
-        List<ParsingResult.BinaryOperation> bos = parsingResult.getBinaryOperations();
+        List<ParsingResult.BinaryOperation> bos = parsingResult.getSelections();
         bos = bos.stream()
                 .filter(bo -> columnsOnTable.indexOf(bo.operand1) >= 0)
                 .collect(Collectors.toList());

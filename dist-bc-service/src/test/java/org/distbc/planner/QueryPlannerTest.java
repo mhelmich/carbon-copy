@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
 public class QueryPlannerTest {
     @Inject
-    Catalog catalog;
+    private Catalog catalog;
 
     @Inject
     private InternalDataStructureFactory dsFactory;
@@ -91,13 +91,18 @@ public class QueryPlannerTest {
             }
 
             @Override
-            public List<BinaryOperation> getBinaryOperations() {
+            public List<BinaryOperation> getSelections() {
                 return Collections.emptyList();
             }
 
             @Override
             public String getExpressionText() {
                 return StringUtils.EMPTY;
+            }
+
+            @Override
+            public List<BinaryOperation> getJoins() {
+                return Collections.emptyList();
             }
         };
 
@@ -144,13 +149,18 @@ public class QueryPlannerTest {
             }
 
             @Override
-            public List<BinaryOperation> getBinaryOperations() {
+            public List<BinaryOperation> getSelections() {
                 return Collections.emptyList();
             }
 
             @Override
             public String getExpressionText() {
                 return StringUtils.EMPTY;
+            }
+
+            @Override
+            public List<BinaryOperation> getJoins() {
+                return Collections.emptyList();
             }
         };
 
