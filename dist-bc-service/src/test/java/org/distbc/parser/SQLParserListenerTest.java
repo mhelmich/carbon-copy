@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class SQLParserListenerTest {
     @Test
@@ -42,6 +43,7 @@ public class SQLParserListenerTest {
         assertEquals("*", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
         assertEquals("narf", listener.getTableNames().get(0));
+        assertNull( listener.getExpressionText());
     }
 
     @Test
@@ -55,6 +57,7 @@ public class SQLParserListenerTest {
         }
         assertEquals(1, listener.getTableNames().size());
         assertEquals("narf", listener.getTableNames().get(0));
+        assertNull( listener.getExpressionText());
     }
 
     @Test
@@ -68,11 +71,12 @@ public class SQLParserListenerTest {
         for (int i = 0; i < listener.getTableNames().size(); i++) {
             assertEquals("tab" + (i + 1), listener.getTableNames().get(i));
         }
+        assertNull( listener.getExpressionText());
     }
 
     @Test
     public void testSelection() {
-        String input = "select col from tab1 where col2 = 13";
+        String input = "SELECT col from tab1 where col2 = 13";
         SQLParserListener listener = parse(input);
 
         assertEquals(1, listener.getProjectionColumnNames().size());
@@ -87,6 +91,27 @@ public class SQLParserListenerTest {
         assertEquals("col2", exprComponents.get(0));
         assertEquals("=", exprComponents.get(1));
         assertEquals("13", exprComponents.get(2));
+        assertEquals("col2=13",  listener.getExpressionText());
+    }
+
+    @Test
+    public void testSelectionWithBooleanExpression() {
+        String input = "select col from tab1 where col2 = 13 AND col1='narf'";
+        SQLParserListener listener = parse(input);
+
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(1, listener.getTableNames().size());
+        assertEquals(2, listener.getWhereClauses().size());
+        assertEquals("col2=13", listener.getWhereClauses().get(0));
+
+        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(new ANTLRInputStream(listener.getWhereClauses().get(0)))));
+        List<String> exprComponents = parser.simple_expression().children.stream().map(ParseTree::getText).collect(Collectors.toList());
+        assertEquals(3, exprComponents.size());
+        assertEquals("col2", exprComponents.get(0));
+        assertEquals("=", exprComponents.get(1));
+        assertEquals("13", exprComponents.get(2));
+        assertEquals("col2=13ANDcol1='narf'",  listener.getExpressionText());
     }
 
     @Test

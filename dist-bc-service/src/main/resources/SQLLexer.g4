@@ -22,27 +22,27 @@ package org.distbc.parser.gen;
 }
 
 SELECT
-   : 'select'
+   : 'select' | 'SELECT'
    ;
 
 
 FROM
-   : 'from'
+   : 'from' | 'FROM'
    ;
 
 
 WHERE
-   : 'where'
+   : 'where' | 'WHERE'
    ;
 
 
 AND
-   : 'and' | '&&'
+   : 'and' | '&&' | 'AND'
    ;
 
 
 OR
-   : 'or' | '||'
+   : 'or' | '||' | 'OR'
    ;
 
 
@@ -366,9 +366,9 @@ QUOTED_LITERAL:
         ( ('\\' '\\') | ('\'' '\'') | ('\\' '\'') | ~('\'') )*
     '\''  )
     |
-    (  '\"'
-        ( ('\\' '\\') | ('\"' '\"') | ('\\' '\"') | ~('\"') )*
-    '\"'  )
+    (  '"'
+        ( ('\\' '\\') | ('"' '"') | ('\\' '"') | ~('"') )*
+    '"'  )
 ;
 
 
@@ -403,7 +403,7 @@ fragment USER_VAR_SUBFIX2
 
 
 fragment USER_VAR_SUBFIX3
-   : ( '\"' ( ~ '\"' )+ '\"' )
+   : ( '"' ( ~ '"' )+ '"' )
    ;
 
 
