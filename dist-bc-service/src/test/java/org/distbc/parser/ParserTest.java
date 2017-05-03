@@ -18,8 +18,8 @@
 
 package org.distbc.parser;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.distbc.parser.gen.SQLLexer;
 import org.distbc.parser.gen.SQLParser;
@@ -33,7 +33,7 @@ public class ParserTest {
     @Test
     public void testBasic() {
         String input = "select * from narf";
-        CharStream stream = new ANTLRInputStream(input);
+        CodePointCharStream stream = CharStreams.fromString(input);
         SQLLexer lex = new SQLLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lex);
         SQLParser parser = new SQLParser(tokens);
