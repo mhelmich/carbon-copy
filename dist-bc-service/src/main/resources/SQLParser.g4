@@ -50,7 +50,7 @@ column_name
    ;
 
 column_name_in_where_clause
-   : ( ( schema_name DOT )? ID DOT )? ID ( column_name_alias )? | ( table_alias DOT )? ID | USER_VAR ( column_name_alias )? | ASTERISK
+   : ( table_alias DOT )? column_name | ( ( schema_name DOT )? table_alias DOT )? column_name ( column_name_alias )? | USER_VAR ( column_name_alias )? | ASTERISK
    ;
 
 column_name_alias
