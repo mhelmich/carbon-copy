@@ -89,7 +89,7 @@ class QueryPlannerImpl implements QueryPlanner {
         // each of these swim lanes can be kicked off already
         // but we don't do that...
         // then determine how tables feed into joins
-        parsingResult.getJoinClauses().forEach(joinClause -> {
+        parsingResult.getJoins().forEach(joinClause -> {
             // TODO: get both tables out of the joinClause
             // potentially parse the string again ... not crazy cool but gets us there :)
             // create new swim lane from child swim lanes

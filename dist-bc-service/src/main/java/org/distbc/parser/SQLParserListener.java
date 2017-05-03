@@ -30,7 +30,6 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     private List<String> projectionColumnNames = new ArrayList<>();
     private List<String> whereClauses = new ArrayList<>();
-    private List<String> joinClauses = new ArrayList<>();
     private List<BinaryOperation> selections = new ArrayList<>();
     private String expressionText = null;
     private List<BinaryOperation> joins = new ArrayList<>();
@@ -88,11 +87,6 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     @Override
     public List<String> getWhereClauses() {
         return whereClauses;
-    }
-
-    @Override
-    public List<String> getJoinClauses() {
-        return joinClauses;
     }
 
     @Override
