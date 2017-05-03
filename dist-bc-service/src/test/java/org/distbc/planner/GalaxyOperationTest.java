@@ -272,6 +272,29 @@ public class GalaxyOperationTest {
         assertEquals(2, resultSet.keys().count());
     }
 
+    @Test
+    public void testOpSelection2() throws IOException {
+        Table t = createDummyTable();
+        Set<String> cns = new HashSet<String>() {{
+            add("FOO");
+        }};
+        OpSelection2 sel = new OpSelection2(cns, t, "FOO <= 'tup2_foo'");
+        Set<GUID> resultSet = sel.get();
+        assertEquals(2, resultSet.size());
+    }
+
+    @Test
+    public void testOpSelection2Boolean() throws IOException {
+        Table t = createDummyTable();
+        Set<String> cns = new HashSet<String>() {{
+            add("FOO");
+            add("MOEP");
+        }};
+        OpSelection2 sel = new OpSelection2(cns, t, "FOO <= 'tup2_foo' AND MOEP = '__moep__'");
+        Set<GUID> resultSet = sel.get();
+        assertEquals(1, resultSet.size());
+    }
+
     private Table createDummyTable() throws IOException {
         return createDummyTable(null);
     }
