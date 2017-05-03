@@ -21,12 +21,16 @@ package org.distbc.parser;
 import java.util.List;
 
 public interface ParsingResult {
+    /**
+     * Unordered list of table names in the SQL
+     */
     List<String> getTableNames();
     List<String> getProjectionColumnNames();
     List<String> getWhereClauses();
     List<String> getJoinClauses();
-    List<BinaryOperation> getBinaryOperations();
+    List<BinaryOperation> getSelections();
     String getExpressionText();
+    List<BinaryOperation> getJoins();
 
     class UnaryOperation {
         final String operand1;

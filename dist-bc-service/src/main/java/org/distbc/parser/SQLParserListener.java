@@ -22,22 +22,19 @@ import org.distbc.parser.gen.SQLParser;
 import org.distbc.parser.gen.SQLParserBaseListener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
-    private List<String> tableNames = new ArrayList<>();
     private List<String> projectionColumnNames = new ArrayList<>();
     private List<String> whereClauses = new ArrayList<>();
     private List<String> joinClauses = new ArrayList<>();
-    private List<String> columnNamesInWhereClauses = new ArrayList<>();
-    private List<BinaryOperation> binaryOperations = new ArrayList<>();
+    private List<BinaryOperation> selections = new ArrayList<>();
     private String expressionText = null;
-
-    @Override
-    public void exitTable_name(SQLParser.Table_nameContext ctx) {
-        tableNames.add(ctx.getText());
-    }
+    private List<BinaryOperation> joins = new ArrayList<>();
+    private Map<String, String> tableAliasToTableName = new HashMap<>();
 
     @Override
     public void exitColumn_name(SQLParser.Column_nameContext ctx) {
@@ -50,19 +47,17 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
-    public void exitColumn_name_in_where_clause(SQLParser.Column_name_in_where_clauseContext ctx) {
-        columnNamesInWhereClauses.add(ctx.getText());
-    }
-
-    @Override
     public void exitRelational_op(SQLParser.Relational_opContext ctx) {
         SQLParser.Simple_expressionContext simpleExpressionCtx = (SQLParser.Simple_expressionContext) ctx.getParent();
         SQLParser.ElementContext leftElementContext = simpleExpressionCtx.left_element().element();
         SQLParser.ElementContext rightElementContext = simpleExpressionCtx.right_element().element();
-        if (leftElementContext.column_name_in_where_clause() != null) {
-            binaryOperations.add(new BinaryOperation(leftElementContext.getText(), ctx.getText(), rightElementContext.getText()));
+        if (leftElementContext.column_name_in_where_clause() != null && rightElementContext.column_name_in_where_clause() == null) {
+            selections.add(new BinaryOperation(leftElementContext.getText(), ctx.getText(), rightElementContext.getText()));
+        } else if (leftElementContext.column_name_in_where_clause() == null && rightElementContext.column_name_in_where_clause() != null) {
+            selections.add(new BinaryOperation(rightElementContext.getText(), ctx.getText(), leftElementContext.getText()));
         } else {
-            binaryOperations.add(new BinaryOperation(rightElementContext.getText(), ctx.getText(), leftElementContext.getText()));
+            // joins
+            joins.add(new BinaryOperation(leftElementContext.getText(), ctx.getText(), rightElementContext.getText()));
         }
     }
 
@@ -76,8 +71,13 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
+    public void exitTable_atom(SQLParser.Table_atomContext ctx) {
+        tableAliasToTableName.put(ctx.table_name().getText(), ctx.table_alias().getText());
+    }
+
+    @Override
     public List<String> getTableNames() {
-        return tableNames;
+        return new ArrayList<>(tableAliasToTableName.values());
     }
 
     @Override
@@ -96,8 +96,13 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
-    public List<BinaryOperation> getBinaryOperations() {
-        return binaryOperations;
+    public List<BinaryOperation> getSelections() {
+        return selections;
+    }
+
+    @Override
+    public List<BinaryOperation> getJoins() {
+        return joins;
     }
 
     @Override
