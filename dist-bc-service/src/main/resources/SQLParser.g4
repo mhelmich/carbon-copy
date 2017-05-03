@@ -16,6 +16,11 @@
  *
  */
 
+ /**
+  * The grammar is loosely based on the excellent grammar of https://github.com/teverett .
+  * It can be found here: https://github.com/antlr/grammars-v4/tree/master/mysql
+  */
+
 parser grammar SQLParser;
 
 @header {
