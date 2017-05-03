@@ -18,8 +18,8 @@
 
 package org.distbc.parser;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -85,7 +85,7 @@ public class SQLParserListenerTest {
         assertEquals(1, listener.getWhereClauses().size());
         assertEquals("col2=13", listener.getWhereClauses().get(0));
 
-        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(new ANTLRInputStream(listener.getWhereClauses().get(0)))));
+        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(CharStreams.fromString(listener.getWhereClauses().get(0)))));
         List<String> exprComponents = parser.simple_expression().children.stream().map(ParseTree::getText).collect(Collectors.toList());
         assertEquals(3, exprComponents.size());
         assertEquals("col2", exprComponents.get(0));
@@ -96,7 +96,7 @@ public class SQLParserListenerTest {
 
     @Test
     public void testSelectionWithBooleanExpression() {
-        String input = "select col from tab1 where col2 = 13 AND col1='narf'";
+        String input = "select col from tab1 where col2 = 13 AND col1= 'narf'";
         SQLParserListener listener = parse(input);
 
         assertEquals(1, listener.getProjectionColumnNames().size());
@@ -105,7 +105,7 @@ public class SQLParserListenerTest {
         assertEquals(2, listener.getWhereClauses().size());
         assertEquals("col2=13", listener.getWhereClauses().get(0));
 
-        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(new ANTLRInputStream(listener.getWhereClauses().get(0)))));
+        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(CharStreams.fromString(listener.getWhereClauses().get(0)))));
         List<String> exprComponents = parser.simple_expression().children.stream().map(ParseTree::getText).collect(Collectors.toList());
         assertEquals(3, exprComponents.size());
         assertEquals("col2", exprComponents.get(0));
@@ -117,7 +117,7 @@ public class SQLParserListenerTest {
     @Test
     public void testStringLiteral() {
         String input = "col2 = \"string\"";
-        CharStream stream = new ANTLRInputStream(input);
+        CodePointCharStream stream = CharStreams.fromString(input);
         SQLLexer lex = new SQLLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lex);
         SQLParser parser = new SQLParser(tokens);
@@ -157,7 +157,7 @@ public class SQLParserListenerTest {
     }
 
     private SQLParserListener parse(String query) {
-        CharStream stream = new ANTLRInputStream(query);
+        CodePointCharStream stream = CharStreams.fromString(query);
         SQLLexer lex = new SQLLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lex);
         SQLParser parser = new SQLParser(tokens);
