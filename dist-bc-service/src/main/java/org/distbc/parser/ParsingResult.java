@@ -27,7 +27,6 @@ public interface ParsingResult {
     List<String> getTableNames();
     List<String> getProjectionColumnNames();
     List<String> getWhereClauses();
-    List<String> getJoinClauses();
     List<BinaryOperation> getSelections();
     String getExpressionText();
     List<BinaryOperation> getJoins();
