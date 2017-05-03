@@ -32,6 +32,7 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     private List<String> joinClauses = new ArrayList<>();
     private List<String> columnNamesInWhereClauses = new ArrayList<>();
     private List<BinaryOperation> binaryOperations = new ArrayList<>();
+    private String expressionText = null;
 
     @Override
     public void exitTable_name(SQLParser.Table_nameContext ctx) {
@@ -66,6 +67,15 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
+    public void exitExpression(SQLParser.ExpressionContext ctx) {
+        // this text has all whitespaces stripped out
+        // and all non-relevant characters stripped out too
+        // in order to get the original string, you can do something like this:
+        // ctx.start.getInputStream()
+        this.expressionText = ctx.getText();
+    }
+
+    @Override
     public List<String> getTableNames() {
         return tableNames;
     }
@@ -85,7 +95,13 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
         return joinClauses;
     }
 
+    @Override
     public List<BinaryOperation> getBinaryOperations() {
         return binaryOperations;
+    }
+
+    @Override
+    public String getExpressionText() {
+        return expressionText;
     }
 }

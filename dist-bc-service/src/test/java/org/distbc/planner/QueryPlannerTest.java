@@ -20,6 +20,7 @@ package org.distbc.planner;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
 import org.distbc.data.structures.Catalog;
@@ -93,6 +94,11 @@ public class QueryPlannerTest {
             public List<BinaryOperation> getBinaryOperations() {
                 return Collections.emptyList();
             }
+
+            @Override
+            public String getExpressionText() {
+                return StringUtils.EMPTY;
+            }
         };
 
         QueryPlan qp = planner.generateQueryPlan(pr);
@@ -140,6 +146,11 @@ public class QueryPlannerTest {
             @Override
             public List<BinaryOperation> getBinaryOperations() {
                 return Collections.emptyList();
+            }
+
+            @Override
+            public String getExpressionText() {
+                return StringUtils.EMPTY;
             }
         };
 

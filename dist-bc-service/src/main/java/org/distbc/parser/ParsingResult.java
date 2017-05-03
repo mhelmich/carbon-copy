@@ -26,6 +26,7 @@ public interface ParsingResult {
     List<String> getWhereClauses();
     List<String> getJoinClauses();
     List<BinaryOperation> getBinaryOperations();
+    String getExpressionText();
 
     class UnaryOperation {
         final String operand1;
