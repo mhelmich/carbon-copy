@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class OpSelection implements Supplier<Set<GUID>> {
+class OpSelection implements Supplier<Set<GUID>> {
 
     private final Set<String> columnNames;
     private final Table tableToUse;

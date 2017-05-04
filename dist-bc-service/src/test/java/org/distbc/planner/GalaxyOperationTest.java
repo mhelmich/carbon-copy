@@ -216,7 +216,7 @@ public class GalaxyOperationTest {
     }
 
     @Test
-    public void testOpSelection() throws IOException {
+    public void testOpSelection2() throws IOException {
         Table t = createDummyTable();
 
         List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
@@ -250,10 +250,10 @@ public class GalaxyOperationTest {
         /////////////////////////////
         ///////////////////////
         // SELECTION
-        List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
-            add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
+        Set<String> columns = new HashSet<String>() {{
+            add("FOO");
         }};
-        OpSelection2 sel = new OpSelection2(bos, t);
+        OpSelection sel = new OpSelection(columns, t, "FOO <= 'tup2_foo'");
         Set<GUID> res = sel.get();
 
         /////////////////////////////
@@ -273,7 +273,7 @@ public class GalaxyOperationTest {
     }
 
     @Test
-    public void testOpSelection2() throws IOException {
+    public void testOpSelection() throws IOException {
         Table t = createDummyTable();
         Set<String> cns = new HashSet<String>() {{
             add("FOO");
@@ -284,7 +284,7 @@ public class GalaxyOperationTest {
     }
 
     @Test
-    public void testOpSelection2Boolean() throws IOException {
+    public void testOpSelectionBoolean() throws IOException {
         Table t = createDummyTable();
         Set<String> cns = new HashSet<String>() {{
             add("FOO");

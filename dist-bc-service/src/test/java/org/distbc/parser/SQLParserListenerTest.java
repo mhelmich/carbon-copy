@@ -27,11 +27,13 @@ import org.distbc.parser.gen.SQLLexer;
 import org.distbc.parser.gen.SQLParser;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class SQLParserListenerTest {
     @Test
@@ -68,10 +70,13 @@ public class SQLParserListenerTest {
         assertEquals(1, listener.getProjectionColumnNames().size());
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(4, listener.getTableNames().size());
+        List<String> columnNames = new ArrayList<>(listener.getTableNames());
         for (int i = 0; i < listener.getTableNames().size(); i++) {
-            assertEquals("tab" + (i + 1), listener.getTableNames().get(i));
+            assertTrue(columnNames.contains("tab" + (i + 1)));
+            assertTrue(columnNames.remove("tab" + (i + 1)));
         }
-        assertNull( listener.getExpressionText());
+        assertTrue(columnNames.isEmpty());
+        assertNull(listener.getExpressionText());
     }
 
     @Test
