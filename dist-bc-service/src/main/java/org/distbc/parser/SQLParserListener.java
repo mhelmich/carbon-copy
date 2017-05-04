@@ -71,7 +71,8 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     @Override
     public void exitTable_atom(SQLParser.Table_atomContext ctx) {
-        tableAliasToTableName.put(ctx.table_name().getText(), ctx.table_alias().getText());
+        String alias = (ctx.table_alias() != null) ? ctx.table_alias().getText() : ctx.table_name().getText();
+        tableAliasToTableName.put(alias, ctx.table_name().getText());
     }
 
     @Override
