@@ -26,7 +26,6 @@ import org.distbc.data.structures.Catalog;
 import org.distbc.data.structures.DataStructureModule;
 import org.distbc.data.structures.InternalDataStructureFactory;
 import org.distbc.data.structures.Table;
-import org.distbc.data.structures.TempTable;
 import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
@@ -43,8 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
@@ -71,16 +68,14 @@ public class QueryPlannerTest {
         ParsingResult pr = Mockito.mock(ParsingResult.class);
         Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
         Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t1_narf"));
+        Mockito.when(pr.getExpressionText()).thenReturn("");
 
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
         QueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
-        assertNotEquals(t1.getId(), getBase(sl).getId());
-        List<Operation> ops = getOperations(sl);
-        assertEquals(1, ops.size());
-        assertTrue(ops.get(0) instanceof Projection);
+        assertEquals(t1.getId(), getBase(sl).getId());
     }
 
     /**
@@ -96,17 +91,14 @@ public class QueryPlannerTest {
         ParsingResult pr = Mockito.mock(ParsingResult.class);
         Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
         Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t2_narf"));
-        Mockito.when(pr.getWhereClauses()).thenReturn(ImmutableList.of("t2_narf = 'void'"));
+        Mockito.when(pr.getExpressionText()).thenReturn("t2_narf='void'");
 
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
         QueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
-        assertNotEquals(t1.getId(), getBase(sl).getId());
-        List<Operation> ops = getOperations(sl);
-        assertEquals(2, ops.size());
-        assertTrue(ops.get(0) instanceof Projection);
+        assertEquals(t1.getId(), getBase(sl).getId());
     }
 
     private Table getTable(String tableName) throws IOException {
@@ -178,16 +170,9 @@ public class QueryPlannerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private TempTable getBase(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
+    private Table getBase(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
         Field field = swimLane.getClass().getDeclaredField("base");
         field.setAccessible(true);
-        return (TempTable) field.get(swimLane);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Operation> getOperations(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
-        Field field = swimLane.getClass().getDeclaredField("ops");
-        field.setAccessible(true);
-        return (List<Operation>) field.get(swimLane);
+        return (Table) field.get(swimLane);
     }
 }

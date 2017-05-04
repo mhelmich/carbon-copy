@@ -86,11 +86,6 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
     }
 
     @Override
-    public List<String> getWhereClauses() {
-        return whereClauses;
-    }
-
-    @Override
     public List<BinaryOperation> getSelections() {
         return selections;
     }
@@ -102,6 +97,6 @@ class SQLParserListener extends SQLParserBaseListener implements ParsingResult {
 
     @Override
     public String getExpressionText() {
-        return expressionText;
+        return expressionText != null ? expressionText : "";
     }
 }
