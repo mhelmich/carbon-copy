@@ -59,7 +59,7 @@ class OpSelection implements Supplier<Set<GUID>> {
         Map<String, Boolean> columnNameToNumeric = tableMetadata.stream()
                 .collect(Collectors.toMap(tuple -> (String)tuple.get(0), tuple -> {
                     try {
-                        return Number.class.isAssignableFrom(Class.forName(tuple.get(2).toString()));
+                        return Number.class.isAssignableFrom(Class.forName((String)tuple.get(2)));
                     } catch (ClassNotFoundException e) {
                         return false;
                     }
