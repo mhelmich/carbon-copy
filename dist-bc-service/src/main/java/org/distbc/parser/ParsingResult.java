@@ -22,11 +22,10 @@ import java.util.List;
 
 public interface ParsingResult {
     /**
-     * Unordered list of table names in the SQL
+     * _Unordered_ list of table names in the SQL
      */
     List<String> getTableNames();
     List<String> getProjectionColumnNames();
-    List<String> getWhereClauses();
     List<BinaryOperation> getSelections();
     String getExpressionText();
     List<BinaryOperation> getJoins();

@@ -22,17 +22,13 @@ import com.google.inject.Inject;
 import org.distbc.data.structures.Catalog;
 import org.distbc.data.structures.DataStructureFactory;
 import org.distbc.data.structures.Table;
-import org.distbc.data.structures.TempTable;
 import org.distbc.data.structures.TopLevelDataStructure;
-import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 import org.distbc.parser.ParsingResult;
 
-import java.io.IOException;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -60,43 +56,19 @@ class QueryPlannerImpl implements QueryPlanner {
 
     @Override
     public QueryPlan generateQueryPlan(ParsingResult parsingResult) {
-        List<Table> tables = orderTablesInExecutionOrder(parsingResult);
-        Map<String, QueryPlanSwimLane> tableNameToSwimLand = new HashMap<>(tables.size());
         QueryPlanImpl qp = new QueryPlanImpl();
-        Txn txn = txnManager.beginTransaction();
-
-        try {
-            try {
-                tables.forEach(table -> {
-                    TempTable tt = dsFactory.newTempTableFromTable(table, txn);
-                    QueryPlanSwimLane sl = new QueryPlanSwimLane(tt);
-                    // figure out projections first
-                    sl.addOperation(generateProjectionForTable(tt, parsingResult));
-                    // then do selections
-                    if (parsingResult.getWhereClauses().size() > 0) {
-                        sl.addOperation(generateSelectionForTable(tt, parsingResult));
-                    }
-                    qp.addSwimLane(sl);
-                    tableNameToSwimLand.put(table.getName(), sl);
-                });
-            } finally {
-                txn.commit();
-            }
-        } catch (IOException xcp) {
-            throw new RuntimeException(xcp);
-        }
-
-        // each of these swim lanes can be kicked off already
-        // but we don't do that...
-        // then determine how tables feed into joins
-        parsingResult.getJoins().forEach(joinClause -> {
-            // TODO: get both tables out of the joinClause
-            // potentially parse the string again ... not crazy cool but gets us there :)
-            // create new swim lane from child swim lanes
-            // let's see how this goes for us :)
-            qp.addSwimLane(generateJoinForSwimLanes(tableNameToSwimLand.get(""), tableNameToSwimLand.get(""), parsingResult));
+        List<Table> tables = orderTablesInExecutionOrder(parsingResult);
+        tables.forEach(table -> {
+            QueryPlanSwimLane sl = new QueryPlanSwimLane(dsFactory, txnManager, table);
+            // TODO -- do more figuring out here
+            // we need to make sure that we only use columns that exist in this table
+            Set<String> columnsToSelectOn = parsingResult.getSelections().stream()
+                    .map(bo -> bo.operand1)
+                    .collect(Collectors.toSet());
+            sl.addSelection(columnsToSelectOn, table, parsingResult.getExpressionText());
+            sl.addProjection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
+            qp.addSwimLane(sl);
         });
-
         return qp;
     }
 
@@ -105,27 +77,5 @@ class QueryPlannerImpl implements QueryPlanner {
                 .map(tableName -> catalog.get(tableName, Table.class))
                 .sorted(Comparator.comparing(TopLevelDataStructure::getName))
                 .collect(Collectors.toList());
-    }
-
-    private Operation generateProjectionForTable(TempTable table, ParsingResult parsingResult) {
-        return new Projection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
-    }
-
-    private Operation generateSelectionForTable(TempTable table, ParsingResult parsingResult) {
-        List<String> columnsOnTable = table.getColumnNames();
-        // TODO -- this doesn't take care of bound clauses
-        // e.g. this AND that OR these
-        List<ParsingResult.BinaryOperation> bos = parsingResult.getSelections();
-        bos = bos.stream()
-                .filter(bo -> columnsOnTable.indexOf(bo.operand1) >= 0)
-                .collect(Collectors.toList());
-        // get all where clauses that are interesting for the table in question
-        // convert the tree into a series of strings
-        // selections with literals only
-        return new Selection(bos);
-    }
-
-    private QueryPlanSwimLane generateJoinForSwimLanes(QueryPlanSwimLane sl1, QueryPlanSwimLane sl2, ParsingResult parsingResult) {
-        return null;
     }
 }

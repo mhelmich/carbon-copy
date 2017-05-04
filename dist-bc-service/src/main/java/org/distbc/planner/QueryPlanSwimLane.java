@@ -18,30 +18,52 @@
 
 package org.distbc.planner;
 
+import org.distbc.data.structures.DataStructureFactory;
+import org.distbc.data.structures.GUID;
+import org.distbc.data.structures.Table;
 import org.distbc.data.structures.TempTable;
+import org.distbc.data.structures.Txn;
+import org.distbc.data.structures.TxnManager;
 
-import java.util.LinkedList;
+import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class QueryPlanSwimLane implements Callable<TempTable> {
-    private TempTable base;
-    private List<Operation> ops = new LinkedList<>();
+    private final DataStructureFactory dsFactory;
+    private final TxnManager txnManager;
+    private final Table base;
+    private OpSelection selection;
+    private OpProjection projection;
 
-    QueryPlanSwimLane(TempTable base) {
+    QueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, Table base) {
+        this.dsFactory = dsFactory;
+        this.txnManager = txnManager;
         this.base = base;
     }
 
-    void addOperation(Operation op) {
-        ops.add(op);
+    void addSelection(Set<String> columnNames, Table tableToUse, String expression) {
+        this.selection = new OpSelection(columnNames, tableToUse, expression);
     }
 
-    @Override
+    void addProjection(List<String> columnNamesToProjectTo, List<String> columnsAvailableInTuple) {
+        this.projection = new OpProjection(columnNamesToProjectTo, columnsAvailableInTuple);
+    }
+
     public TempTable call() throws Exception {
-        TempTable tempResult = base;
-        for (Operation op : ops) {
-            tempResult = op.apply(tempResult, null);
+        List<Integer> columnIndexesToKeep = projection.get();
+        Set<GUID> guidsToKeep =  selection.get();
+        Txn txn = txnManager.beginTransaction();
+        try {
+            TempTable tt = dsFactory.newTempTable(txn);
+            OpMaterialize materialize = new OpMaterialize(base, tt, guidsToKeep, columnIndexesToKeep);
+            tt = materialize.apply(txn);
+            txn.commit();
+            return tt;
+        } catch (IOException e) {
+            txn.rollback();
+            throw new RuntimeException(e);
         }
-        return tempResult;
     }
 }
