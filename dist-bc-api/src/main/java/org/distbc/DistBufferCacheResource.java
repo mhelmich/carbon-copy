@@ -37,5 +37,5 @@ public interface DistBufferCacheResource {
     @POST
     @Path("/query")
     @Timed
-    Set<Object> query(@QueryParam("query") String query);
+    Set<Object> query(@QueryParam("query") String query) throws Exception;
 }
