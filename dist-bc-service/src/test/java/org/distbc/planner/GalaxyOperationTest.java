@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -61,7 +62,7 @@ public class GalaxyOperationTest {
         TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
         txn.commit();
 
-        Projection p = new Projection(ImmutableList.of("tup_num".toUpperCase(), "foo".toUpperCase()), ttOld.getColumnNames());
+        Projection p = new Projection(ImmutableList.of("tup_num", "foo"), ttOld.getColumnNames());
         Txn txn2 = txnManager.beginTransaction();
         TempTable tt = p.apply(ttOld, txn2);
         txn2.commit();
@@ -194,7 +195,7 @@ public class GalaxyOperationTest {
             assertEquals("tup2_foo", res.get(guid).get(0));
         }
 
-        assertNotNull(tt.getColumnMetadataByColumnName("TUP_NUM"));
+        assertNotNull(tt.getColumnMetadataByColumnName("tup_num"));
     }
 
     @Test
@@ -220,7 +221,7 @@ public class GalaxyOperationTest {
         Table t = createDummyTable();
 
         List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
-            add(new ParsingResult.BinaryOperation("FOO", "<=", "tup2_foo"));
+            add(new ParsingResult.BinaryOperation("foo", "<=", "tup2_foo"));
         }};
 
         OpSelection2 op = new OpSelection2(bos, t);
@@ -241,7 +242,7 @@ public class GalaxyOperationTest {
         ///////////////////////
         // PROJECTION
         List<String> columnNamesToProjectTo = new LinkedList<String>() {{
-            add("tup_num".toUpperCase());
+            add("tup_num");
         }};
         List<String> columnsAvailableInTuple = t.getColumnNames();
         OpProjection pro = new OpProjection(columnNamesToProjectTo, columnsAvailableInTuple);
@@ -251,9 +252,9 @@ public class GalaxyOperationTest {
         ///////////////////////
         // SELECTION
         Set<String> columns = new HashSet<String>() {{
-            add("FOO");
+            add("foo");
         }};
-        OpSelection sel = new OpSelection(columns, t, "FOO <= 'tup2_foo'");
+        OpSelection sel = new OpSelection(columns, t, "foo <= 'tup2_foo'");
         Set<GUID> res = sel.get();
 
         /////////////////////////////
@@ -276,9 +277,9 @@ public class GalaxyOperationTest {
     public void testOpSelection() throws IOException {
         Table t = createDummyTable();
         Set<String> cns = new HashSet<String>() {{
-            add("FOO");
+            add("foo");
         }};
-        OpSelection sel = new OpSelection(cns, t, "FOO <= 'tup2_foo'");
+        OpSelection sel = new OpSelection(cns, t, "foo <= 'tup2_foo'");
         Set<GUID> resultSet = sel.get();
         assertEquals(2, resultSet.size());
     }
@@ -287,10 +288,10 @@ public class GalaxyOperationTest {
     public void testOpSelectionBoolean() throws IOException {
         Table t = createDummyTable();
         Set<String> cns = new HashSet<String>() {{
-            add("FOO");
-            add("MOEP");
+            add("foo");
+            add("moep");
         }};
-        OpSelection sel = new OpSelection(cns, t, "FOO <= 'tup2_foo' AND MOEP = '__moep__'");
+        OpSelection sel = new OpSelection(cns, t, "foo <= 'tup2_foo' AND moep = '__moep__'");
         Set<GUID> resultSet = sel.get();
         assertEquals(1, resultSet.size());
     }
@@ -302,7 +303,7 @@ public class GalaxyOperationTest {
     private Table createDummyTable(List<GUID> guids) throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis() + "_" + this.getClass().getName())
+        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "_"))
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);

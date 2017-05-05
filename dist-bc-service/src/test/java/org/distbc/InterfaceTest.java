@@ -82,7 +82,7 @@ public class InterfaceTest {
     @Test
     public void testBasic() throws Exception {
         Table t = createDummyTable();
-        String query = "select TUP_NUM from " + t.getName() + " where FOO <= 'tup2_foo'";
+        String query = "select tup_num from " + t.getName() + " where foo <= 'tup2_foo'";
         ParsingResult pr = queryParser.parse(query);
         logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
         logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));

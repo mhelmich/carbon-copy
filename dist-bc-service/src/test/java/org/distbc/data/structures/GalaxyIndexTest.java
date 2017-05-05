@@ -115,8 +115,8 @@ public class GalaxyIndexTest {
 
         Index newAndShinyIndex = dsFactory.loadIndex(idxId);
         List<String> columnNames = newAndShinyIndex.getColumnNames();
-        assertEquals("NUMBER", columnNames.get(0));
-        assertEquals("FOO", columnNames.get(1));
-        assertEquals("FOOBAR", columnNames.get(2));
+        assertEquals("number", columnNames.get(0));
+        assertEquals("foo", columnNames.get(1));
+        assertEquals("foobar", columnNames.get(2));
     }
 }

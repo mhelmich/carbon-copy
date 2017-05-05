@@ -69,13 +69,13 @@ public class GalaxyTempTableTest {
         txn.commit();
 
         txn = txnManager.beginTransaction();
-        tt.removeColumnWithName("foo".toUpperCase(), txn);
+        tt.removeColumnWithName("foo", txn);
         txn.commit();
 
         List<Tuple> columns = tt.getColumnMetadata();
         assertEquals(2, columns.size());
-        assertEquals("tup_num".toUpperCase(), columns.get(0).get(0));
-        assertEquals("moep".toUpperCase(), columns.get(1).get(0));
+        assertEquals("tup_num", columns.get(0).get(0));
+        assertEquals("moep", columns.get(1).get(0));
     }
 
     @Test

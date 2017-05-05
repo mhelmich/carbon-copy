@@ -46,7 +46,7 @@ class Selection implements Operation {
         Predicate<Tuple> p = tuple -> {
             AtomicBoolean b = new AtomicBoolean(false);
             bos.forEach(binaryOperation -> {
-                Integer idx = columnNameToIndex.get(binaryOperation.operand1.toUpperCase());
+                Integer idx = columnNameToIndex.get(binaryOperation.operand1);
                 if (idx != null) {
                     int cmp = tuple.get(idx).compareTo(binaryOperation.operand2);
                     switch(binaryOperation.operation) {
