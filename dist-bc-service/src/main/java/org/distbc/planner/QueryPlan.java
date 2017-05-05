@@ -18,10 +18,10 @@
 
 package org.distbc.planner;
 
-import org.distbc.data.structures.Tuple;
+import org.distbc.data.structures.TempTable;
 
-import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 public interface QueryPlan {
-    Set<Tuple> execute();
+    TempTable execute(ExecutorService es) throws Exception;
 }

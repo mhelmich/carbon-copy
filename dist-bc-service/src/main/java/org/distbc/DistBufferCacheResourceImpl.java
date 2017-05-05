@@ -23,9 +23,10 @@ import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
-import org.distbc.data.structures.Tuple;
+import org.distbc.data.structures.TempTable;
 import org.distbc.data.structures.experimental.SkipList;
 import org.distbc.parser.ParsingResult;
 import org.distbc.parser.QueryParser;
@@ -33,11 +34,14 @@ import org.distbc.planner.QueryPlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
 class DistBufferCacheResourceImpl implements DistBufferCacheResource {
     private static Logger logger = LoggerFactory.getLogger(DistBufferCacheResourceImpl.class);
@@ -46,6 +50,9 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
     private final Grid grid;
     private final QueryParser queryParser;
     private final QueryPlanner queryPlanner;
+
+    private static final ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("query-worker-%d").build();
+    private static final ExecutorService es = Executors.newFixedThreadPool(3, tf);
 
     @Inject
     DistBufferCacheResourceImpl(Grid grid, QueryParser queryParser, QueryPlanner queryPlanner) {
@@ -95,12 +102,12 @@ class DistBufferCacheResourceImpl implements DistBufferCacheResource {
         return "ok";
     }
 
-    public Set<Object> query(String query) {
+    public Set<Object> query(String query) throws Exception {
         ParsingResult pr = queryParser.parse(query);
-        logger.info("All the tables I want to access: {}", StringUtils.join(", ", pr.getTableNames()));
-        logger.info("All the columns I want to access: {}", StringUtils.join(", ", pr.getProjectionColumnNames()));
-        Set<Tuple> tuples = queryPlanner.generateQueryPlan(pr).execute();
+        logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
+        logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));
+        TempTable tuples = queryPlanner.generateQueryPlan(pr).execute(es);
         logger.info("#tuples {}", tuples.size());
-        return Collections.emptySet();
+        return tuples.keys().collect(Collectors.toSet());
     }
 }

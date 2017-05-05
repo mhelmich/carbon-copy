@@ -19,39 +19,36 @@
 package org.distbc.planner;
 
 import org.distbc.data.structures.TempTable;
-import org.distbc.data.structures.Tuple;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class QueryPlanImpl implements QueryPlan {
-    List<QueryPlanSwimLane> swimLanes = new LinkedList<>();
+    private List<QueryPlanSwimLane> swimLanes = new LinkedList<>();
 
     void addSwimLane(QueryPlanSwimLane sl) {
         swimLanes.add(sl);
     }
 
     @Override
-    public Set<Tuple> execute() {
-        TempTable tt;
-        ExecutorService es = Executors.newFixedThreadPool(swimLanes.size());
+    public TempTable execute(ExecutorService es) throws Exception {
+        // TODO -- this has to take care of the juggling of swim lanes
+//        Set<Future<TempTable>> futures = swimLanes.stream()
+//                .map(es::submit)
+//                .collect(Collectors.toSet());
+
+        QueryPlanSwimLane sl = swimLanes.get(0);
+        Future<TempTable> f = es.submit(sl);
 
         try {
-            while (!swimLanes.isEmpty()) {
-                Set<Future<TempTable>> futures = swimLanes.stream()
-                        .map(es::submit)
-                        .collect(Collectors.toSet());
-            }
-        } finally {
-            es.shutdown();
+            return f.get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException xcp) {
+            throw new Exception(xcp);
         }
-
-        return Collections.emptySet();
     }
 }

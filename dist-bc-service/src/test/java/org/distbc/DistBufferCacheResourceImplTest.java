@@ -31,7 +31,6 @@ import org.junit.runner.RunWith;
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
 public class DistBufferCacheResourceImplTest {
-
     @Inject
     private QueryParser queryParser;
 
@@ -39,7 +38,7 @@ public class DistBufferCacheResourceImplTest {
     private QueryPlanner queryPlanner;
 
     @Test(expected = IllegalArgumentException.class)
-    public void testNoTablePresent() {
+    public void testNoTablePresent() throws Exception {
         DistBufferCacheResource r = new DistBufferCacheResourceImpl(null, queryParser, queryPlanner);
         r.query("select * from table1");
     }
