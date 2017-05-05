@@ -66,4 +66,9 @@ public class QueryPlanSwimLane implements Callable<TempTable> {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public String toString() {
+        return projection.toString() + " - " + selection.toString();
+    }
 }

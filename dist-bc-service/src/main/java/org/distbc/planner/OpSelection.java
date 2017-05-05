@@ -101,4 +101,9 @@ class OpSelection implements Supplier<Set<GUID>> {
                 .map(Tuple::getGuid)
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public String toString() {
+        return expression;
+    }
 }
