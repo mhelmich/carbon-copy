@@ -46,7 +46,7 @@ class QueryPlanImpl implements QueryPlan {
         Future<TempTable> f = es.submit(sl);
 
         try {
-            return f.get(5, TimeUnit.SECONDS);
+            return f.get(120, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException xcp) {
             throw new Exception(xcp);
         }

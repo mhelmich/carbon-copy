@@ -71,10 +71,39 @@ class OpSelection implements Supplier<Set<GUID>> {
         for (String columnName : columnNames) {
             Boolean isNumber = columnNameToNumeric.get(columnName);
             if (isNumber != null && isNumber) {
-                tmp = tmp.replaceAll(columnName, "#{" + columnName + "}");
+                // replace all column names that are not within single quotes
+                tmp = tmp.replaceAll(
+                        columnName +   // replace this string
+                        "(?=" +        // followed by
+                          "(?:" +      // start a non-capture group -- these things will be skipped
+                            "[^\']*" + // 0 or more non-quote characters
+                            "\'" +     // 1 quote
+                            "[^\']*" + // 0 or more non-quote characters
+                            "\'" +     // 1 quote
+                          ")*" +       // 0 or more repetition of non-capture group (multiple of 2 quotes will be even)
+                          "[^\']*" +   // finally 0 or more non-quotes
+                          "$" +        // till the end  (this is necessary, else every comma will satisfy the condition)
+                        ")",
+                        "#{" + columnName + "}"
+                );
+
             } else {
                 // this contains single quotes!!! to make non-numeric values a string
-                tmp = tmp.replaceAll(columnName, "'#{" + columnName + "}'");
+                // replace all column names that are not within single quotes
+                tmp = tmp.replaceAll(
+                        columnName +   // replace this string
+                        "(?=" +        // followed by
+                          "(?:" +      // start a non-capture group -- these things will be skipped
+                            "[^\']*" + // 0 or more non-quote characters
+                            "\'" +     // 1 quote
+                            "[^\']*" + // 0 or more non-quote characters
+                            "\'" +     // 1 quote
+                          ")*" +       // 0 or more repetition of non-capture group (multiple of 2 quotes will be even)
+                          "[^\']*" +   // finally 0 or more non-quotes
+                          "$" +        // till the end  (this is necessary, else every comma will satisfy the condition)
+                        ")",
+                        "'#{" + columnName + "}'"
+                );
             }
         }
         // this is used into the closure and needs to be final

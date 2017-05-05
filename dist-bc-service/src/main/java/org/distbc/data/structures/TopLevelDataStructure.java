@@ -93,7 +93,7 @@ public abstract class TopLevelDataStructure extends DataStructure {
         checkDataStructureRetrieved();
         for (Tuple column : columns) {
             verifyAddColumnTypes(column);
-            String columnName = column.get(0).toString().toUpperCase();
+            String columnName = column.get(0).toString();
             column.put(0, columnName);
             this.columnMetadata.put(columnName, column, txn);
         }

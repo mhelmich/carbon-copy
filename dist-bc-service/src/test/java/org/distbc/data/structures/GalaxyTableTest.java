@@ -95,8 +95,8 @@ public class GalaxyTableTest {
 
         List<String> cols = table2.getColumnNames();
         assertEquals(3, cols.size());
-        assertEquals("tup_num".toUpperCase(), cols.get(0));
-        assertEquals("moep".toUpperCase(), cols.get(1));
-        assertEquals("foo".toUpperCase(), cols.get(2));
+        assertEquals("tup_num", cols.get(0));
+        assertEquals("moep", cols.get(1));
+        assertEquals("foo", cols.get(2));
     }
 }
