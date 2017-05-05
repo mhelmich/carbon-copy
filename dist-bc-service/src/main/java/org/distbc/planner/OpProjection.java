@@ -18,6 +18,8 @@
 
 package org.distbc.planner;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,5 +39,10 @@ class OpProjection implements Supplier<List<Integer>> {
         return columnNamesToProjectTo.stream()
                 .map(columnsAvailableInTuple::indexOf)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public String toString() {
+        return StringUtils.join(columnNamesToProjectTo, ", ");
     }
 }
