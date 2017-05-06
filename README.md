@@ -5,6 +5,7 @@ Distributed BufferCache
 
 # Table of Contents
 - [Overview](#overview)
+  - [Roadmap](#roadmap)
 - [Architecture](#architecture)
 - [Components](#components)
   - [Data Structures](#data-structures)
@@ -17,6 +18,15 @@ Distributed BufferCache
 
 * read-only distributed in-memory data store
 * a more resilient redis cluster with complex data structures
+
+### Roadmap
+
+* joins!
+* query optimization by using indexes
+* capturing stats
+* monitoring and logging
+* management endpoints (creating tables, indexes, etc.)
+* develop routing manager inside the cluster to forward queries to nodes with resident data ([this article](http://highscalability.com/blog/2012/8/20/the-performance-of-distributed-data-structures-running-on-a.html) illustrates the idea)
 
 ## Architecture
 
