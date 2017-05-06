@@ -20,7 +20,6 @@ package org.distbc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import org.apache.commons.lang3.StringUtils;
 import org.distbc.data.structures.Catalog;
 import org.distbc.data.structures.DataStructureFactory;
 import org.distbc.data.structures.DataStructureModule;
@@ -39,8 +38,6 @@ import org.distbc.planner.QueryPlanner;
 import org.distbc.planner.QueryPlannerModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -59,8 +56,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
 public class InterfaceTest {
-    private static Logger logger = LoggerFactory.getLogger(DistBufferCacheResourceImpl.class);
-
     @Inject
     private QueryParser queryParser;
 
@@ -84,8 +79,6 @@ public class InterfaceTest {
         Table t = createDummyTable();
         String query = "select tup_num from " + t.getName() + " where foo <= 'tup2_foo'";
         ParsingResult pr = queryParser.parse(query);
-        logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
-        logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));
         QueryPlan qp = queryPlanner.generateQueryPlan(pr);
         TempTable tuples = qp.execute(es);
         assertNotNull(tuples);
@@ -96,6 +89,28 @@ public class InterfaceTest {
         Set<String> expectedResults = new HashSet<String>() {{
             add("tup2_narf");
             add("tup1_narf");
+        }};
+        for (Tuple tup : resultSet) {
+            assertEquals(1, tup.getTupleSize());
+            assertTrue(expectedResults.remove(tup.get(0).toString()));
+        }
+        assertTrue(expectedResults.isEmpty());
+    }
+
+    @Test
+    public void testBasicBooleanExpression() throws Exception {
+        Table t = createDummyTable();
+        String query = "select tup_num from " + t.getName() + " where foo <= 'tup2_foo' and moep='__moep__'";
+        ParsingResult pr = queryParser.parse(query);
+        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
+        TempTable tuples = qp.execute(es);
+        assertNotNull(tuples);
+        Set<Tuple> resultSet = tuples.keys()
+                .map(tuples::get)
+                .collect(Collectors.toSet());
+        assertEquals(1, resultSet.size());
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("tup2_narf");
         }};
         for (Tuple tup : resultSet) {
             assertEquals(1, tup.getTupleSize());

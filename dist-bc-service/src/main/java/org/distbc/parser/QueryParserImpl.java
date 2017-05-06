@@ -34,7 +34,7 @@ public class QueryParserImpl implements QueryParser {
         SQLParser parser = new SQLParser(tokens);
         SQLParser.StmtContext stmtCtx = parser.stmt();
 
-        SQLParserListener listener = new SQLParserListener();
+        SQLParserListener listener = new SQLParserListener(tokens);
         ParseTreeWalker.DEFAULT.walk(listener, stmtCtx);
         return listener;
     }

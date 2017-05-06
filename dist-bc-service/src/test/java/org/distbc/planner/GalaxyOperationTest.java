@@ -291,7 +291,7 @@ public class GalaxyOperationTest {
             add("foo");
             add("moep");
         }};
-        OpSelection sel = new OpSelection(cns, t, "foo <= 'tup2_foo' AND moep = '__moep__'");
+        OpSelection sel = new OpSelection(cns, t, "foo <= 'tup2_foo' && moep == '__moep__'");
         Set<GUID> resultSet = sel.get();
         assertEquals(1, resultSet.size());
     }

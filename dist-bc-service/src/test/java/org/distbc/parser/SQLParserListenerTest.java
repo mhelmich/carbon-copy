@@ -21,7 +21,6 @@ package org.distbc.parser;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.distbc.parser.gen.SQLLexer;
 import org.distbc.parser.gen.SQLParser;
@@ -29,7 +28,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,34 +84,40 @@ public class SQLParserListenerTest {
         assertEquals(1, listener.getProjectionColumnNames().size());
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
-        assertEquals("col2=13", listener.getExpressionText());
-
-        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(CharStreams.fromString(listener.getExpressionText()))));
-        List<String> exprComponents = parser.simple_expression().children.stream().map(ParseTree::getText).collect(Collectors.toList());
-        assertEquals(3, exprComponents.size());
-        assertEquals("col2", exprComponents.get(0));
-        assertEquals("=", exprComponents.get(1));
-        assertEquals("13", exprComponents.get(2));
-        assertEquals("col2=13",  listener.getExpressionText());
+        assertEquals("col2==13", listener.getExpressionText());
     }
 
     @Test
     public void testSelectionWithBooleanExpression() {
-        String input = "select col from tab1 where col2 = 13 AND col1= 'narf'";
+        String input = "select col from tab1 where col2 = 13 and col1= 'narf'";
         SQLParserListener listener = parse(input);
 
         assertEquals(1, listener.getProjectionColumnNames().size());
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
-        assertEquals("col2=13ANDcol1='narf'", listener.getExpressionText());
+        assertEquals("col2==13&&col1=='narf'", listener.getExpressionText());
+    }
 
-        SQLParser parser = new SQLParser(new CommonTokenStream(new SQLLexer(CharStreams.fromString(listener.getExpressionText()))));
-        List<String> exprComponents = parser.simple_expression().children.stream().map(ParseTree::getText).collect(Collectors.toList());
-        assertEquals(3, exprComponents.size());
-        assertEquals("col2", exprComponents.get(0));
-        assertEquals("=", exprComponents.get(1));
-        assertEquals("13", exprComponents.get(2));
-        assertEquals("col2=13ANDcol1='narf'",  listener.getExpressionText());
+    @Test
+    public void testSelectionWithBooleanExpression2() {
+        String input = "select col from tab1 where col2 < 13 or col1>= 'narf'";
+        SQLParserListener listener = parse(input);
+
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(1, listener.getTableNames().size());
+        assertEquals("col2<13||col1>='narf'", listener.getExpressionText());
+    }
+
+    @Test
+    public void testSelectionWithBooleanExpression3() {
+        String input = "select col from tab1 where col2 = 13 or col1 = 'narf' or col3 = 17 and col4 > 19 AND col5 = 23";
+        SQLParserListener listener = parse(input);
+
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("col", listener.getProjectionColumnNames().get(0));
+        assertEquals(1, listener.getTableNames().size());
+        assertEquals("col2==13||col1=='narf'||col3==17&&col4>19&&col5==23", listener.getExpressionText());
     }
 
     @Test
@@ -125,7 +129,7 @@ public class SQLParserListenerTest {
         SQLParser parser = new SQLParser(tokens);
         SQLParser.Simple_expressionContext elementContext = parser.simple_expression();
 
-        SQLParserListener listener = new SQLParserListener();
+        SQLParserListener listener = new SQLParserListener(tokens);
         ParseTreeWalker.DEFAULT.walk(listener, elementContext);
     }
 
@@ -136,10 +140,10 @@ public class SQLParserListenerTest {
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
         assertEquals(1, listener.getSelections().size());
-        assertEquals("col2=13", listener.getExpressionText());
+        assertEquals("col2==13", listener.getExpressionText());
         ParsingResult.BinaryOperation bo = listener.getSelections().get(0);
         assertEquals("col2", bo.operand1);
-        assertEquals("=", bo.operation);
+        assertEquals("==", bo.operation);
         assertEquals("13", bo.operand2);
 
         listener = parse("select col from tab1 where 13 = col2");
@@ -147,10 +151,10 @@ public class SQLParserListenerTest {
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(1, listener.getTableNames().size());
         assertEquals(1, listener.getSelections().size());
-        assertEquals("13=col2", listener.getExpressionText());
+        assertEquals("13==col2", listener.getExpressionText());
         bo = listener.getSelections().get(0);
         assertEquals("col2", bo.operand1);
-        assertEquals("=", bo.operation);
+        assertEquals("==", bo.operation);
         assertEquals("13", bo.operand2);
     }
 
@@ -161,16 +165,16 @@ public class SQLParserListenerTest {
         assertEquals("col", listener.getProjectionColumnNames().get(0));
         assertEquals(2, listener.getTableNames().size());
         assertEquals(1, listener.getSelections().size());
-        assertEquals("col2=13ANDt1.id=t2.id", listener.getExpressionText());
+        assertEquals("col2==13&&t1.id==t2.id", listener.getExpressionText());
         ParsingResult.BinaryOperation bo = listener.getSelections().get(0);
         assertEquals("col2", bo.operand1);
-        assertEquals("=", bo.operation);
+        assertEquals("==", bo.operation);
         assertEquals("13", bo.operand2);
 
         assertEquals(1, listener.getJoins().size());
         ParsingResult.BinaryOperation join = listener.getJoins().get(0);
         assertEquals("t1.id", join.operand1);
-        assertEquals("=", join.operation);
+        assertEquals("==", join.operation);
         assertEquals("t2.id", join.operand2);
     }
 
@@ -181,7 +185,7 @@ public class SQLParserListenerTest {
         SQLParser parser = new SQLParser(tokens);
         SQLParser.StmtContext stmtCtx = parser.stmt();
 
-        SQLParserListener listener = new SQLParserListener();
+        SQLParserListener listener = new SQLParserListener(tokens);
         ParseTreeWalker.DEFAULT.walk(listener, stmtCtx);
         return listener;
     }
