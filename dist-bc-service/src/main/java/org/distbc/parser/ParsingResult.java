@@ -50,5 +50,10 @@ public interface ParsingResult {
             this.operand2 = operand2;
             this.operation = operation;
         }
+
+        @Override
+        public String toString() {
+            return operand1 + " " + operation + " " + operand2;
+        }
     }
 }

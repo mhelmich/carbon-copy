@@ -40,14 +40,7 @@ class OpSelection implements Supplier<Set<GUID>> {
     OpSelection(Set<String> columnNames, Table tableToUse, String expression) {
         this.columnNames = columnNames;
         this.tableToUse = tableToUse;
-        this.expression = sanitizeExpression(expression);
-    }
-
-    private String sanitizeExpression(String expression) {
-        return expression
-                .replaceAll(" = ", " == ")
-                .replaceAll(" AND ", " && ")
-                .replaceAll(" OR ", " || ");
+        this.expression = expression;
     }
 
     @Override
@@ -119,7 +112,7 @@ class OpSelection implements Supplier<Set<GUID>> {
             try {
                 return eval.getBooleanResult(newExpression);
             } catch (EvaluationException xcp) {
-                throw new RuntimeException(xcp);
+                throw new RuntimeException("invalid expression " + newExpression, xcp);
             }
         };
 
