@@ -6,7 +6,23 @@ server:
   - type: http
     port: 9001
 
-
 # defaultPeerXml: ./config/peer_example.xml
 
 # defaultPeerProperties: ./config/peer.properties
+
+logging:
+  level: INFO
+  loggers:
+    io.dropwizard: INFO
+  appenders:
+    - type: console
+      logFormat: %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+  appenders:
+    - type: file
+      currentLogFilename: ./logs/application.log
+      threshold: ALL
+      archive: true
+      archivedLogFilenamePattern: ./logs/application-%d.log
+      archivedFileCount: 5
+      timeZone: UTC
+      logFormat: %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
