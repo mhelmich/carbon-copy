@@ -22,6 +22,10 @@ import co.paralleluniverse.galaxy.Store;
 
 import java.util.Iterator;
 
+/**
+ * The foundation of all other data structures.
+ * It's merely a linked list of keys and values that is being shoved into a blob of data.
+ */
 class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     /**
      * Internal node implementing a linked list
@@ -81,7 +85,7 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         innerPut(key, val);
     }
 
-    public boolean putIfPossible(Key key, Value val, Txn txn) {
+    boolean putIfPossible(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
         boolean didPut = innerPutIfPossible(key, val);
@@ -144,7 +148,8 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         if (first == null) return false;
 
         if (key.equals(first.key)) {
-            first = (first.next != null) ? first.next : null;
+            // no need to be afraid of null
+            first = first.next;
             return true;
         }
 

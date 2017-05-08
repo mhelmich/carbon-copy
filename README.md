@@ -9,6 +9,7 @@ Distributed BufferCache
 - [Architecture](#architecture)
 - [Components](#components)
   - [Data Structures](#data-structures)
+  - [Catalog](#catalog)
   - [Query Parsing](#query-parsing)
   - [Query Planning](#query-planning)
   - [Query Execution](#query-execution)
@@ -22,6 +23,7 @@ Distributed BufferCache
 ### Roadmap
 
 * joins!
+* extend the catalog (attach indexes to tables, etc.)
 * query optimization by using indexes
 * capturing stats
 * monitoring and logging
@@ -32,7 +34,7 @@ Distributed BufferCache
 
 * short intro how galaxy works
 * probably link the high scalability article
-* explain your fanciness on top of galaxy (aka complex data structures)
+* explain the fanciness on top of galaxy (aka complex data structures)
 
 ## Components
 
@@ -44,6 +46,11 @@ Software components that are worth mentioning here.
 * serves as abstraction to not deal with galaxy concepts directly
 * probably explain things on the example of a data block
 * after that mention a bunch of other data structures and we're good
+
+### Catalog
+
+* is the directory of everything living in dist-bc
+* keeps track of all high-level data structures (tables, indexes, result sets, etc.)
 
 ### Query Parsing
 

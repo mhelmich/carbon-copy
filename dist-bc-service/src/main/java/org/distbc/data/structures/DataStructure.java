@@ -40,11 +40,17 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * This class wants to make you forget (as good as possible) what underlying library is being used.
+ * It should abstract out all the dealings you should ever be having with Galaxy.
+ *
  * Abstract classes and super classes are a red flag for guice
  * The combination of which is even worse
  * But this way I managed to build a fairly nice interface that should allow
  * easy addition of new data structures without going through the hassle
  * of setting up galaxy, worry about serialization, etc.
+ *
+ * Don't you ever call any of these constructors directly! They are made to be called by
+ * an implementation of DataStructureFactory.
  */
 abstract class DataStructure extends Sizable implements Persistable {
     private static final int TIMEOUT_SECS = 5;
@@ -72,7 +78,9 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     private final Store store;
     private long id = -1;
+    // future used to load data
     private ListenableFuture<Persistable> dataFuture = null;
+    // future to create a new data structure
     private ListenableFuture<Long> creationFuture = null;
     private boolean isLoaded = false;
 
@@ -154,6 +162,9 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
+    /**
+     * Was the data you ask for retrieved?
+     */
     boolean checkDataStructureRetrieved() {
         if (creationFuture != null) {
             try {
@@ -183,6 +194,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         return false;
     }
 
+    // has to be public because of Galaxy
     public void write(ByteBuffer compressedBB) {
         ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
         try (SerializerOutputStream out = new SerializerOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
@@ -204,6 +216,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
+    // has to be public because of Galaxy
     public void read(ByteBuffer compressedBB) {
         ByteBuffer uncompressedBB;
         // snappy doesn't like it when you give it a ByteBuffer out of
@@ -245,6 +258,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         store.delAsync(o.getId(), txn.getStoreTransaction());
     }
 
+    // implementations get to decide how to serialize themselves
+    // this is the call back that will be eventually invoked by Galaxy
     abstract void serialize(SerializerOutputStream out);
     abstract void deserialize(SerializerInputStream in);
 
@@ -288,6 +303,13 @@ abstract class DataStructure extends Sizable implements Persistable {
         return String.valueOf(id);
     }
 
+    //////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////
+    //////////////////////////////////////
+    // This classes deal with kryo and galaxy.
+    // They make sure kryo instances are returned to the pool properly.
+    // These are being passed on to the implementations of this class
+    // so that implementors have it easy to serialize their data structures.
     static class SerializerOutputStream extends OutputStream {
         private Kryo kryo;
         private Output out;

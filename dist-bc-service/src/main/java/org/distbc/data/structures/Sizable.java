@@ -22,6 +22,12 @@ import co.paralleluniverse.common.io.Persistable;
 
 import java.util.UUID;
 
+/**
+ * The purpose of this class is it hide away all the code that worries about byte sizing data structures (or data in general).
+ * It provides an implementation for the size method from Galaxy that calculates the byte size of the current object.
+ * I did this because from classes don't extend DataStructure (like Tuple or GUID) but they need to be serialized
+ * (and hence their byte size needs to be calculated).
+ */
 abstract class Sizable {
     static final int MAX_BYTE_SIZE = 32768;
 
@@ -39,6 +45,10 @@ abstract class Sizable {
 
     private int currentObjectSize = 0;
 
+    /**
+     * Unfortunate naming of the galaxy library. This is the byte size of the object.
+     * NOT the number of elements or items it contains.
+     */
     public final int size() {
         //  8: for general compression and kryo overhead
         // 16: for a few leading bytes to put the number of elements in the object somewhere
