@@ -27,6 +27,12 @@ import com.google.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * This guy keeps track of everything inside dist-bc (all top-level objects anyways).
+ * It holds a map of all top-level objects to their roots and takes care of
+ * all sorts of accounting tasks (such as mapping indexes to tables, etc.)
+ * It also has convenience methods to load tables and indexes.
+ */
 class CatalogImpl implements Catalog {
     private static final String CATALOG_ROOT_NAME = "CATALOG_ROOT";
 
@@ -35,6 +41,8 @@ class CatalogImpl implements Catalog {
     private final TxnManager txnManager;
 
     private Long catalogRootId;
+    // this map contains all high-level objects
+    // it maps their names to the galaxy ids that are their roots
     private ChainingHash<String, Long> namesToIds;
 
     @Inject

@@ -18,6 +18,10 @@
 
 package org.distbc.data.structures;
 
+/**
+ * Use me to get (or create) top-level data structures.
+ * Don't even think about using them directly!
+ */
 public interface DataStructureFactory {
     Table newTable(Table.Builder builder, Txn txn);
     Table loadTable(long id);

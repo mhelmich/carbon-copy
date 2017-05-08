@@ -19,6 +19,9 @@
 package org.distbc.data.structures;
 
 /**
+ * Use me to get (or create) data structures.
+ * Don't even think about using them directly!
+ *
  * Don't even try to use guice assisted injection
  * I was dancing around for two days and it didn't line up for me until I decided
  * to put this factory together myself and move on with my life
