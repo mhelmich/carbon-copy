@@ -158,7 +158,7 @@ public class InterfaceTest {
             guids.add(table.insert(tup3, txn));
         }
 
-        catalog.create(table.getName(), table, txn);
+        catalog.create(table, txn);
         txn.commit();
 
         return table;

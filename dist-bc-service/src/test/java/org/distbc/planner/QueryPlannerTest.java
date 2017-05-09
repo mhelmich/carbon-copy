@@ -121,7 +121,7 @@ public class QueryPlannerTest {
                 .withColumn("foo", String.class);
         Table table = dsFactory.newTable(builder, txn);
 
-        catalog.create(tn, table, txn);
+        catalog.create(table, txn);
         txn.commit();
         long id = table.getId();
         Table readTable = catalog.get(tn, Table.class);
