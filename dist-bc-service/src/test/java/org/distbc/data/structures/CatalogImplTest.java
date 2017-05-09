@@ -48,12 +48,12 @@ public class CatalogImplTest {
     public void testBasic() throws IOException {
         String tableName = "table_" + System.currentTimeMillis();
         Txn txn = txnManager.beginTransaction();
-        Table.Builder builder = Table.Builder.newBuilder("moep")
+        Table.Builder builder = Table.Builder.newBuilder(tableName)
                 .withColumn("narf", Integer.class);
         Table table = dsFactory.newTable(builder, txn);
 
         CatalogImpl c = new CatalogImpl(store, dsFactory, txnManager);
-        c.create(tableName, table, txn);
+        c.create(table, txn);
         txn.commit();
         long id = table.getId();
         Table readTable = c.get(tableName, Table.class);
@@ -65,12 +65,12 @@ public class CatalogImplTest {
         String tableName = "table_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
-        Table.Builder builder = Table.Builder.newBuilder("moep")
+        Table.Builder builder = Table.Builder.newBuilder(tableName)
                 .withColumn("narf", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table1 = dsFactory.newTable(builder, txn);
-        c1.create(tableName, table1, txn);
+        c1.create(table1, txn);
         txn.commit();
 
         CatalogImpl c2 = new CatalogImpl(store, dsFactory, txnManager);
@@ -83,12 +83,12 @@ public class CatalogImplTest {
         String tableName = "table_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
-        Table.Builder builder = Table.Builder.newBuilder("moep")
+        Table.Builder builder = Table.Builder.newBuilder(tableName)
                 .withColumn("narf", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table1 = dsFactory.newTable(builder, txn);
-        c1.create(tableName, table1, txn);
+        c1.create(table1, txn);
         txn.commit();
 
         CatalogImpl c2 = new CatalogImpl(store, dsFactory, txnManager);
