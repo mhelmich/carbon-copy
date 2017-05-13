@@ -53,12 +53,15 @@ class CatalogImpl implements Catalog {
     private Long catalogRootId;
     // this map contains all high-level objects
     // it maps their names to the galaxy ids that are their roots
-    private Long namesToIdsId;
-    private ChainingHash<String, Long> namesToIds;
     // this map contains the names of all tables and which indexes "they own"
+    private Long namesToIdsId;
     // TODO -- actually build logic around this
+    // I might need to two way mapping:
+    //   - during query planning give me all the indexes for a table
+    //     - table name -> list of index names
+    //   - which table does an index belong to?
+    //     - index name -> table name
     private Long tablesToIndexesId;
-    private ChainingHash<String, String> tablesToIndexes;
 
     @Inject
     CatalogImpl(Store store, InternalDataStructureFactory dsFactory, TxnManager txnManager) {
@@ -143,12 +146,10 @@ class CatalogImpl implements Catalog {
     }
 
     private Long getIdForName(String name) throws ExecutionException, TimeoutException, IOException {
-        if (namesToIds == null) {
-            if (catalogRootId == null) {
-                initCatalogRootId();
-            }
-            namesToIds = dsFactory.loadChainingHash(namesToIdsId);
+        if (catalogRootId == null) {
+            initCatalogRootId();
         }
+        ChainingHash<String, Long> namesToIds = dsFactory.loadChainingHash(namesToIdsId);
         return namesToIds.get(name);
     }
 
