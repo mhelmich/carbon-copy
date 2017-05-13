@@ -1,9 +1,9 @@
-Distributed BufferCache
-=======================
+Distributed BufferCache or Carbon Copy
+======================================
 
-[TOC levels=2,3]: # "Table of Contents"
+Distributed BufferCache is a horizontally scalable, in-memory, distributed database. It is designed to be the read-only backend to your transactional database!
 
-# Table of Contents
+## Table of Contents
 - [Overview](#overview)
   - [Roadmap](#roadmap)
 - [Architecture](#architecture)
@@ -17,8 +17,11 @@ Distributed BufferCache
 
 ## Overview
 
+Distributed BufferCache is an in-memory data store designed to serve up data from your transactional data store.
+
 * read-only distributed in-memory data store
 * a more resilient redis cluster with complex data structures
+* provides a consistent view on your data
 
 ### Roadmap
 
@@ -29,10 +32,15 @@ Distributed BufferCache
 * monitoring and logging
 * management endpoints (creating tables, indexes, etc.)
 * develop routing manager inside the cluster to forward queries to nodes with resident data ([this article](http://highscalability.com/blog/2012/8/20/the-performance-of-distributed-data-structures-running-on-a.html) illustrates the idea)
+  * forward queries to data
+  * develop distributed flavors of tables and indexes
+    * tables can be sorted lists of GUIDs
+    * indexes need more thinking :)
+
 
 ## Architecture
 
-* short intro how galaxy works
+* short intro how [galaxy](https://github.com/puniverse/galaxy) works
 * probably link the high scalability article
 * explain the fanciness on top of galaxy (aka complex data structures)
 
@@ -46,14 +54,17 @@ Software components that are worth mentioning here.
 * serves as abstraction to not deal with galaxy concepts directly
 * probably explain things on the example of a data block
 * after that mention a bunch of other data structures and we're good
+* right now the implicit design assumption is: one data structure is owned by exactly one node -- this can be changed however
 
 ### Catalog
 
 * is the directory of everything living in dist-bc
 * keeps track of all high-level data structures (tables, indexes, result sets, etc.)
+* keeps track of owners of these data structures and is responsible for making routing decisions
 
 ### Query Parsing
 
+* simple ANTLR parser that picks a SQL apart and feeds into dist-bc
 * do I really need to explain how SQL parsing works?
 
 ### Query Planning
