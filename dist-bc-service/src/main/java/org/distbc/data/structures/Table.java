@@ -111,16 +111,16 @@ public class Table extends TopLevelDataStructure {
 //                .collect(Collectors.toSet());
 //    }
 
+    public static Builder newBuilder(String name) {
+        return new Builder(name);
+    }
+
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
         private final String name;
 
         private Builder(String name) {
             this.name = name;
-        }
-
-        public static Table.Builder newBuilder(String name) {
-            return new Builder(name);
         }
 
         public Builder withColumn(String name, int index, Class type) {

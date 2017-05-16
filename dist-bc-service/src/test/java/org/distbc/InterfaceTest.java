@@ -124,13 +124,12 @@ public class InterfaceTest {
     }
 
     private Table createDummyTable(List<GUID> guids) throws IOException {
-        Txn txn = txnManager.beginTransaction();
-
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", ""))
+        Table.Builder tableBuilder = Table.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", ""))
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
 
+        Txn txn = txnManager.beginTransaction();
         Table table = dsFactory.newTable(tableBuilder, txn);
 
         Tuple tup1 = new Tuple(3);

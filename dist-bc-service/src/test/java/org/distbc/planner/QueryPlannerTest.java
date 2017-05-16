@@ -115,7 +115,7 @@ public class QueryPlannerTest {
     private void createTable(String tableName) throws IOException {
         String tn = getTableName(tableName);
         Txn txn = txnManager.beginTransaction();
-        Table.Builder builder = Table.Builder.newBuilder(tn)
+        Table.Builder builder = Table.newBuilder(tn)
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);

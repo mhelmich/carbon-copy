@@ -42,7 +42,7 @@ public class GalaxyTableTest {
     public void testBasic() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf")
+        Table.Builder tableBuilder = Table.newBuilder("narf")
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
@@ -81,7 +81,7 @@ public class GalaxyTableTest {
     public void testColumnsAndAll() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf")
+        Table.Builder tableBuilder = Table.newBuilder("narf")
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", Integer.class)
                 .withColumn("foo", String.class);

@@ -18,7 +18,6 @@
 
 package org.distbc.planner;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.distbc.GuiceJUnit4Runner;
 import org.distbc.GuiceModules;
@@ -31,7 +30,6 @@ import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 import org.distbc.data.structures.TxnManagerModule;
-import org.distbc.parser.ParsingResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -43,7 +41,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(GuiceJUnit4Runner.class)
@@ -54,117 +51,6 @@ public class GalaxyOperationTest {
 
     @Inject
     private TxnManager txnManager;
-
-    @Test
-    public void testProjection() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
-
-        Projection p = new Projection(ImmutableList.of("tup_num", "foo"), ttOld.getColumnNames());
-        Txn txn2 = txnManager.beginTransaction();
-        TempTable tt = p.apply(ttOld, txn2);
-        txn2.commit();
-
-        t.keys().forEach(guid -> {
-            assertNotNull(tt.get(guid));
-            assertEquals(guid, tt.get(guid).getGuid());
-            assertNotEquals(t.get(guid), tt.get(guid));
-        });
-    }
-
-    @Test
-    public void testSelection() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
-
-        Selection s = new Selection(ImmutableList.of(
-                new ParsingResult.BinaryOperation("moep", "=", "moep")
-        ));
-        Txn txn2 = txnManager.beginTransaction();
-        TempTable tt = s.apply(ttOld, txn2);
-        txn2.commit();
-
-        tt.keys().forEach(guid -> {
-            assertNotNull(t.get(guid));
-            assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
-        });
-
-        assertEquals(2, tt.keys().count());
-    }
-
-    @Test
-    public void testSelection2() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
-
-        Selection s = new Selection(ImmutableList.of(
-                new ParsingResult.BinaryOperation("moep", "=", "__moep__")
-        ));
-        Txn txn2 = txnManager.beginTransaction();
-        TempTable tt = s.apply(ttOld, txn2);
-        txn2.commit();
-
-        tt.keys().forEach(guid -> {
-            assertNotNull(t.get(guid));
-            assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
-        });
-
-        assertEquals(1, tt.keys().count());
-    }
-
-    @Test
-    public void testSelection3() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
-
-        Selection s = new Selection(ImmutableList.of(
-                new ParsingResult.BinaryOperation("tup_num", "=", "tup3_narf")
-        ));
-        Txn txn2 = txnManager.beginTransaction();
-        TempTable tt = s.apply(ttOld, txn2);
-        txn2.commit();
-
-        tt.keys().forEach(guid -> {
-            assertNotNull(t.get(guid));
-            assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
-        });
-
-        assertEquals(1, tt.keys().count());
-    }
-
-    @Test
-    public void testSelection4() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable ttOld = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
-
-        Selection s = new Selection(ImmutableList.of(
-                new ParsingResult.BinaryOperation("tup_num", "<=", "tup3_narf")
-        ));
-        Txn txn2 = txnManager.beginTransaction();
-        TempTable tt = s.apply(ttOld, txn2);
-        txn2.commit();
-
-        tt.keys().forEach(guid -> {
-            assertNotNull(t.get(guid));
-            assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
-        });
-
-        assertEquals(3, tt.keys().count());
-    }
 
     @Test
     public void testOpMaterialized() throws IOException {
@@ -323,7 +209,7 @@ public class GalaxyOperationTest {
     private Table createDummyTable(List<GUID> guids) throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "_"))
+        Table.Builder tableBuilder = Table.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "_"))
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
