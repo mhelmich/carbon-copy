@@ -31,7 +31,8 @@ public interface DataStructureFactory {
     Index loadIndex(long id);
     Index loadIndexForWrites(long id, Txn txn);
 
-    TempTable newTempTable(Txn txn);
+    TempTable newTempTable(TempTable.Builder builder, Txn txn);
+    @Deprecated
     TempTable newTempTableFromTable(Table table, Txn txn);
     TempTable loadTempTableFromId(long id, Txn txn);
 }
