@@ -1,7 +1,7 @@
 Distributed BufferCache or Carbon Copy
 ======================================
 
-Distributed BufferCache is a horizontally scalable, in-memory, distributed database. It is designed to be the read-only backend to your transactional database!
+Distributed BufferCache is an in-memory, distributed data warehouse. It is designed to be the read-only backend to your transactional database!
 
 ## Table of Contents
 - [Overview](#overview)
@@ -22,6 +22,9 @@ Distributed BufferCache is an in-memory data store designed to serve up data fro
 * read-only distributed in-memory data store
 * a more resilient redis cluster with complex data structures
 * provides a consistent view on your data
+* lock free ingest
+* horizontally scalable & automatically distributed
+* distributed SQL
 
 ### Roadmap
 
