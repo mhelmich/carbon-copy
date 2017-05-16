@@ -159,6 +159,22 @@ public class SQLParserListenerTest {
     }
 
     @Test
+    public void testSimpleJoins() {
+        SQLParserListener listener = parse("select * from narf, moep where narf.id = moep.id");
+        assertEquals(1, listener.getProjectionColumnNames().size());
+        assertEquals("*", listener.getProjectionColumnNames().get(0));
+        assertEquals(2, listener.getTableNames().size());
+        assertEquals(0, listener.getSelections().size());
+        assertEquals("narf.id==moep.id", listener.getExpressionText());
+
+        assertEquals(1, listener.getJoins().size());
+        ParsingResult.BinaryOperation join = listener.getJoins().get(0);
+        assertEquals("narf.id", join.operand1);
+        assertEquals("==", join.operation);
+        assertEquals("moep.id", join.operand2);
+    }
+
+    @Test
     public void testJoins() {
         SQLParserListener listener = parse("select col from tab1 t1, tab2 t2 where col2 = 13 AND t1.id = t2.id");
         assertEquals(1, listener.getProjectionColumnNames().size());
