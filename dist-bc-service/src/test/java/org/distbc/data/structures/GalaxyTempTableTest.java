@@ -45,16 +45,12 @@ public class GalaxyTempTableTest {
 
     @Test
     public void testBasic() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
+        TempTable tt = createDummyTempTable();
 
         AtomicInteger i = new AtomicInteger(0);
-        t.keys().forEach(guid -> {
+        tt.keys().forEach(guid -> {
             assertNotNull(tt.get(guid));
             assertEquals(guid, tt.get(guid).getGuid());
-            assertEquals(t.get(guid), tt.get(guid));
             i.getAndAdd(1);
         });
 
@@ -63,29 +59,23 @@ public class GalaxyTempTableTest {
 
     @Test
     public void testRemoveColumnNames() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
+        TempTable tt = createDummyTempTable();
 
-        txn = txnManager.beginTransaction();
-        tt.removeColumnWithName("foo", txn);
+        Txn txn = txnManager.beginTransaction();
+        tt.removeColumnWithName("narf", txn);
         txn.commit();
 
         List<Tuple> columns = tt.getColumnMetadata();
         assertEquals(2, columns.size());
-        assertEquals("tup_num", columns.get(0).get(0));
+        assertEquals("id", columns.get(0).get(0));
         assertEquals("moep", columns.get(1).get(0));
     }
 
     @Test
     public void testDelete() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
+        TempTable tt = createDummyTempTable();
 
-        txn = txnManager.beginTransaction();
+        Txn txn = txnManager.beginTransaction();
         List<GUID> keys = tt.keys().collect(Collectors.toList());
         tt.delete(keys.get(1), txn);
         txn.commit();
@@ -107,12 +97,9 @@ public class GalaxyTempTableTest {
 
     @Test
     public void testSaveLoad() throws IOException {
-        Table t = createDummyTable();
-        Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(t, txn);
-        txn.commit();
+        TempTable tt = createDummyTempTable();
 
-        txn = txnManager.beginTransaction();
+        Txn txn = txnManager.beginTransaction();
         TempTable tt2 = dsFactory.loadTempTableFromId(tt.getId(), txn);
         txn.commit();
 
@@ -135,59 +122,35 @@ public class GalaxyTempTableTest {
         assertEquals(3, i2.get());
     }
 
-    @Test
-    public void testEmptyTable() throws IOException {
+    private TempTable createDummyTempTable() throws IOException {
         Txn txn = txnManager.beginTransaction();
-
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis())
-                .withColumn("tup_num", String.class)
+        TempTable.Builder tableBuilder = TempTable.newBuilder()
+                .withColumn("id", Integer.class)
                 .withColumn("moep", String.class)
-                .withColumn("foo", String.class);
-
-        Table table = dsFactory.newTable(tableBuilder, txn);
-        txn.commit();
-
-        txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTableFromTable(table, txn);
-        txn.commit();
-
-        AtomicInteger i = new AtomicInteger(0);
-        tt.keys()
-                .forEach(guid -> i.getAndAdd(1));
-
-        assertEquals(0, i.get());
-    }
-
-    private Table createDummyTable() throws IOException {
-        Txn txn = txnManager.beginTransaction();
-
-        Table.Builder tableBuilder = Table.Builder.newBuilder("narf_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis())
-                .withColumn("tup_num", String.class)
-                .withColumn("moep", String.class)
-                .withColumn("foo", String.class);
-
-        Table table = dsFactory.newTable(tableBuilder, txn);
+                .withColumn("narf", String.class);
+        TempTable tt = dsFactory.newTempTable(tableBuilder, txn);
 
         Tuple tup1 = new Tuple(3);
-        tup1.put(0, "tup1_narf");
-        tup1.put(1, "moep");
+        tup1.put(0, 1);
+        tup1.put(1, "moep_" + UUID.randomUUID().toString());
         tup1.put(2, "tup1_foo");
 
         Tuple tup2 = new Tuple(3);
-        tup2.put(0, "tup2_narf");
-        tup2.put(1, "__moep__");
+        tup2.put(0, 3);
+        tup2.put(1, "__moep__" + UUID.randomUUID().toString());
         tup2.put(2, "tup2_foo");
 
         Tuple tup3 = new Tuple(3);
-        tup3.put(0, "tup3_narf");
-        tup3.put(1, "moep");
+        tup3.put(0, 5);
+        tup3.put(1, "moep_" + UUID.randomUUID().toString());
         tup3.put(2, "tup3_foo");
 
-        table.insert(tup1, txn);
-        table.insert(tup2, txn);
-        table.insert(tup3, txn);
+        tt.insert(tup1, txn);
+        tt.insert(tup2, txn);
+        tt.insert(tup3, txn);
+
         txn.commit();
 
-        return table;
+        return tt;
     }
 }

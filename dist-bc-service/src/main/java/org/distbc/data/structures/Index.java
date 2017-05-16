@@ -76,16 +76,16 @@ public class Index extends TopLevelDataStructure {
         return StreamSupport.stream(bTree.keys().spliterator(), false);
     }
 
+    public static Builder newBuilder(String name) {
+        return new Builder(name);
+    }
+
     public static class Builder {
         private List<Tuple> columnMetadata = new ArrayList<>();
         private final String name;
 
         private Builder(String name) {
             this.name = name;
-        }
-
-        public static Index.Builder newBuilder(String name) {
-            return new Builder(name);
         }
 
         public Index.Builder withColumn(String name, int index, Class type) {
