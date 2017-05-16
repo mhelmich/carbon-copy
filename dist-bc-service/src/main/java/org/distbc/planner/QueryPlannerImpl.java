@@ -59,7 +59,7 @@ class QueryPlannerImpl implements QueryPlanner {
         QueryPlanImpl qp = new QueryPlanImpl();
         List<Table> tables = orderTablesInExecutionOrder(parsingResult);
         tables.forEach(table -> {
-            QueryPlanSwimLane sl = new QueryPlanSwimLane(dsFactory, txnManager, table);
+            UnaryQueryPlanSwimLane sl = new UnaryQueryPlanSwimLane(dsFactory, txnManager, table);
             // TODO -- do more figuring out here
             // we need to make sure that we only use columns that exist in this table
             Set<String> columnsToSelectOn = parsingResult.getSelections().stream()

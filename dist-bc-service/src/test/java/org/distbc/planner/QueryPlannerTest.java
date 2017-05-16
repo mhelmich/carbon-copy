@@ -71,9 +71,9 @@ public class QueryPlannerTest {
         Mockito.when(pr.getExpressionText()).thenReturn("");
 
         QueryPlan qp = planner.generateQueryPlan(pr);
-        List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
+        List<UnaryQueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
-        QueryPlanSwimLane sl = swimLanes.get(0);
+        UnaryQueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
         assertEquals(t1.getId(), getBase(sl).getId());
     }
@@ -94,9 +94,9 @@ public class QueryPlannerTest {
         Mockito.when(pr.getExpressionText()).thenReturn("t2_narf='void'");
 
         QueryPlan qp = planner.generateQueryPlan(pr);
-        List<QueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
+        List<UnaryQueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
-        QueryPlanSwimLane sl = swimLanes.get(0);
+        UnaryQueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
         assertEquals(t1.getId(), getBase(sl).getId());
     }
@@ -163,14 +163,14 @@ public class QueryPlannerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private List<QueryPlanSwimLane> getSwimLanesFromPlan(QueryPlan plan) throws NoSuchFieldException, IllegalAccessException {
+    private List<UnaryQueryPlanSwimLane> getSwimLanesFromPlan(QueryPlan plan) throws NoSuchFieldException, IllegalAccessException {
         Field field = plan.getClass().getDeclaredField("swimLanes");
         field.setAccessible(true);
-        return (List<QueryPlanSwimLane>) field.get(plan);
+        return (List<UnaryQueryPlanSwimLane>) field.get(plan);
     }
 
     @SuppressWarnings("unchecked")
-    private Table getBase(QueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
+    private Table getBase(UnaryQueryPlanSwimLane swimLane) throws NoSuchFieldException, IllegalAccessException {
         Field field = swimLane.getClass().getDeclaredField("base");
         field.setAccessible(true);
         return (Table) field.get(swimLane);
