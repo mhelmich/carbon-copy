@@ -22,6 +22,7 @@ import org.distbc.data.structures.DataStructureFactory;
 import org.distbc.data.structures.GUID;
 import org.distbc.data.structures.Table;
 import org.distbc.data.structures.TempTable;
+import org.distbc.data.structures.Tuple;
 import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 
@@ -30,12 +31,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-public class QueryPlanSwimLane extends AbstractSwimLane {
+class UnaryQueryPlanSwimLane extends AbstractSwimLane {
     private final Table base;
     private OpSelection selection;
     private OpProjection projection;
 
-    QueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, Table base) {
+    UnaryQueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, Table base) {
         super(dsFactory, txnManager);
         this.base = base;
     }
@@ -52,8 +53,7 @@ public class QueryPlanSwimLane extends AbstractSwimLane {
     public TempTable call() throws Exception {
         List<Integer> columnIndexesToKeep = (projection != null) ? projection.get() : Collections.emptyList();
         Set<GUID> guidsToKeep = (selection != null) ? selection.get() : Collections.emptySet();
-
-        TempTable.Builder ttBuilder = TempTable.newBuilder();
+        TempTable.Builder ttBuilder = buildBuilder(columnIndexesToKeep);
 
         Txn txn = txnManager.beginTransaction();
         try {
@@ -66,6 +66,15 @@ public class QueryPlanSwimLane extends AbstractSwimLane {
             txn.rollback();
             throw new RuntimeException(e);
         }
+    }
+
+    private TempTable.Builder buildBuilder(List<Integer> columnIndexesToKeep) {
+        TempTable.Builder builder = TempTable.newBuilder();
+        List<Tuple> metadata = base.getColumnMetadata();
+        for (Integer idx : columnIndexesToKeep) {
+            builder.withColumn(metadata.get(idx));
+        }
+        return builder;
     }
 
     @Override

@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class JoiningQueryPlanSwimLaneTest {
+public class BinaryQueryPlanSwimLaneTest {
     @Inject
     private InternalDataStructureFactory dsFactory;
 
@@ -51,7 +51,7 @@ public class JoiningQueryPlanSwimLaneTest {
         TempTable tt1 = createDummyTempTable("t1", 2, 3, 5);
         TempTable tt2 = createDummyTempTable("t2", 1, 3, 6);
 
-        JoiningQueryPlanSwimLane sl = new JoiningQueryPlanSwimLane(dsFactory, txnManager, tt1, 0, tt2, 0);
+        BinaryQueryPlanSwimLane sl = new BinaryQueryPlanSwimLane(dsFactory, txnManager, tt1, 0, tt2, 0);
         TempTable result = sl.call();
         long numItems = result.keys().count();
         assertEquals(1, numItems);

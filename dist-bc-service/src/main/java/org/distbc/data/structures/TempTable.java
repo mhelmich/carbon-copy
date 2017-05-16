@@ -137,8 +137,7 @@ public class TempTable extends TopLevelDataStructure {
             col.put(0, name);
             col.put(1, index);
             col.put(2, type);
-            columnMetadata.add(col);
-            return this;
+            return withColumn(col);
         }
 
         public Builder withColumn(String name, int index, Class type) {
@@ -147,6 +146,11 @@ public class TempTable extends TopLevelDataStructure {
 
         public Builder withColumn(String name, Class type) {
             return withColumn(name, columnMetadata.size(), type);
+        }
+
+        public Builder withColumn(Tuple metadata) {
+            columnMetadata.add(metadata);
+            return this;
         }
 
         private Tuple[] getColumnMetadata() {

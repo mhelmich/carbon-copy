@@ -29,9 +29,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 class QueryPlanImpl implements QueryPlan {
-    private List<QueryPlanSwimLane> swimLanes = new LinkedList<>();
+    private List<UnaryQueryPlanSwimLane> swimLanes = new LinkedList<>();
 
-    void addSwimLane(QueryPlanSwimLane sl) {
+    void addSwimLane(UnaryQueryPlanSwimLane sl) {
         swimLanes.add(sl);
     }
 
@@ -42,7 +42,7 @@ class QueryPlanImpl implements QueryPlan {
 //                .map(es::submit)
 //                .collect(Collectors.toSet());
 
-        QueryPlanSwimLane sl = swimLanes.get(0);
+        UnaryQueryPlanSwimLane sl = swimLanes.get(0);
         Future<TempTable> f = es.submit(sl);
 
         try {
