@@ -20,6 +20,7 @@ package org.distbc.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -43,7 +44,7 @@ public class TempTable extends TopLevelDataStructure {
         asyncLoadForWrites(txn);
     }
 
-    TempTable(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
+    TempTable(Store store, InternalDataStructureFactory dsFactory, TempTable.Builder builder, Txn txn) {
         super(store, dsFactory, txn, "temp_" + UUID.randomUUID().toString());
         // create new data
         data = dsFactory.newChainingHash(txn);
@@ -55,6 +56,7 @@ public class TempTable extends TopLevelDataStructure {
         // only then upsert yourself
         asyncUpsert(txn);
         checkDataStructureRetrieved();
+        addColumns(txn, builder.getColumnMetadata());
     }
 
     /**
@@ -62,6 +64,7 @@ public class TempTable extends TopLevelDataStructure {
      * This is clearly different from the upper ctor where we want to load an existing result set or something.
      * This is intended to be called at the start of every query.
      */
+    @Deprecated
     TempTable(Store store, InternalDataStructureFactory dsFactory, Table tableToWrap, Txn txn) {
         super(store, dsFactory, txn, "temp_" + tableToWrap.getId() + "_" + UUID.randomUUID().toString());
         // create new data
@@ -82,28 +85,6 @@ public class TempTable extends TopLevelDataStructure {
         // TODO -- this copies the data which is hugely inefficient but good for now
         tableToWrap.keys()
                 .forEach(guid -> insert(tableToWrap.getMutable(guid), txn));
-    }
-
-    TempTable(Store store, InternalDataStructureFactory dsFactory, Index indexToWrap, Txn txn) {
-        super(store, dsFactory, txn, "temp_" + indexToWrap.getId() + "_" + UUID.randomUUID().toString());
-        // create new data
-        data = dsFactory.newChainingHash(txn);
-        txn.addToChangedObjects(data);
-        // wait for it to be upserted and
-        // have an id
-        data.checkDataStructureRetrieved();
-        addObjectToObjectSize(data.getId());
-        // only then upsert yourself
-        asyncUpsert(txn);
-        checkDataStructureRetrieved();
-        // make a copy of the underlying table...for now
-        // this adds all columns of the original table in the temp table
-        indexToWrap.getColumnNames().stream()
-                .map(indexToWrap::getColumnMetadataByColumnName)
-                .forEach(tuple -> addColumns(txn, tuple));
-        // TODO -- this copies the data which is hugely inefficient but good for now
-        indexToWrap.keys()
-                .forEach(tuple -> insert(tuple, txn));
     }
 
     public void insert(Tuple tuple, Txn txn) {
@@ -128,10 +109,6 @@ public class TempTable extends TopLevelDataStructure {
         return (t != null) ? t.immutableCopy() : null;
     }
 
-    public void addColumnWithName(Txn txn, String name, Integer index, Class dataType) {
-        addColumn(txn, name, index, dataType.getCanonicalName());
-    }
-
     public void removeColumnWithName(String columnName, Txn txn) {
         List<String> allColumnNames = getColumnNames();
         int idx = allColumnNames.indexOf(columnName);
@@ -146,6 +123,35 @@ public class TempTable extends TopLevelDataStructure {
         }
 
         columnMetadata.delete(columnName, txn);
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private List<Tuple> columnMetadata = new ArrayList<>();
+
+        public Builder withColumn(String name, int index, String type) {
+            Tuple col = new Tuple(3);
+            col.put(0, name);
+            col.put(1, index);
+            col.put(2, type);
+            columnMetadata.add(col);
+            return this;
+        }
+
+        public Builder withColumn(String name, int index, Class type) {
+            return withColumn(name, index, type.getCanonicalName());
+        }
+
+        public Builder withColumn(String name, Class type) {
+            return withColumn(name, columnMetadata.size(), type);
+        }
+
+        private Tuple[] getColumnMetadata() {
+            return columnMetadata.toArray(new Tuple[columnMetadata.size()]);
+        }
     }
 
     /////////////////////////////////////////////////////////////

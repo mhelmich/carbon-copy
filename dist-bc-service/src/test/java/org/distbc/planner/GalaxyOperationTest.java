@@ -170,9 +170,12 @@ public class GalaxyOperationTest {
     public void testOpMaterialized() throws IOException {
         List<GUID> guids = new LinkedList<>();
         Table t = createDummyTable(guids);
+
+        TempTable.Builder ttBuilder = TempTable.newBuilder()
+                .withColumn("tup_num", String.class);
+
         Txn txn = txnManager.beginTransaction();
-        TempTable tt = dsFactory.newTempTable(txn);
-        tt.addColumnWithName(txn, "tup_num", 0, String.class);
+        TempTable tt = dsFactory.newTempTable(ttBuilder, txn);
         txn.commit();
 
         Set<GUID> idsToKeep = new HashSet<GUID>() {{
@@ -217,23 +220,6 @@ public class GalaxyOperationTest {
     }
 
     @Test
-    public void testOpSelection2() throws IOException {
-        Table t = createDummyTable();
-
-        List<ParsingResult.BinaryOperation> bos = new LinkedList<ParsingResult.BinaryOperation>() {{
-            add(new ParsingResult.BinaryOperation("foo", "<=", "tup2_foo"));
-        }};
-
-        OpSelection2 op = new OpSelection2(bos, t);
-        Set<GUID> res = op.get();
-
-        assertEquals(2, res.size());
-        for (GUID guid : res) {
-            assertNotNull(t.get(guid));
-        }
-    }
-
-    @Test
     public void testAllOpsTogether() throws IOException {
         List<GUID> guids = new LinkedList<>();
         Table t = createDummyTable(guids);
@@ -260,10 +246,11 @@ public class GalaxyOperationTest {
         /////////////////////////////
         ///////////////////////
         // MATERIALIZE
-        Txn txn = txnManager.beginTransaction();
+        TempTable.Builder ttBuilder = TempTable.newBuilder()
+                .withColumn("tup_num", String.class);
 
-        TempTable tt = dsFactory.newTempTable(txn);
-        tt.addColumnWithName(txn, "tup_num", 0, String.class);
+        Txn txn = txnManager.beginTransaction();
+        TempTable tt = dsFactory.newTempTable(ttBuilder, txn);
 
         OpMaterialize mat = new OpMaterialize(t, tt, res, indexesToKeep);
         txn = txnManager.beginTransaction();
@@ -274,12 +261,45 @@ public class GalaxyOperationTest {
     }
 
     @Test
-    public void testOpSelection() throws IOException {
+    public void testOpSelection1() throws IOException {
         Table t = createDummyTable();
         Set<String> cns = new HashSet<String>() {{
             add("foo");
         }};
         OpSelection sel = new OpSelection(cns, t, "foo <= 'tup2_foo'");
+        Set<GUID> resultSet = sel.get();
+        assertEquals(2, resultSet.size());
+    }
+
+    @Test
+    public void testOpSelection2() throws IOException {
+        Table t = createDummyTable();
+        Set<String> cns = new HashSet<String>() {{
+            add("foo");
+        }};
+        OpSelection sel = new OpSelection(cns, t, "foo == 'tup2_foo'");
+        Set<GUID> resultSet = sel.get();
+        assertEquals(1, resultSet.size());
+    }
+
+    @Test
+    public void testOpSelection3() throws IOException {
+        Table t = createDummyTable();
+        Set<String> cns = new HashSet<String>() {{
+            add("foo");
+        }};
+        OpSelection sel = new OpSelection(cns, t, "foo > 'tup2_foo'");
+        Set<GUID> resultSet = sel.get();
+        assertEquals(1, resultSet.size());
+    }
+
+    @Test
+    public void testOpSelection4() throws IOException {
+        Table t = createDummyTable();
+        Set<String> cns = new HashSet<String>() {{
+            add("moep");
+        }};
+        OpSelection sel = new OpSelection(cns, t, "moep >= 'moep'");
         Set<GUID> resultSet = sel.get();
         assertEquals(2, resultSet.size());
     }

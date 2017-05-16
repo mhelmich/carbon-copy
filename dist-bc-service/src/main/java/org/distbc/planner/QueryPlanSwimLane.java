@@ -26,20 +26,17 @@ import org.distbc.data.structures.Txn;
 import org.distbc.data.structures.TxnManager;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
-public class QueryPlanSwimLane implements Callable<TempTable> {
-    private final DataStructureFactory dsFactory;
-    private final TxnManager txnManager;
+public class QueryPlanSwimLane extends AbstractSwimLane {
     private final Table base;
     private OpSelection selection;
     private OpProjection projection;
 
     QueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, Table base) {
-        this.dsFactory = dsFactory;
-        this.txnManager = txnManager;
+        super(dsFactory, txnManager);
         this.base = base;
     }
 
@@ -51,12 +48,16 @@ public class QueryPlanSwimLane implements Callable<TempTable> {
         this.projection = new OpProjection(columnNamesToProjectTo, columnsAvailableInTuple);
     }
 
+    @Override
     public TempTable call() throws Exception {
-        List<Integer> columnIndexesToKeep = projection.get();
-        Set<GUID> guidsToKeep =  selection.get();
+        List<Integer> columnIndexesToKeep = (projection != null) ? projection.get() : Collections.emptyList();
+        Set<GUID> guidsToKeep = (selection != null) ? selection.get() : Collections.emptySet();
+
+        TempTable.Builder ttBuilder = TempTable.newBuilder();
+
         Txn txn = txnManager.beginTransaction();
         try {
-            TempTable tt = dsFactory.newTempTable(txn);
+            TempTable tt = dsFactory.newTempTable(ttBuilder, txn);
             OpMaterialize materialize = new OpMaterialize(base, tt, guidsToKeep, columnIndexesToKeep);
             tt = materialize.apply(txn);
             txn.commit();
