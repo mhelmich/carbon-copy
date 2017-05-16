@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
+@Deprecated
 class Selection implements Operation {
     private final List<ParsingResult.BinaryOperation> bos;
 
