@@ -31,7 +31,7 @@
     </modules>
 
     <properties>
-        <dropwizard.version>1.1.0</dropwizard.version>
+        <dropwizard.version>1.1.1</dropwizard.version>
     </properties>
 
     <dependencies>
