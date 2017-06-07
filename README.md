@@ -61,13 +61,13 @@ Software components that are worth mentioning here.
 
 ### Catalog
 
-* is the directory of everything living in dist-bc
+* is the directory of everything living in carbon copy
 * keeps track of all high-level data structures (tables, indexes, result sets, etc.)
 * keeps track of owners of these data structures and is responsible for making routing decisions
 
 ### Query Parsing
 
-* simple ANTLR parser that picks a SQL apart and feeds into dist-bc
+* simple ANTLR parser that picks a SQL apart and feeds into carbon copy
 * do I really need to explain how SQL parsing works?
 
 ### Query Planning
