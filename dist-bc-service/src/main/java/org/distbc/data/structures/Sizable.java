@@ -19,6 +19,7 @@
 package org.distbc.data.structures;
 
 import co.paralleluniverse.common.io.Persistable;
+import org.xerial.snappy.Snappy;
 
 import java.util.UUID;
 
@@ -52,7 +53,13 @@ abstract class Sizable {
     public final int size() {
         //  8: for general compression and kryo overhead
         // 16: for a few leading bytes to put the number of elements in the object somewhere
-        return 8 + 16 + currentObjectSize;
+        // obviously this is a very non-scientific approach
+        //
+        // since we default to compression, we need to calculate the biggest compressed size
+        // this sometimes yields counter-intuitive results where the compressed size
+        // is greater than the uncompressed size
+        // it could be worth (in the long run) doing compression in certain cases and not always
+        return Snappy.maxCompressedLength(8 + 16 + currentObjectSize);
     }
 
     void addObjectToObjectSize(Object o) {
@@ -96,7 +103,7 @@ abstract class Sizable {
     }
 
     boolean isUnderMaxByteSize(int addSize) {
-        return currentObjectSize + addSize <= getMaxByteSize();
+        return Snappy.maxCompressedLength(currentObjectSize + addSize) <= getMaxByteSize();
     }
 
     int getMaxByteSize() {

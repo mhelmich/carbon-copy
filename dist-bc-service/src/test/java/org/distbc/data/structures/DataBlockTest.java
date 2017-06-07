@@ -66,7 +66,7 @@ public class DataBlockTest {
 
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db.write(bb);
-        assertEquals(40, db.size());
+        assertEquals(78, db.size());
         assertEquals(1549, bb.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb.remaining());
 
@@ -89,7 +89,7 @@ public class DataBlockTest {
 
         ByteBuffer bb2 = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db3.write(bb2);
-        assertEquals(135, db3.size());
+        assertEquals(189, db3.size());
         assertTrue(1665 >= bb2.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb2.remaining());
         bb2.rewind();
@@ -110,7 +110,7 @@ public class DataBlockTest {
         DataBlock<Integer, Integer> db = new DataBlock<Integer, Integer>(s, txn) {
             @Override
             int getMaxByteSize() {
-                return 22;
+                return 50;
             }
         };
 
@@ -135,7 +135,7 @@ public class DataBlockTest {
         assertNull(db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
-        assertEquals(40, db.size());
+        assertEquals(78, db.size());
     }
 
     @Test
@@ -148,14 +148,14 @@ public class DataBlockTest {
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
-        assertEquals(48, db.size());
+        assertEquals(88, db.size());
 
         db.innerDelete(7);
 
         assertNull(db.get(7));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
-        assertEquals(48, db.size());
+        assertEquals(88, db.size());
     }
 
     @Test
@@ -168,14 +168,14 @@ public class DataBlockTest {
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(3), db.get(3));
         assertEquals(Integer.valueOf(7), db.get(7));
-        assertEquals(48, db.size());
+        assertEquals(88, db.size());
 
         db.innerDelete(3);
 
         assertNull(db.get(3));
         assertEquals(Integer.valueOf(5), db.get(5));
         assertEquals(Integer.valueOf(7), db.get(7));
-        assertEquals(40, db.size());
+        assertEquals(78, db.size());
     }
 
     @Test
@@ -184,7 +184,7 @@ public class DataBlockTest {
         db.innerPut(3, 3);
         db.innerPut(5, 5);
         db.innerPut(7, 7);
-        assertEquals(48, db.size());
+        assertEquals(88, db.size());
 
         Set<Integer> keys = new HashSet<>();
         for (Integer key : db.keys()) {
