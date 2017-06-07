@@ -36,7 +36,6 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, Txn txn) {
         this(store, dsFactory, DEFAULT_NUM_BUCKETS, txn);
-        txn.addToChangedObjects(this);
     }
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, int initNumBuckets, Txn txn) {
@@ -52,6 +51,9 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         for (int i = 0; i < initNumBuckets; i++) {
             addObjectToObjectSize(Long.MAX_VALUE);
         }
+        // make sure we have an id before we add this to the txn
+        checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
     }
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, long id) {

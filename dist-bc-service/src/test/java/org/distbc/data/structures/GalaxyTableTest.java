@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +43,7 @@ public class GalaxyTableTest {
     public void testBasic() throws IOException {
         Txn txn = txnManager.beginTransaction();
 
-        Table.Builder tableBuilder = Table.newBuilder("narf")
+        Table.Builder tableBuilder = Table.newBuilder("narf_" + UUID.randomUUID().toString())
                 .withColumn("tup_num", String.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);
@@ -75,6 +76,44 @@ public class GalaxyTableTest {
         assertEquals("tup2_narf", table2.get(guid2).get(0));
         assertEquals("moep", table2.get(guid1).get(1));
         assertEquals("tup3_foo", table2.get(guid3).get(2));
+    }
+
+    @Test
+    public void testWithVariousSchemas() throws IOException {
+        Table.Builder tableBuilder = Table.newBuilder("narf_" + UUID.randomUUID().toString())
+                .withColumn("id", Integer.class)
+                .withColumn("moep", String.class)
+                .withColumn("foo", Long.class);
+
+        Txn txn = txnManager.beginTransaction();
+        Table table1 = dsFactory.newTable(tableBuilder, txn);
+
+        Tuple tup1 = new Tuple(3);
+        tup1.put(0, 123);
+        tup1.put(1, "moep");
+        tup1.put(2, Long.MAX_VALUE);
+
+        Tuple tup2 = new Tuple(3);
+        tup2.put(0, 234);
+        tup2.put(1, "__moep__");
+        tup2.put(2, 19L);
+
+        Tuple tup3 = new Tuple(3);
+        tup3.put(0, 345);
+        tup3.put(1, "moep");
+        tup3.put(2, 1234567890123450L);
+
+        GUID guid1 = table1.insert(tup1, txn);
+        GUID guid2 = table1.insert(tup2, txn);
+        GUID guid3 = table1.insert(tup3, txn);
+        txn.commit();
+
+        long tableId = table1.getId();
+
+        Table table2 = dsFactory.loadTable(tableId);
+        assertEquals(234, table2.get(guid2).get(0));
+        assertEquals("moep", table2.get(guid1).get(1));
+        assertEquals(1234567890123450L, table2.get(guid3).get(2));
     }
 
     @Test
