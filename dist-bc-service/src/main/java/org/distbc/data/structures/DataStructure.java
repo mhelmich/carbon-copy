@@ -24,6 +24,7 @@ import co.paralleluniverse.common.io.Persistable;
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.TimeoutException;
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
@@ -145,6 +146,14 @@ abstract class DataStructure extends Sizable implements Persistable {
             } else {
                 store.set(o.getId(), o, txn.getStoreTransaction());
             }
+        } catch (KryoException xcp) {
+            // this error handling gives us a better clue on what exactly went wrong
+            // for example in the sizing of our ByteBuffers
+            int estimatedSize = o.size();
+            ByteBuffer bb = ByteBuffer.allocateDirect(Math.max(estimatedSize * 2, MAX_BYTE_SIZE));
+            o.write(bb);
+            int actuallyUsed = bb.position();
+            throw new RuntimeException("cache line " + toString() + " failed to upsert! Estimated size: [" + estimatedSize + "]; Actual size: [" + actuallyUsed + "]", xcp);
         } catch (TimeoutException xcp) {
             throw new RuntimeException(xcp);
         }
@@ -211,7 +220,7 @@ abstract class DataStructure extends Sizable implements Persistable {
             } catch (IOException xcp) {
                 throw new RuntimeException(xcp);
             } catch (IllegalArgumentException xcp) {
-                throw new IllegalArgumentException("Compressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed! uncompressedBB: " + uncompressedBB.capacity() + " compressedBB: " + compressedBB.capacity(), xcp);
+                throw new IllegalArgumentException("Compressing " + this.getClass().getSimpleName() + " _ " + getId() + " failed! uncompressedBB: " + uncompressedBB.capacity() + " compressedBB: " + compressedBB.capacity(), xcp);
             }
         }
     }
@@ -231,7 +240,7 @@ abstract class DataStructure extends Sizable implements Persistable {
             } catch (IOException xcp) {
                 throw new RuntimeException(xcp);
             } catch (IllegalArgumentException xcp) {
-                throw new IllegalArgumentException("Uncompressing " + this.getClass().getCanonicalName() + " _ " + getId() + " failed!", xcp);
+                throw new IllegalArgumentException("Uncompressing " + this.getClass().getSimpleName() + " _ " + getId() + " failed!", xcp);
             }
 
             try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
@@ -300,7 +309,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     // I saw this mostly in tests but never went to the bottom of it
     @Override
     public String toString() {
-        return String.valueOf(id);
+        return getClass().getSimpleName() + " - " + String.valueOf(id);
     }
 
     //////////////////////////////////////////////////////////////

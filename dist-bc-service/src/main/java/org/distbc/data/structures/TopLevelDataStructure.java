@@ -118,6 +118,7 @@ public abstract class TopLevelDataStructure extends DataStructure {
         }
     }
 
+    @SuppressWarnings("unchecked")
     void verifyDataColumnTypes(Tuple dataTuple) {
         for (String columnName : columnMetadata.keys()) {
             Tuple metadataTuple = columnMetadata.get(columnName);
@@ -129,8 +130,8 @@ public abstract class TopLevelDataStructure extends DataStructure {
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            if (!klass.equals(dataTuple.get(idx).getClass())) {
-                throw new IllegalArgumentException();
+            if (!klass.isAssignableFrom(dataTuple.get(idx).getClass())) {
+                throw new IllegalArgumentException("Incompatible types! Trying to assign " + dataTuple.get(idx).getClass().getName() + " to " + klass.getName());
             }
         }
     }
