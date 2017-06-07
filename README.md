@@ -1,7 +1,7 @@
-Distributed BufferCache or Carbon Copy
-======================================
+Carbon Copy
+===========
 
-Distributed BufferCache is an in-memory, distributed data warehouse. It is designed to be the read-only backend to your transactional database!
+Carbon Copy is an in-memory, distributed data warehouse. It is designed to be the read-only backend to your transactional database!
 
 ## Table of Contents
 - [Overview](#overview)
@@ -17,7 +17,7 @@ Distributed BufferCache is an in-memory, distributed data warehouse. It is desig
 
 ## Overview
 
-Distributed BufferCache is an in-memory data store designed to serve up data from your transactional data store.
+Carbon Copy is an in-memory data store designed to serve up data from your transactional data store.
 
 * read-only distributed in-memory data store
 * a more resilient redis cluster with complex data structures

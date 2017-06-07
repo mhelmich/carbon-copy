@@ -20,14 +20,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.distbc</groupId>
-    <artifactId>dist-bc</artifactId>
+    <groupId>org.carbon.copy</groupId>
+    <artifactId>carbon-copy</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>dist-bc-service</module>
-        <module>dist-bc-api</module>
+        <module>carbon-copy-service</module>
+        <module>carbon-copy-api</module>
     </modules>
 
     <properties>
@@ -73,7 +73,7 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.distbc.DistBufferCacheApplication</mainClass>
+                                    <mainClass>CarbonCopyApplication</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
