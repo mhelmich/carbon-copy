@@ -98,6 +98,32 @@ public class GalaxyChainingHashTest {
         t.commit();
     }
 
+    @Test
+    public void testSchemaHash() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        ChainingHash<String, Tuple> hash = dsFactory.newChainingHash(t);
+
+        Tuple t1 = new Tuple(3);
+        t1.put(0, "tup_num");
+        t1.put(1, 0);
+        t1.put(2, Integer.class.getCanonicalName());
+        hash.put("id", t1, t);
+
+        Tuple t2 = new Tuple(3);
+        t2.put(0, "foo");
+        t2.put(1, 1);
+        t2.put(2, String.class.getCanonicalName());
+        hash.put("foo", t2, t);
+
+        Tuple t3 = new Tuple(3);
+        t3.put(0, "bar");
+        t3.put(1, 2);
+        t3.put(2, String.class.getCanonicalName());
+        hash.put("bar", t3, t);
+
+        t.commit();
+    }
+
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {
         for (int i = from; i < to; i++) {
             assertEquals(Long.valueOf(i), hash.get(i));
