@@ -27,7 +27,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import java.util.Set;
 
-@Path("/distbc")
+@Path("/carbon-copy")
 public interface CarbonCopyResource {
     @GET
     @Path("/feedData/{index}")
