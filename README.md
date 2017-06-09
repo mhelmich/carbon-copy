@@ -43,20 +43,20 @@ Carbon Copy is an in-memory data store designed to serve up data from your trans
 
 ## Architecture
 
-* short intro how [galaxy](https://github.com/puniverse/galaxy) works
-* probably link the high scalability article
-* explain the fanciness on top of galaxy (aka complex data structures)
+Carbon Copy is based on the excellent [Galaxy framework](https://github.com/puniverse/galaxy). Galaxy does most of the heavy-lifting for Carbon Copy when it comes to coherence of data. In a nutshell, Galaxy takes processor cache line coherence protocols and implements them for distributed machines. Details about Galaxy can be found in its [documentation](http://docs.paralleluniverse.co/galaxy/).
+Carbon Copy builds the resemblance of a database around the guarantees Galaxy provides.
 
 ## Components
 
-Software components that are worth mentioning here.
+Carbon Copy breaks down into the following (noteworthy) components
 
 ### Data Structures
 
+* built on top of Galaxys raw byte arrays
 * lowest level of structured data
 * serves as abstraction to not deal with galaxy concepts directly
-* probably explain things on the example of a data block
-* after that mention a bunch of other data structures and we're good
+* a data block for example is a linked list of key-value-pairs that is serialized into a byte array
+* on top of data blocks more complicated data structures are being built (such as hashes and BTrees)
 * right now the implicit design assumption is: one data structure is owned by exactly one node -- this can be changed however
 
 ### Catalog
