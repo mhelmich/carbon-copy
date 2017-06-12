@@ -20,13 +20,13 @@ package org.carbon.copy.planner;
 
 import com.google.inject.Inject;
 import org.carbon.copy.GuiceJUnit4Runner;
+import org.carbon.copy.GuiceModules;
+import org.carbon.copy.data.structures.DataStructureModule;
 import org.carbon.copy.data.structures.InternalDataStructureFactory;
 import org.carbon.copy.data.structures.TempTable;
 import org.carbon.copy.data.structures.Tuple;
-import org.carbon.copy.data.structures.TxnManager;
-import org.carbon.copy.GuiceModules;
-import org.carbon.copy.data.structures.DataStructureModule;
 import org.carbon.copy.data.structures.Txn;
+import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.data.structures.TxnManagerModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +34,8 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
@@ -51,26 +53,29 @@ public class BinaryQueryPlanSwimLaneTest {
         TempTable tt1 = createDummyTempTable("t1", 2, 3, 5);
         TempTable tt2 = createDummyTempTable("t2", 1, 3, 6);
 
-        BinaryQueryPlanSwimLane sl = new BinaryQueryPlanSwimLane(dsFactory, txnManager, tt1, 0, tt2, 0);
+        Future<TempTable> f1 = CompletableFuture.completedFuture(tt1);
+        Future<TempTable> f2 = CompletableFuture.completedFuture(tt2);
+
+        BinaryQueryPlanSwimLane sl = new BinaryQueryPlanSwimLane(dsFactory, txnManager, f1, "t1_id", f2, "t2_id");
         TempTable result = sl.call();
         long numItems = result.keys().count();
         assertEquals(1, numItems);
         List<Tuple> metadata = result.getColumnMetadata();
         assertEquals(6, metadata.size());
-        assertEquals("t1.id", metadata.get(0).get(0).toString());
-        assertEquals("t1.moep", metadata.get(1).get(0).toString());
-        assertEquals("t1.narf", metadata.get(2).get(0).toString());
-        assertEquals("t2.id", metadata.get(3).get(0).toString());
-        assertEquals("t2.moep", metadata.get(4).get(0).toString());
-        assertEquals("t2.narf", metadata.get(5).get(0).toString());
+        assertEquals("t1_id", metadata.get(0).get(0).toString());
+        assertEquals("t1_moep", metadata.get(1).get(0).toString());
+        assertEquals("t1_narf", metadata.get(2).get(0).toString());
+        assertEquals("t2_id", metadata.get(3).get(0).toString());
+        assertEquals("t2_moep", metadata.get(4).get(0).toString());
+        assertEquals("t2_narf", metadata.get(5).get(0).toString());
     }
 
     private TempTable createDummyTempTable(String namePrefix, int... ids) throws IOException {
         Txn txn = txnManager.beginTransaction();
         TempTable.Builder tableBuilder = TempTable.newBuilder()
-                .withColumn(namePrefix + ".id", Integer.class)
-                .withColumn(namePrefix + ".moep", String.class)
-                .withColumn(namePrefix + ".narf", String.class);
+                .withColumn(namePrefix + "_id", Integer.class)
+                .withColumn(namePrefix + "_moep", String.class)
+                .withColumn(namePrefix + "_narf", String.class);
         TempTable tt = dsFactory.newTempTable(tableBuilder, txn);
 
         Tuple tup1 = new Tuple(3);

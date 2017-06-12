@@ -25,28 +25,36 @@ import org.carbon.copy.data.structures.Tuple;
 import org.carbon.copy.data.structures.Txn;
 import org.carbon.copy.data.structures.TxnManager;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 class BinaryQueryPlanSwimLane extends AbstractSwimLane {
-    private final TempTable source1;
-    private final int idxJoinColumn1;
-    private final TempTable source2;
-    private final int idxJoinColumn2;
+    private final Future<TempTable> source1F;
+    private final String nameJoinColumn1;
+    private final Future<TempTable> source2F;
+    private final String nameJoinColumn2;
 
-    BinaryQueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, TempTable source1, int idxJoinColumn1, TempTable source2, int idxJoinColumn2) {
+    BinaryQueryPlanSwimLane(DataStructureFactory dsFactory, TxnManager txnManager, Future<TempTable> source1F, String nameJoinColumn1, Future<TempTable> source2F, String nameJoinColumn2) {
         super(dsFactory, txnManager);
-        this.source1 = source1;
-        this.idxJoinColumn1 = idxJoinColumn1;
-        this.source2 = source2;
-        this.idxJoinColumn2 = idxJoinColumn2;
+        this.source1F = source1F;
+        this.nameJoinColumn1 = nameJoinColumn1;
+        this.source2F = source2F;
+        this.nameJoinColumn2 = nameJoinColumn2;
     }
 
     @Override
     public TempTable call() throws Exception {
-        Map<GUID, GUID> guids = hashJoin(source1, source2);
+        TempTable source1 = source1F.get();
+        TempTable source2 = source2F.get();
 
-        TempTable.Builder ttBuilder = buildBuilder();
+        int idxJoinColumn1 = source1.getColumnIndexForName(nameJoinColumn1);
+        int idxJoinColumn2 = source2.getColumnIndexForName(nameJoinColumn2);
+
+        Map<GUID, GUID> guids = hashJoin(source1, idxJoinColumn1, source2, idxJoinColumn2);
+
+        TempTable.Builder ttBuilder = buildBuilder(source1, source2);
         Txn txn = txnManager.beginTransaction();
         TempTable tt = dsFactory.newTempTable(ttBuilder, txn);
 
@@ -62,7 +70,7 @@ class BinaryQueryPlanSwimLane extends AbstractSwimLane {
         return tt;
     }
 
-    private Map<GUID, GUID> hashJoin(TempTable source1, TempTable source2) {
+    private Map<GUID, GUID> hashJoin(TempTable source1, int idxJoinColumn1, TempTable source2, int idxJoinColumn2) {
         Map<Comparable, GUID> allValuesToGuidsFromSource1 = source1.keys()
                 .map(source1::get)
                 .collect(Collectors.toMap(
@@ -95,14 +103,15 @@ class BinaryQueryPlanSwimLane extends AbstractSwimLane {
         return newTuple;
     }
 
-    private TempTable.Builder buildBuilder() {
+    private TempTable.Builder buildBuilder(TempTable source1, TempTable source2) {
         TempTable.Builder ttBuilder = TempTable.newBuilder();
         // add metadata
-        for (Tuple metadata : source1.getColumnMetadata()) {
+        List<Tuple> source1Metadata = source1.getColumnMetadata();
+        for (Tuple metadata : source1Metadata) {
             ttBuilder.withColumn(metadata.get(0).toString(), (int)metadata.get(1), metadata.get(2).toString());
         }
 
-        int startIdx = source1.getColumnMetadata().size();
+        int startIdx = source1Metadata.size();
         for (Tuple metadata : source2.getColumnMetadata()) {
             int idx = startIdx + (int)metadata.get(1);
             ttBuilder.withColumn(metadata.get(0).toString(), idx, metadata.get(2).toString());
