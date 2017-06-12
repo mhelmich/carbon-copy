@@ -81,6 +81,11 @@ public abstract class TopLevelDataStructure extends DataStructure {
                 .collect(Collectors.toList());
     }
 
+    public int getColumnIndexForName(String columnName) {
+        Tuple t = getColumnMetadataByColumnName(columnName);
+        return (t != null) ? (int) t.get(1) : -1;
+    }
+
     /**
      * Tuple structure:
      *  | index | description              | type     |
