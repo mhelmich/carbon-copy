@@ -20,7 +20,7 @@ package org.carbon.copy.planner;
 
 import org.carbon.copy.data.structures.TempTable;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,21 +29,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 class QueryPlanImpl implements QueryPlan {
-    private List<UnaryQueryPlanSwimLane> swimLanes = new LinkedList<>();
+    private List<AbstractSwimLane> swimLanes = new ArrayList<>();
 
-    void addSwimLane(UnaryQueryPlanSwimLane sl) {
+    void addSwimLane(AbstractSwimLane sl) {
         swimLanes.add(sl);
     }
 
     @Override
     public TempTable execute(ExecutorService es) throws Exception {
-        // TODO -- this has to take care of the juggling of swim lanes
-//        Set<Future<TempTable>> futures = swimLanes.stream()
-//                .map(es::submit)
-//                .collect(Collectors.toSet());
-
-        UnaryQueryPlanSwimLane sl = swimLanes.get(0);
-        Future<TempTable> f = es.submit(sl);
+        Future<TempTable> f = null;
+        int idxLastFuture = swimLanes.size() - 1;
+        for (int i = 0; i < swimLanes.size(); i++) {
+            if (i == idxLastFuture) {
+                f = es.submit(swimLanes.get(i));
+            } else {
+                es.submit(swimLanes.get(i));
+            }
+        }
 
         try {
             return f.get(120, TimeUnit.SECONDS);

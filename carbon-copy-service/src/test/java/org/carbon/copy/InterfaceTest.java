@@ -52,7 +52,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
+@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class })
 public class InterfaceTest {
     @Inject
     private QueryParser queryParser;
@@ -119,12 +119,24 @@ public class InterfaceTest {
         assertTrue(expectedResults.isEmpty());
     }
 
-    private Table createDummyTable() throws IOException {
-        return createDummyTable(1, 2, 3);
+    @Test
+    public void testSimpleJoins() throws Exception {
+        Table t1 = createDummyTable("t1", 1, 2, 3);
+        Table t2 = createDummyTable("t2", 2, 3, 4);
+        String query = String.format("SELECT %1$s.tup_num FROM %1$s, %2$s WHERE %1$s.tup_num = %2$s.tup_num", t1.getName(), t2.getName());
+
+        ParsingResult pr = queryParser.parse(query);
+        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
+        TempTable tuples = qp.execute(es);
+        assertNotNull(tuples);
     }
 
-    private Table createDummyTable(int... ids) throws IOException {
-        Table.Builder tableBuilder = Table.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", ""))
+    private Table createDummyTable() throws IOException {
+        return createDummyTable("narf_" + UUID.randomUUID().toString().replaceAll("-", ""), 1, 2, 3);
+    }
+
+    private Table createDummyTable(String tableName, int... ids) throws IOException {
+        Table.Builder tableBuilder = Table.newBuilder(tableName)
                 .withColumn("tup_num", Integer.class)
                 .withColumn("moep", String.class)
                 .withColumn("foo", String.class);

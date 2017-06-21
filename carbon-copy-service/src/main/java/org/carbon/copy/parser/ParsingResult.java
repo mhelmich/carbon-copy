@@ -53,7 +53,7 @@ public interface ParsingResult {
 
         @Override
         public String toString() {
-            return operand1 + " " + operation + " " + operand2;
+            return operand1 + " - " + operation + " - " + operand2;
         }
     }
 }

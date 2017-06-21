@@ -19,16 +19,19 @@
 package org.carbon.copy.planner;
 
 import com.google.inject.Inject;
+import org.carbon.copy.data.structures.Catalog;
 import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.Table;
-import org.carbon.copy.data.structures.TxnManager;
-import org.carbon.copy.data.structures.Catalog;
+import org.carbon.copy.data.structures.TempTable;
 import org.carbon.copy.data.structures.TopLevelDataStructure;
+import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.parser.ParsingResult;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
 /**
@@ -58,17 +61,46 @@ class QueryPlannerImpl implements QueryPlanner {
     public QueryPlan generateQueryPlan(ParsingResult parsingResult) {
         QueryPlanImpl qp = new QueryPlanImpl();
         List<Table> tables = orderTablesInExecutionOrder(parsingResult);
-        tables.forEach(table -> {
-            UnaryQueryPlanSwimLane sl = new UnaryQueryPlanSwimLane(dsFactory, txnManager, table);
-            // TODO -- do more figuring out here
-            // we need to make sure that we only use columns that exist in this table
-            Set<String> columnsToSelectOn = parsingResult.getSelections().stream()
-                    .map(bo -> bo.operand1)
-                    .collect(Collectors.toSet());
-            sl.addSelection(columnsToSelectOn, table, parsingResult.getExpressionText());
-            sl.addProjection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
+
+        // figure out which tables have a non-join mutation to them
+        // create a swim lane for the respective mutation
+        Map<String, UnaryQueryPlanSwimLane> tableNameToSwimLane = tables.stream()
+                .collect(Collectors.toMap(
+                        TopLevelDataStructure::getName,
+                        table -> {
+                            UnaryQueryPlanSwimLane sl = new UnaryQueryPlanSwimLane(dsFactory, txnManager, table);
+                            // TODO -- do more figuring out here
+                            // we need to make sure that we only use columns that exist in this table
+                            // also take care of fully qualified column names (something like t1.column1)
+                            Set<String> columnsToSelectOn = parsingResult.getSelections().stream()
+                                    .map(bo -> bo.operand1)
+                                    .collect(Collectors.toSet());
+                            sl.addSelection(columnsToSelectOn, table, parsingResult.getExpressionText());
+                            sl.addProjection(parsingResult.getProjectionColumnNames(), table.getColumnNames());
+                            qp.addSwimLane(sl);
+                            return sl;
+                        }
+                ));
+
+        List<ParsingResult.BinaryOperation> joins = orderJoinsInExecutionOrder(parsingResult);
+        joins.forEach(bo -> {
+            String[] left = bo.operand1.split("\\.");
+            String[] right = bo.operand2.split("\\.");
+
+            String leftTableName = left[0];
+            String leftColumnName = left[1];
+            String rightTableName = right[0];
+            String rightColumnName = right[1];
+
+            UnaryQueryPlanSwimLane leftSwimLane = tableNameToSwimLane.get(leftTableName);
+            FutureTask<TempTable> leftFuture = new FutureTask<>(leftSwimLane);
+            UnaryQueryPlanSwimLane rightSwimLane = tableNameToSwimLane.get(rightTableName);
+            FutureTask<TempTable> rightFuture = new FutureTask<>(rightSwimLane);
+
+            BinaryQueryPlanSwimLane sl = new BinaryQueryPlanSwimLane(dsFactory, txnManager, leftFuture, leftColumnName, rightFuture, rightColumnName);
             qp.addSwimLane(sl);
         });
+
         return qp;
     }
 
@@ -77,5 +109,9 @@ class QueryPlannerImpl implements QueryPlanner {
                 .map(tableName -> catalog.get(tableName, Table.class))
                 .sorted(Comparator.comparing(TopLevelDataStructure::getName))
                 .collect(Collectors.toList());
+    }
+
+    private List<ParsingResult.BinaryOperation> orderJoinsInExecutionOrder(ParsingResult parsingResult) {
+        return parsingResult.getJoins();
     }
 }

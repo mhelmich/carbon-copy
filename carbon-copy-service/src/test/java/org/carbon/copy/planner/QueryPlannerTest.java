@@ -39,12 +39,14 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
+@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class })
 public class QueryPlannerTest {
     @Inject
     private Catalog catalog;
@@ -64,12 +66,12 @@ public class QueryPlannerTest {
         List<String> tablesNames = ImmutableList.of("t1");
         createTable(tablesNames);
 
-        QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
         ParsingResult pr = Mockito.mock(ParsingResult.class);
-        Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
+        Mockito.when(pr.getTableNames()).thenReturn(getTableNamesForNames(tablesNames));
         Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t1_narf"));
         Mockito.when(pr.getExpressionText()).thenReturn("");
 
+        QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<UnaryQueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
@@ -87,18 +89,37 @@ public class QueryPlannerTest {
         List<String> tablesNames = ImmutableList.of("t2");
         createTable(tablesNames);
 
-        QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
         ParsingResult pr = Mockito.mock(ParsingResult.class);
-        Mockito.when(pr.getTableNames()).thenReturn(new ArrayList<>(getTableNamesForNames(tablesNames)));
+        Mockito.when(pr.getTableNames()).thenReturn(getTableNamesForNames(tablesNames));
         Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t2_narf"));
         Mockito.when(pr.getExpressionText()).thenReturn("t2_narf='void'");
 
+        QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
         QueryPlan qp = planner.generateQueryPlan(pr);
         List<UnaryQueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
         assertEquals(1, swimLanes.size());
         UnaryQueryPlanSwimLane sl = swimLanes.get(0);
         Table t1 = getTable(tablesNames.get(0));
         assertEquals(t1.getId(), getBase(sl).getId());
+    }
+
+    /**
+     * This test executes a query like this:
+     * SELECT t1_narf, t2_moep FROM t1, t2 WHERE t1.id = t2.id
+     */
+    @Test
+    public void testSimpleJoin() throws Exception {
+        createTable("t1", "t2");
+
+        ParsingResult pr = Mockito.mock(ParsingResult.class);
+        Mockito.when(pr.getTableNames()).thenReturn(getTableNamesForNames("t1", "t2"));
+        Mockito.when(pr.getProjectionColumnNames()).thenReturn(ImmutableList.of("t1_narf", "t2_moep"));
+        Mockito.when(pr.getJoins()).thenReturn(Collections.singletonList(new ParsingResult.BinaryOperation(getTableName("t1") + ".id", "==", getTableName("t2") + ".id")));
+
+        QueryPlanner planner = new QueryPlannerImpl(catalog, dsFactory, txnManager);
+        QueryPlan qp = planner.generateQueryPlan(pr);
+        List<UnaryQueryPlanSwimLane> swimLanes = getSwimLanesFromPlan(qp);
+        assertEquals(3, swimLanes.size());
     }
 
     private Table getTable(String tableName) throws IOException {
@@ -110,6 +131,10 @@ public class QueryPlannerTest {
         for (String tn : tableNames) {
             createTable(tn);
         }
+    }
+
+    private void createTable(String... tableNames) throws IOException {
+        createTable(Arrays.asList(tableNames));
     }
 
     private void createTable(String tableName) throws IOException {
@@ -150,6 +175,10 @@ public class QueryPlannerTest {
         txn.commit();
     }
 
+    private List<String> getTableNamesForNames(String... tableNames) {
+        return getTableNamesForNames(Arrays.asList(tableNames));
+    }
+
     private List<String> getTableNamesForNames(List<String> tableNames) {
         List<String> tns = new ArrayList<>();
         for (String tn : tableNames) {
@@ -159,7 +188,7 @@ public class QueryPlannerTest {
     }
 
     private String getTableName(String tableName) {
-        return "table_" + tableName + "_" + getClass().getName();
+        return "table_" + tableName + "_" + getClass().getName().replaceAll("\\.", "_");
     }
 
     @SuppressWarnings("unchecked")
