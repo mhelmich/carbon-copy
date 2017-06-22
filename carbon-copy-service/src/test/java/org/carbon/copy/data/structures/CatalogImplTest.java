@@ -28,8 +28,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
@@ -93,5 +95,40 @@ public class CatalogImplTest {
 
         CatalogImpl c2 = new CatalogImpl(store, dsFactory, txnManager);
         c2.get("some_other_table_name", Table.class);
+    }
+
+    @Test
+    public void testGetAllTablesNames() throws IOException {
+        String tableName1 = "table_" + System.currentTimeMillis();
+        CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
+
+        Table.Builder builder = Table.newBuilder(tableName1)
+                .withColumn("narf", Integer.class);
+
+        Txn txn = txnManager.beginTransaction();
+        Table table1 = dsFactory.newTable(builder, txn);
+        c1.create(table1, txn);
+        txn.commit();
+
+        CatalogImpl c2 = new CatalogImpl(store, dsFactory, txnManager);
+        Map<String, Table> tablesNames = c2.listTables();
+        assertEquals(1, tablesNames.size());
+        assertNotNull(tablesNames.remove(tableName1));
+        assertEquals(0, tablesNames.size());
+
+        String tableName2 = "table_" + System.currentTimeMillis();
+        builder = Table.newBuilder(tableName2)
+                .withColumn("narf", Integer.class);
+
+        txn = txnManager.beginTransaction();
+        Table table2 = dsFactory.newTable(builder, txn);
+        c1.create(table2, txn);
+        txn.commit();
+
+        tablesNames = c2.listTables();
+        assertEquals(2, tablesNames.size());
+        assertNotNull(tablesNames.remove(tableName1));
+        assertNotNull(tablesNames.remove(tableName2));
+        assertEquals(0, tablesNames.size());
     }
 }

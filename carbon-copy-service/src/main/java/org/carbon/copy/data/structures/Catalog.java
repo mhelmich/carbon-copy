@@ -19,8 +19,10 @@
 package org.carbon.copy.data.structures;
 
 import java.io.IOException;
+import java.util.Map;
 
 public interface Catalog {
     void create(TopLevelDataStructure ds, Txn txn) throws IOException;
     <T extends TopLevelDataStructure> T get(String name, Class<T> klass);
+    Map<String, Table> listTables() throws IOException;
 }
