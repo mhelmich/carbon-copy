@@ -29,6 +29,7 @@ import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -87,6 +88,20 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
             newData.add(data.get(i));
         }
         return new Tuple(guid, newData, size);
+    }
+
+    public Object[] toObjectArray() {
+        ArrayList<Object> l = new ArrayList<>(data);
+        // TODO -- think about what you actually want here
+        // either you expose the internal guid to everybody as part of the result set
+        // or you keep it to yourself
+        // if you decide to put it in though you need to go and adapt the calcite row types accordingly
+        //l.add(0, guid);
+        return l.toArray();
+    }
+
+    public Tuple subTuple(Integer... indexes) {
+        return subTuple(Arrays.asList(indexes));
     }
 
     public Tuple subTuple(List<Integer> indexes) {
@@ -160,7 +175,7 @@ public class Tuple extends Sizable implements Comparable<Tuple> {
             return this;
         }
 
-        public Tuple build() {
+        Tuple build() {
             Tuple t = new Tuple(data.size());
             for (int i = 0; i < data.size(); i++) {
                 t.put(i, data.get(i));

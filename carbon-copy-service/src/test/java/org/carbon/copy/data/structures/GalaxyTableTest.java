@@ -121,9 +121,9 @@ public class GalaxyTableTest {
         Txn txn = txnManager.beginTransaction();
 
         Table.Builder tableBuilder = Table.newBuilder("narf")
-                .withColumn("tup_num", String.class)
-                .withColumn("moep", Integer.class)
-                .withColumn("foo", String.class);
+                .withColumn("TUP_NUM", String.class)
+                .withColumn("MOEP", Integer.class)
+                .withColumn("FOO", String.class);
 
         Table table1 = dsFactory.newTable(tableBuilder, txn);
         txn.commit();
@@ -134,8 +134,8 @@ public class GalaxyTableTest {
 
         List<String> cols = table2.getColumnNames();
         assertEquals(3, cols.size());
-        assertEquals("tup_num", cols.get(0));
-        assertEquals("moep", cols.get(1));
-        assertEquals("foo", cols.get(2));
+        assertEquals("TUP_NUM", cols.get(0));
+        assertEquals("MOEP", cols.get(1));
+        assertEquals("FOO", cols.get(2));
     }
 }
