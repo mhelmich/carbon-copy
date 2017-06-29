@@ -1,0 +1,164 @@
+package org.carbon.copy.calcite;
+
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.linq4j.tree.Blocks;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelWriter;
+
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.List;
+
+class TableScan extends org.apache.calcite.rel.core.TableScan implements EnumerableRel {
+
+    private final CarbonCopyTable carbonCopyTable;
+    private final String javaFilterExpression;
+    private final List<Integer> columnIndexesForThePredicate;
+    private final List<Integer> columnIndexesToProjectTo;
+
+    TableScan(RelOptCluster cluster, RelOptTable table, CarbonCopyTable carbonCopyTable) {
+        super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), table);
+        this.carbonCopyTable = carbonCopyTable;
+        this.javaFilterExpression = "";
+        this.columnIndexesForThePredicate = Collections.emptyList();
+        this.columnIndexesToProjectTo = Collections.emptyList();
+    }
+
+    TableScan(RelOptCluster cluster, RelOptTable table, CarbonCopyTable carbonCopyTable, String javaFilterExpression, List<Integer> columnIndexesForThePredicate) {
+        super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), table);
+        this.carbonCopyTable = carbonCopyTable;
+        this.javaFilterExpression = javaFilterExpression;
+        this.columnIndexesForThePredicate = columnIndexesForThePredicate;
+        this.columnIndexesToProjectTo = Collections.emptyList();
+    }
+
+    TableScan(RelOptCluster cluster, RelOptTable table, CarbonCopyTable carbonCopyTable, String javaFilterExpression, List<Integer> columnIndexesForThePredicate, List<Integer> columnIndexesToProjectTo) {
+        super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), table);
+        this.carbonCopyTable = carbonCopyTable;
+        this.javaFilterExpression = javaFilterExpression;
+        this.columnIndexesForThePredicate = columnIndexesForThePredicate;
+        this.columnIndexesToProjectTo = columnIndexesToProjectTo;
+    }
+
+    CarbonCopyTable getCarbonCopyTable() {
+        return carbonCopyTable;
+    }
+
+    @Override
+    public void register(RelOptPlanner planner) {
+        planner.addRule(OptimizerRule.FILTER_SCAN);
+        planner.addRule(OptimizerRule.PROJECT_FILTER_SCAN);
+    }
+
+    /**
+     * As it turns out the optimizer uses this information to find the cheapest plan.
+     * It's important for this to be implemented and accurate at all times!
+     */
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+                .item("javaFilterExpression", javaFilterExpression)
+                .item("columnIndexesForThePredicate", columnIndexesForThePredicate)
+                .item("columnIndexesToProjectTo", columnIndexesToProjectTo);
+    }
+
+    // this refers to a method in CarbonCopyTable that does the heavy lifting for us
+    private static final Method SCAN_CALLBACK =
+            Types.lookupMethod(
+                    CarbonCopyTable.class,
+                    "scan",
+                    DataContext.class,
+                    String.class,
+                    Integer[].class
+            );
+
+    private static final Method PROJECT_CALLBACK =
+            Types.lookupMethod(
+                    CarbonCopyTable.class,
+                    "project",
+                    DataContext.class,
+                    Integer[].class
+            );
+
+    private static final Method SCAN_AND_PROJECT_CALLBACK =
+            Types.lookupMethod(
+                    CarbonCopyTable.class,
+                    "scanAndProject",
+                    DataContext.class,
+                    String.class,
+                    Integer[].class,
+                    Integer[].class
+            );
+
+    private static final Method FULL_TABLE_SCAN_CALLBACK =
+            Types.lookupMethod(
+                    CarbonCopyTable.class,
+                    "fullTableScan",
+                    DataContext.class
+            );
+
+    /**
+     * This is being called when the table scan is executed.
+     * This acts as a proxy that forwards calls to a method back on the respective table object.
+     */
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer prefer) {
+        PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        prefer.preferArray());
+
+        // not the prettiest code but this decides on basis of what TableScan instance I am which method on the table to call.
+        // I rather have this kind of code here as opposed to on the table (which this will eventually call reflectively).
+        // The table just gets all information handed and knows what to do.
+        if (canDoScan() && canDoProject()) {
+            return implementor.result(
+                    physType,
+                    Blocks.toBlock(
+                            Expressions.call(table.getExpression(CarbonCopyTable.class),
+                                    SCAN_AND_PROJECT_CALLBACK,
+                                    implementor.getRootExpression(),
+                                    Expressions.constant(javaFilterExpression),
+                                    Expressions.constant(columnIndexesForThePredicate.toArray(new Integer[columnIndexesForThePredicate.size()])),
+                                    Expressions.constant(columnIndexesToProjectTo.toArray(new Integer[columnIndexesToProjectTo.size()]))
+                            )));
+        } else if (canDoScan()) {
+            return implementor.result(
+                    physType,
+                    Blocks.toBlock(
+                            Expressions.call(table.getExpression(CarbonCopyTable.class),
+                                    SCAN_CALLBACK,
+                                    implementor.getRootExpression(),
+                                    Expressions.constant(javaFilterExpression),
+                                    Expressions.constant(columnIndexesForThePredicate.toArray(new Integer[columnIndexesForThePredicate.size()]))
+                            )));
+        } else {
+            return implementor.result(
+                    physType,
+                    Blocks.toBlock(
+                            Expressions.call(table.getExpression(CarbonCopyTable.class),
+                                    FULL_TABLE_SCAN_CALLBACK,
+                                    implementor.getRootExpression()
+                            )));
+        }
+    }
+
+    private boolean canDoScan() {
+        return javaFilterExpression != null && !javaFilterExpression.isEmpty()
+                && columnIndexesForThePredicate != null && !columnIndexesForThePredicate.isEmpty();
+    }
+
+    private boolean canDoProject() {
+        return columnIndexesToProjectTo != null && !columnIndexesToProjectTo.isEmpty();
+    }
+}
