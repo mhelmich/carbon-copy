@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
@@ -59,36 +58,31 @@ public class InterfaceTest {
     private Catalog catalog;
 
     @Test
-    public void testCalciteConnectionNoTable() throws SQLException {
-        try (Connection connection = getCalciteConnection()) {
-            try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
-                assertFalse(tables.next());
-            }
-        }
-    }
-
-    @Test
     public void testCalciteConnectionListTables() throws SQLException, IOException {
         Table t1 = createDummyTable();
         try (Connection connection = getCalciteConnection()) {
             try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
-                assertTrue(tables.next());
-                String tableName = tables.getString("TABLE_NAME");
-                assertEquals(t1.getName(), tableName);
-                assertFalse(tables.next());
+
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+
+                assertTrue(tableNames.remove(t1.getName()));
             }
         }
 
         Table t2 = createDummyTable();
         try (Connection connection = getCalciteConnection()) {
             try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
-                assertTrue(tables.next());
-                String tableName = tables.getString("TABLE_NAME");
-                assertEquals(t1.getName(), tableName);
-                assertTrue(tables.next());
-                tableName = tables.getString("TABLE_NAME");
-                assertEquals(t2.getName(), tableName);
-                assertFalse(tables.next());
+
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+
+                assertTrue(tableNames.remove(t1.getName()));
+                assertTrue(tableNames.remove(t2.getName()));
             }
         }
     }
@@ -98,15 +92,16 @@ public class InterfaceTest {
         Table t = createDummyTable("MARCO");
         try (Connection connection = getCalciteConnection()) {
 
-            String tableName;
             try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
-                assertTrue(tables.next());
-                tableName = tables.getString("TABLE_NAME");
-                assertEquals(t.getName(), tableName);
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+                assertTrue(tableNames.contains(t.getName()));
             }
 
             try (Statement statement = connection.createStatement()) {
-                String sql = "SELECT * FROM " + tableName + " WHERE moep = 'moep' AND 2 = tup_num";
+                String sql = "SELECT * FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
                     Set<Integer> tupNums = new HashSet<>(2);
 
