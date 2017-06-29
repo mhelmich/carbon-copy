@@ -18,25 +18,16 @@
 
 package org.carbon.copy;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import org.carbon.copy.calcite.CalciteModule;
 import org.carbon.copy.data.structures.Catalog;
 import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.DataStructureModule;
 import org.carbon.copy.data.structures.Table;
-import org.carbon.copy.data.structures.TempTable;
 import org.carbon.copy.data.structures.Tuple;
 import org.carbon.copy.data.structures.Txn;
 import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.data.structures.TxnManagerModule;
-import org.carbon.copy.parser.ParsingResult;
-import org.carbon.copy.parser.QueryParser;
-import org.carbon.copy.parser.QueryPaserModule;
-import org.carbon.copy.planner.QueryPlan;
-import org.carbon.copy.planner.QueryPlanner;
-import org.carbon.copy.planner.QueryPlannerModule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,25 +41,14 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class, CalciteModule.class })
+@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, CalciteModule.class })
 public class InterfaceTest {
-    @Inject
-    private QueryParser queryParser;
-
-    @Inject
-    private QueryPlanner queryPlanner;
-
     @Inject
     private DataStructureFactory dsFactory;
 
@@ -77,58 +57,6 @@ public class InterfaceTest {
 
     @Inject
     private Catalog catalog;
-
-    private static final ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("query-worker-%d").build();
-    private static final ExecutorService es = Executors.newFixedThreadPool(3, tf);
-
-    @Test
-    @Ignore
-    public void testBasic() throws Exception {
-        Table t = createDummyTable();
-        String query = "select tup_num from " + t.getName() + " where foo <= '2_tup_foo'";
-        ParsingResult pr = queryParser.parse(query);
-        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
-        TempTable tuples = qp.execute(es);
-        assertNotNull(tuples);
-        Set<Tuple> resultSet = tuples.keys()
-                .map(tuples::get)
-                .collect(Collectors.toSet());
-        assertEquals(2, resultSet.size());
-        Set<Integer> expectedResults = new HashSet<Integer>() {{
-            add(1);
-            add(2);
-        }};
-        for (Tuple tup : resultSet) {
-            assertEquals(1, tup.getTupleSize());
-            Integer i = (Integer) tup.get(0);
-            assertTrue(expectedResults.remove(i));
-        }
-        assertTrue(expectedResults.isEmpty());
-    }
-
-    @Test
-    @Ignore
-    public void testBasicBooleanExpression() throws Exception {
-        Table t = createDummyTable();
-        String query = "select tup_num from " + t.getName() + " where foo <= '2_tup_foo' and moep='__moep__'";
-        ParsingResult pr = queryParser.parse(query);
-        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
-        TempTable tuples = qp.execute(es);
-        assertNotNull(tuples);
-        Set<Tuple> resultSet = tuples.keys()
-                .map(tuples::get)
-                .collect(Collectors.toSet());
-        assertEquals(1, resultSet.size());
-        Set<Integer> expectedResults = new HashSet<Integer>() {{
-            add(1);
-        }};
-        for (Tuple tup : resultSet) {
-            assertEquals(1, tup.getTupleSize());
-            Integer i = (Integer) tup.get(0);
-            assertTrue(expectedResults.remove(i));
-        }
-        assertTrue(expectedResults.isEmpty());
-    }
 
     @Test
     public void testCalciteConnectionNoTable() throws SQLException {
