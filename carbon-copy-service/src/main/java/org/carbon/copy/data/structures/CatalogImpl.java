@@ -76,6 +76,7 @@ class CatalogImpl implements Catalog {
 
     @Override
     public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) {
+        name = name.toUpperCase();
         try {
             Long id = getIdForName(name);
             if (id != null && id != -1L) {

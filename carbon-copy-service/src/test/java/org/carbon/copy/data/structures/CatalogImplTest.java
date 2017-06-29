@@ -46,10 +46,10 @@ public class CatalogImplTest {
 
     @Test
     public void testBasic() throws IOException {
-        String tableName = "table_" + System.currentTimeMillis();
+        String tableName = "TABLE_" + System.currentTimeMillis();
         Txn txn = txnManager.beginTransaction();
         Table.Builder builder = Table.newBuilder(tableName)
-                .withColumn("narf", Integer.class);
+                .withColumn("NARF", Integer.class);
         Table table = dsFactory.newTable(builder, txn);
 
         CatalogImpl c = new CatalogImpl(store, dsFactory, txnManager);
@@ -62,11 +62,11 @@ public class CatalogImplTest {
 
     @Test
     public void testExistingRoot() throws IOException {
-        String tableName = "table_" + System.currentTimeMillis();
+        String tableName = "TABLE_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
         Table.Builder builder = Table.newBuilder(tableName)
-                .withColumn("narf", Integer.class);
+                .withColumn("NARF", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table1 = dsFactory.newTable(builder, txn);
@@ -80,11 +80,11 @@ public class CatalogImplTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNonExistingTable() throws IOException {
-        String tableName = "table_" + System.currentTimeMillis();
+        String tableName = "TABLE_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
         Table.Builder builder = Table.newBuilder(tableName)
-                .withColumn("narf", Integer.class);
+                .withColumn("NARF", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table1 = dsFactory.newTable(builder, txn);
@@ -97,11 +97,11 @@ public class CatalogImplTest {
 
     @Test
     public void testGetAllTablesNames() throws IOException {
-        String tableName1 = "table_" + System.currentTimeMillis();
+        String tableName1 = "TABLE_" + System.currentTimeMillis();
         CatalogImpl c1 = new CatalogImpl(store, dsFactory, txnManager);
 
         Table.Builder builder = Table.newBuilder(tableName1)
-                .withColumn("narf", Integer.class);
+                .withColumn("NARF", Integer.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table1 = dsFactory.newTable(builder, txn);
@@ -114,9 +114,9 @@ public class CatalogImplTest {
         assertNotNull(tablesNames.remove(tableName1));
         assertEquals(0, tablesNames.size());
 
-        String tableName2 = "table_" + System.currentTimeMillis();
+        String tableName2 = "TABLE_" + System.currentTimeMillis();
         builder = Table.newBuilder(tableName2)
-                .withColumn("narf", Integer.class);
+                .withColumn("NARF", Integer.class);
 
         txn = txnManager.beginTransaction();
         Table table2 = dsFactory.newTable(builder, txn);
