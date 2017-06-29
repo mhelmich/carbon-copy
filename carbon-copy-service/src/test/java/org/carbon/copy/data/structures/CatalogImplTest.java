@@ -22,8 +22,6 @@ import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.carbon.copy.GuiceJUnit4Runner;
 import org.carbon.copy.GuiceModules;
-import org.carbon.copy.parser.QueryPaserModule;
-import org.carbon.copy.planner.QueryPlannerModule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
+@GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class CatalogImplTest {
 
     @Inject
