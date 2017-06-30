@@ -32,6 +32,8 @@ Carbon Copy is an in-memory data store designed to serve up data from your trans
   * see [this paper](http://cidrdb.org/cidr2017/papers/p9-leis-cidr17.pdf) for ideas around gathering stats and data sampling
 * monitoring and logging
 * management endpoints (creating tables, indexes, etc.)
+* distributed data structures
+  * distributed BTrees see [this paper](http://www.vldb.org/pvldb/1/1453922.pdf)
 * develop routing manager inside the cluster to forward queries to nodes with resident data ([this article](http://highscalability.com/blog/2012/8/20/the-performance-of-distributed-data-structures-running-on-a.html) illustrates the idea)
   * forward queries to data
   * develop distributed flavors of tables and indexes
