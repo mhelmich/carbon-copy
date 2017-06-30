@@ -13,6 +13,9 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -57,6 +60,26 @@ class TableScan extends org.apache.calcite.rel.core.TableScan implements Enumera
     public void register(RelOptPlanner planner) {
         planner.addRule(OptimizerRule.FILTER_SCAN);
         planner.addRule(OptimizerRule.PROJECT_FILTER_SCAN);
+    }
+
+    /**
+     * Explains to calcite how rows look like.
+     * This is interesting for projections and intermediate results.
+     */
+    @Override
+    public RelDataType deriveRowType() {
+        final List<RelDataTypeField> fieldList = table.getRowType().getFieldList();
+        final RelDataTypeFactory.FieldInfoBuilder builder = getCluster().getTypeFactory().builder();
+        if (canDoProject()) {
+            for (int field : columnIndexesToProjectTo) {
+                builder.add(fieldList.get(field));
+            }
+        } else {
+            for (RelDataTypeField field : fieldList) {
+                builder.add(field);
+            }
+        }
+        return builder.build();
     }
 
     /**
