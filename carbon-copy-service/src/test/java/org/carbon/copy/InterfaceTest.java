@@ -103,7 +103,7 @@ public class InterfaceTest {
             try (Statement statement = connection.createStatement()) {
                 String sql = "SELECT * FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
-                    Set<Integer> tupNums = new HashSet<>(2);
+                    Set<Integer> tupNums = new HashSet<>();
 
                     while (resultSet.next()) {
                         tupNums.add(resultSet.getInt("tup_num"));
@@ -123,7 +123,7 @@ public class InterfaceTest {
             try (Statement statement = connection.createStatement()) {
                 String sql = "SELECT tup_num FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
-                    Set<Integer> tupNums = new HashSet<>(2);
+                    Set<Integer> tupNums = new HashSet<>();
 
                     while (resultSet.next()) {
                         tupNums.add(resultSet.getInt("tup_num"));
@@ -143,7 +143,29 @@ public class InterfaceTest {
             try (Statement statement = connection.createStatement()) {
                 String sql = "SELECT tup_num FROM " + t.getName();
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
-                    Set<Integer> tupNums = new HashSet<>(2);
+                    Set<Integer> tupNums = new HashSet<>();
+
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(3, tupNums.size());
+                    assertTrue(tupNums.remove(1));
+                    assertTrue(tupNums.remove(2));
+                    assertTrue(tupNums.remove(3));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testQueryWithProjectOnly() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT TUP_NUM, MOEP FROM " + t.getName();
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>();
 
                     while (resultSet.next()) {
                         tupNums.add(resultSet.getInt("tup_num"));
@@ -181,10 +203,6 @@ public class InterfaceTest {
 
     private Table createDummyTable() throws IOException {
         String tableName = "NARF_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "");
-        return createDummyTable(tableName, 1, 2, 3);
-    }
-
-    private Table createDummyTable(String tableName) throws IOException {
         return createDummyTable(tableName, 1, 2, 3);
     }
 

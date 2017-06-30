@@ -21,76 +21,18 @@ import java.util.stream.Collectors;
 
 abstract class OptimizerRule extends RelOptRule {
 
-//    static final OptimizerRule PROJECT_ON_FILTER_ON_PROJECT =
-//            new OptimizerRule(
-//                    operand(
-//                            LogicalProject.class,
-//                            operand(
-//                                    LogicalFilter.class,
-//                                    operand(
-//                                            LogicalProject.class,
-//                                            operand(TableScan.class, none())))),
-//                    "proj on filter on proj");
-
-//    static final OptimizerRule FILTER_ON_PROJECT =
-//            new OptimizerRule(
-//                    operand(
-//                            LogicalFilter.class,
-//                            operand(
-//                                    LogicalProject.class,
-//                                    operand(TableScan.class, none()))),
-//                    "filter on proj");
-//
-//    static final OptimizerRule FILTER =
-//            new OptimizerRule(
-//                    operand(
-//                            LogicalFilter.class,
-//                            operand(TableScan.class, none())),
-//                    "filter");
-//
-//
-//    static final OptimizerRule PROJECT =
-//            new OptimizerRule(
-//                    operand(
-//                            LogicalProject.class,
-//                            operand(TableScan.class, none())),
-//                    "proj");
-
-//    static final OptimizerRule FILTER_ON_PROJECT
-//            = new FilterOnProjectOptimizerRule();
-
     static final OptimizerRule PROJECT_FILTER_SCAN
             = new ProjectFilterScanOptimizerRule();
 
     static final OptimizerRule FILTER_SCAN
             = new FilterScanOptimizerRule();
 
+    static final OptimizerRule PROJECT_SCAN
+            = new ProjectScanOptimizerRule();
+
     private OptimizerRule(RelOptRuleOperand rule, String description) {
         super(rule, "CarbonCopyOptimizerRule:" + description);
     }
-
-//    private static class FilterOnProjectOptimizerRule extends OptimizerRule {
-//        private FilterOnProjectOptimizerRule() {
-//            super(operand(
-//                    LogicalFilter.class,
-//                    operand(
-//                            LogicalProject.class,
-//                            operand(TableScan.class, none()))),
-//                    "filter-on-proj");
-//        }
-//
-//        @Override
-//        public void onMatch(RelOptRuleCall call) {
-//            int scanIdx = call.getRelList().size() - 1;
-//            TableScan scan = call.rel(scanIdx);
-//        call.transformTo(
-//                new TableScan(
-//                        scan.getCluster(),
-//                        scan.getTable(),
-//                        scan.csvTable,
-//                        fields));
-//        }
-//    }
 
     private static class ProjectFilterScanOptimizerRule extends OptimizerRule {
         private ProjectFilterScanOptimizerRule() {
@@ -149,6 +91,34 @@ abstract class OptimizerRule extends RelOptRule {
                             scan.getCarbonCopyTable(),
                             javaSource,
                             translator.getColumnIndexesForPredicate()
+                    )
+            );
+        }
+    }
+
+    private static class ProjectScanOptimizerRule extends OptimizerRule {
+        private ProjectScanOptimizerRule() {
+            super(operand(
+                    LogicalProject.class,
+                    operand(TableScan.class, none())),
+                    "project-scan");
+        }
+
+        @Override
+        public void onMatch(RelOptRuleCall call) {
+            LogicalProject project = call.rel(0);
+            List<Integer> columnIndexesToProjectTo = project.getChildExps().stream()
+                    .map(rexNode -> (RexInputRef)rexNode)
+                    .map(RexSlot::getIndex)
+                    .collect(Collectors.toList());
+            TableScan scan = call.rel(1);
+
+            call.transformTo(
+                    new TableScan(
+                            scan.getCluster(),
+                            scan.getTable(),
+                            scan.getCarbonCopyTable(),
+                            columnIndexesToProjectTo
                     )
             );
         }
