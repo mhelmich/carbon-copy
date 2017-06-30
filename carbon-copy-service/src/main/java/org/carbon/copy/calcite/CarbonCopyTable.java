@@ -61,11 +61,10 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
      * VOODOO!!!
      * This method is being called via reflection from TableScan.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object[]> scan(DataContext dataContext, String booleanJavaSource, Integer[] columnIndexesForThePredicate) {
+    @SuppressWarnings("UnusedDeclaration unchecked")
+    public Enumerable<Object> scan(DataContext dataContext, String booleanJavaSource, Integer[] columnIndexesForThePredicate) {
 
-        if (booleanJavaSource != null && !booleanJavaSource.isEmpty()
-                && columnIndexesForThePredicate != null && columnIndexesForThePredicate.length > 0) {
+        if (canDoFilter(booleanJavaSource, columnIndexesForThePredicate)) {
 
             CarbonCopyPredicate predicate = CompilerUtil.compileBooleanExpression(booleanJavaSource);
             Stream<Object[]> resultStream = table.keys()
@@ -74,9 +73,9 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
                     .map(Tuple::toObjectArray);
 
             AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
-            return new AbstractEnumerable<Object[]>() {
+            return new AbstractEnumerable<Object>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<Object> enumerator() {
                     return new CarbonCopyEnumerator<>(resultStream, cancelFlag);
                 }
             };
@@ -90,11 +89,8 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
      * This method is being called via reflection from TableScan.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object[]> scanAndProject(DataContext dataContext, String booleanJavaSource, Integer[] columnIndexesForThePredicate, Integer[] columnIndexesToProjectTo) {
-        if (booleanJavaSource != null && !booleanJavaSource.isEmpty()
-                && columnIndexesForThePredicate != null && columnIndexesForThePredicate.length > 0
-                && columnIndexesToProjectTo != null && columnIndexesToProjectTo.length > 0) {
-
+    public Enumerable<Object> scanAndProject(DataContext dataContext, String booleanJavaSource, Integer[] columnIndexesForThePredicate, Integer[] columnIndexesToProjectTo) {
+        if (canDoFilter(booleanJavaSource, columnIndexesForThePredicate) && canDoProject(columnIndexesToProjectTo)) {
             CarbonCopyPredicate predicate = CompilerUtil.compileBooleanExpression(booleanJavaSource);
             Stream<Object[]> resultStream = table.keys()
                     .map(table::get)
@@ -103,9 +99,9 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
                     .map(Tuple::toObjectArray);
 
             AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
-            return new AbstractEnumerable<Object[]>() {
+            return new AbstractEnumerable<Object>() {
                 @Override
-                public Enumerator<Object[]> enumerator() {
+                public Enumerator<Object> enumerator() {
                     return new CarbonCopyEnumerator<>(resultStream, cancelFlag);
                 }
             };
@@ -119,23 +115,32 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
      * This method is being called via reflection from TableScan.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object> project(DataContext dataContext, Integer[] idx) {
+    public Enumerable<Object> project(DataContext dataContext, Integer[] columnIndexesToProjectTo) {
         return null;
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object[]> fullTableScan(DataContext dataContext) {
+    public Enumerable<Object> fullTableScan(DataContext dataContext) {
         AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
         Stream<Object[]> resultStream = table.keys()
                 .map(table::get)
                 .map(Tuple::toObjectArray);
 
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<Object>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
+            public Enumerator<Object> enumerator() {
                 return new CarbonCopyEnumerator<>(resultStream, cancelFlag);
             }
         };
+    }
+
+    private boolean canDoFilter(String booleanJavaSource, Integer[] columnIndexesForThePredicate) {
+        return booleanJavaSource != null && !booleanJavaSource.isEmpty()
+                && columnIndexesForThePredicate != null && columnIndexesForThePredicate.length > 0;
+    }
+
+    private boolean canDoProject(Integer[] columnIndexesToProjectTo) {
+        return columnIndexesToProjectTo != null && columnIndexesToProjectTo.length > 0;
     }
 
     @Override

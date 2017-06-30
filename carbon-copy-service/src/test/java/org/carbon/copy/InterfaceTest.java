@@ -88,8 +88,8 @@ public class InterfaceTest {
     }
 
     @Test
-    public void testCalciteQuery() throws IOException, SQLException {
-        Table t = createDummyTable("MARCO");
+    public void testQueryWithFilters() throws IOException, SQLException {
+        Table t = createDummyTable();
         try (Connection connection = getCalciteConnection()) {
 
             try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
@@ -111,6 +111,48 @@ public class InterfaceTest {
 
                     assertEquals(1, tupNums.size());
                     assertTrue(tupNums.remove(2));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testQueryWithProjectionsAndFilters() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT tup_num FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>(2);
+
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(1, tupNums.size());
+                    assertTrue(tupNums.remove(2));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testQueryWithProjectToSingleValueInTuple() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT tup_num FROM " + t.getName();
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>(2);
+
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(3, tupNums.size());
+                    assertTrue(tupNums.remove(1));
+                    assertTrue(tupNums.remove(2));
+                    assertTrue(tupNums.remove(3));
                 }
             }
         }
@@ -138,7 +180,7 @@ public class InterfaceTest {
     }
 
     private Table createDummyTable() throws IOException {
-        String tableName = "narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "");
+        String tableName = "NARF_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", "");
         return createDummyTable(tableName, 1, 2, 3);
     }
 
@@ -148,9 +190,9 @@ public class InterfaceTest {
 
     private Table createDummyTable(String tableName, int... ids) throws IOException {
         Table.Builder tableBuilder = Table.newBuilder(tableName.toUpperCase())
-                .withColumn("tup_num".toUpperCase(), Integer.class)
-                .withColumn("moep".toUpperCase(), String.class)
-                .withColumn("foo".toUpperCase(), String.class);
+                .withColumn("TUP_NUM".toUpperCase(), Integer.class)
+                .withColumn("MOEP".toUpperCase(), String.class)
+                .withColumn("FOO".toUpperCase(), String.class);
 
         Txn txn = txnManager.beginTransaction();
         Table table = dsFactory.newTable(tableBuilder, txn);
