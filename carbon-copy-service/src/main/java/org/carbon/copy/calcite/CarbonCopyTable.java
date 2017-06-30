@@ -116,7 +116,22 @@ public class CarbonCopyTable extends AbstractQueryableTable implements Translata
      */
     @SuppressWarnings("UnusedDeclaration")
     public Enumerable<Object> project(DataContext dataContext, Integer[] columnIndexesToProjectTo) {
-        return null;
+        if (canDoProject(columnIndexesToProjectTo)) {
+            Stream<Object[]> resultStream = table.keys()
+                    .map(table::get)
+                    .map(tuple -> tuple.subTuple(columnIndexesToProjectTo))
+                    .map(Tuple::toObjectArray);
+
+            AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(dataContext);
+            return new AbstractEnumerable<Object>() {
+                @Override
+                public Enumerator<Object> enumerator() {
+                    return new CarbonCopyEnumerator<>(resultStream, cancelFlag);
+                }
+            };
+        } else {
+            throw new IllegalArgumentException("You're asking me to filter and project but you don't give me enough information.");
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")

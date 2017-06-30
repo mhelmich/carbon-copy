@@ -36,6 +36,14 @@ class TableScan extends org.apache.calcite.rel.core.TableScan implements Enumera
         this.columnIndexesToProjectTo = Collections.emptyList();
     }
 
+    TableScan(RelOptCluster cluster, RelOptTable table, CarbonCopyTable carbonCopyTable, List<Integer> columnIndexesToProjectTo) {
+        super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), table);
+        this.carbonCopyTable = carbonCopyTable;
+        this.javaFilterExpression = "";
+        this.columnIndexesForThePredicate = Collections.emptyList();
+        this.columnIndexesToProjectTo = columnIndexesToProjectTo;
+    }
+
     TableScan(RelOptCluster cluster, RelOptTable table, CarbonCopyTable carbonCopyTable, String javaFilterExpression, List<Integer> columnIndexesForThePredicate) {
         super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), table);
         this.carbonCopyTable = carbonCopyTable;
@@ -56,9 +64,15 @@ class TableScan extends org.apache.calcite.rel.core.TableScan implements Enumera
         return carbonCopyTable;
     }
 
+    /**
+     * This tells calcite how CarbonCopy is able to manipulate the query tree.
+     * All these rules are being executed during query optimization and the optimizer picks the cheapest of them.
+     * Each of these rules must have a corresponding implementation in the TableScan to work :)
+     */
     @Override
     public void register(RelOptPlanner planner) {
         planner.addRule(OptimizerRule.FILTER_SCAN);
+        planner.addRule(OptimizerRule.PROJECT_SCAN);
         planner.addRule(OptimizerRule.PROJECT_FILTER_SCAN);
     }
 
@@ -164,6 +178,15 @@ class TableScan extends org.apache.calcite.rel.core.TableScan implements Enumera
                                     implementor.getRootExpression(),
                                     Expressions.constant(javaFilterExpression),
                                     Expressions.constant(columnIndexesForThePredicate.toArray(new Integer[columnIndexesForThePredicate.size()]))
+                            )));
+        } else if (canDoProject()) {
+            return implementor.result(
+                    physType,
+                    Blocks.toBlock(
+                            Expressions.call(table.getExpression(CarbonCopyTable.class),
+                                    PROJECT_CALLBACK,
+                                    implementor.getRootExpression(),
+                                    Expressions.constant(columnIndexesToProjectTo.toArray(new Integer[columnIndexesToProjectTo.size()]))
                             )));
         } else {
             return implementor.result(
