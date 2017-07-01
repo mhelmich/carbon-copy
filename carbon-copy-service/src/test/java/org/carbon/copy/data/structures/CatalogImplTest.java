@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
@@ -110,9 +112,10 @@ public class CatalogImplTest {
 
         CatalogImpl c2 = new CatalogImpl(store, dsFactory, txnManager);
         Map<String, Table> tablesNames = c2.listTables();
-        assertEquals(1, tablesNames.size());
+        assertTrue(tablesNames.size() >= 1);
+        assertTrue(tablesNames.containsKey(tableName1));
         assertNotNull(tablesNames.remove(tableName1));
-        assertEquals(0, tablesNames.size());
+        assertFalse(tablesNames.containsKey(tableName1));
 
         String tableName2 = "TABLE_" + System.currentTimeMillis();
         builder = Table.newBuilder(tableName2)
@@ -124,9 +127,12 @@ public class CatalogImplTest {
         txn.commit();
 
         tablesNames = c2.listTables();
-        assertEquals(2, tablesNames.size());
+        assertTrue(tablesNames.size() >= 2);
+        assertTrue(tablesNames.containsKey(tableName1));
+        assertTrue(tablesNames.containsKey(tableName2));
         assertNotNull(tablesNames.remove(tableName1));
         assertNotNull(tablesNames.remove(tableName2));
-        assertEquals(0, tablesNames.size());
+        assertFalse(tablesNames.containsKey(tableName1));
+        assertFalse(tablesNames.containsKey(tableName2));
     }
 }
