@@ -1,11 +1,5 @@
 package org.carbon.copy;
 
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.jdbc.JdbcMeta;
-import org.apache.calcite.avatica.remote.LocalService;
-import org.apache.calcite.avatica.remote.Service;
-import org.apache.calcite.avatica.server.AvaticaJsonHandler;
-import org.apache.calcite.avatica.server.HttpServer;
 import org.carbon.copy.data.structures.Table;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,7 +7,6 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -24,24 +17,10 @@ public class CarbonCopyDriverTest extends AbstractEndToEndTest {
 
     @BeforeClass
     public static void setup() {
-        Meta meta;
-        try {
-            meta = new JdbcMeta("localhost");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        Service service = new LocalService(meta);
-        HttpServer server = new HttpServer.Builder()
-                .withHandler(new AvaticaJsonHandler(service))
-                .withPort(8765)
-                .build();
-        server.start();
-
         try {
             Class.forName("org.carbon.copy.jdbc.CarbonCopyDriver");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        } catch (ClassNotFoundException xcp) {
+            throw new RuntimeException(xcp);
         }
     }
 
