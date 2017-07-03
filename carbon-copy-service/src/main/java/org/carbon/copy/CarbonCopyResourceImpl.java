@@ -23,42 +23,26 @@ import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import org.apache.commons.lang3.StringUtils;
-import org.carbon.copy.data.structures.TempTable;
 import org.carbon.copy.data.structures.experimental.SkipList;
-import org.carbon.copy.parser.QueryParser;
-import org.carbon.copy.planner.QueryPlanner;
-import org.carbon.copy.parser.ParsingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
 
 class CarbonCopyResourceImpl implements CarbonCopyResource {
     private static Logger logger = LoggerFactory.getLogger(CarbonCopyResourceImpl.class);
     private static final Map<String, Long> namesToId = new ConcurrentHashMap<>();
 
     private final Grid grid;
-    private final QueryParser queryParser;
-    private final QueryPlanner queryPlanner;
-
-    private static final ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("query-worker-%d").build();
-    private static final ExecutorService es = Executors.newFixedThreadPool(3, tf);
 
     @Inject
-    CarbonCopyResourceImpl(Grid grid, QueryParser queryParser, QueryPlanner queryPlanner) {
+    CarbonCopyResourceImpl(Grid grid) {
         this.grid = grid;
-        this.queryParser = queryParser;
-        this.queryPlanner = queryPlanner;
     }
 
     public String feedData(String index) {
@@ -103,11 +87,12 @@ class CarbonCopyResourceImpl implements CarbonCopyResource {
     }
 
     public Set<Object> query(String query) throws Exception {
-        ParsingResult pr = queryParser.parse(query);
-        logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
-        logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));
-        TempTable tuples = queryPlanner.generateQueryPlan(pr).execute(es);
-        logger.info("#tuples {}", tuples.size());
-        return tuples.keys().collect(Collectors.toSet());
+//        ParsingResult pr = queryParser.parse(query);
+//        logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
+//        logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));
+//        TempTable tuples = queryPlanner.generateQueryPlan(pr).execute(es);
+//        logger.info("#tuples {}", tuples.size());
+//        return tuples.keys().collect(Collectors.toSet());
+        return Collections.emptySet();
     }
 }

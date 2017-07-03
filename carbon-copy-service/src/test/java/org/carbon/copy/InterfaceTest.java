@@ -18,131 +18,141 @@
 
 package org.carbon.copy;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Inject;
-import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.Table;
-import org.carbon.copy.data.structures.TempTable;
-import org.carbon.copy.data.structures.TxnManager;
-import org.carbon.copy.data.structures.Catalog;
-import org.carbon.copy.data.structures.DataStructureModule;
-import org.carbon.copy.data.structures.Tuple;
-import org.carbon.copy.data.structures.Txn;
-import org.carbon.copy.data.structures.TxnManagerModule;
-import org.carbon.copy.parser.ParsingResult;
-import org.carbon.copy.parser.QueryParser;
-import org.carbon.copy.parser.QueryPaserModule;
-import org.carbon.copy.planner.QueryPlan;
-import org.carbon.copy.planner.QueryPlanner;
-import org.carbon.copy.planner.QueryPlannerModule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class, QueryPlannerModule.class, QueryPaserModule.class})
-public class InterfaceTest {
-    @Inject
-    private QueryParser queryParser;
-
-    @Inject
-    private QueryPlanner queryPlanner;
-
-    @Inject
-    private DataStructureFactory dsFactory;
-
-    @Inject
-    private TxnManager txnManager;
-
-    @Inject
-    private Catalog catalog;
-
-    private static final ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("query-worker-%d").build();
-    private static final ExecutorService es = Executors.newFixedThreadPool(3, tf);
-
+public class InterfaceTest extends AbstractEndToEndTest {
     @Test
-    public void testBasic() throws Exception {
-        Table t = createDummyTable();
-        String query = "select tup_num from " + t.getName() + " where foo <= '2_tup_foo'";
-        ParsingResult pr = queryParser.parse(query);
-        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
-        TempTable tuples = qp.execute(es);
-        assertNotNull(tuples);
-        Set<Tuple> resultSet = tuples.keys()
-                .map(tuples::get)
-                .collect(Collectors.toSet());
-        assertEquals(2, resultSet.size());
-        Set<Integer> expectedResults = new HashSet<Integer>() {{
-            add(1);
-            add(2);
-        }};
-        for (Tuple tup : resultSet) {
-            assertEquals(1, tup.getTupleSize());
-            Integer i = (Integer) tup.get(0);
-            assertTrue(expectedResults.remove(i));
+    public void testCalciteConnectionListTables() throws SQLException, IOException {
+        Table t1 = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
+
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+
+                assertTrue(tableNames.remove(t1.getName()));
+            }
         }
-        assertTrue(expectedResults.isEmpty());
+
+        Table t2 = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
+
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+
+                assertTrue(tableNames.remove(t1.getName()));
+                assertTrue(tableNames.remove(t2.getName()));
+            }
+        }
     }
 
     @Test
-    public void testBasicBooleanExpression() throws Exception {
+    public void testQueryWithFilters() throws IOException, SQLException {
         Table t = createDummyTable();
-        String query = "select tup_num from " + t.getName() + " where foo <= '2_tup_foo' and moep='__moep__'";
-        ParsingResult pr = queryParser.parse(query);
-        QueryPlan qp = queryPlanner.generateQueryPlan(pr);
-        TempTable tuples = qp.execute(es);
-        assertNotNull(tuples);
-        Set<Tuple> resultSet = tuples.keys()
-                .map(tuples::get)
-                .collect(Collectors.toSet());
-        assertEquals(1, resultSet.size());
-        Set<Integer> expectedResults = new HashSet<Integer>() {{
-            add(1);
-        }};
-        for (Tuple tup : resultSet) {
-            assertEquals(1, tup.getTupleSize());
-            Integer i = (Integer) tup.get(0);
-            assertTrue(expectedResults.remove(i));
+        try (Connection connection = getCalciteConnection()) {
+
+            try (ResultSet tables = connection.getMetaData().getTables(null, "carbon-copy", null, null)) {
+                Set<String> tableNames = new HashSet<>();
+                while (tables.next()) {
+                    tableNames.add(tables.getString("TABLE_NAME"));
+                }
+                assertTrue(tableNames.contains(t.getName()));
+            }
+
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT * FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>();
+
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(1, tupNums.size());
+                    assertTrue(tupNums.remove(2));
+                }
+            }
         }
-        assertTrue(expectedResults.isEmpty());
     }
 
-    private Table createDummyTable() throws IOException {
-        return createDummyTable(1, 2, 3);
+    @Test
+    public void testQueryWithProjectionsAndFilters() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT tup_num FROM " + t.getName() + " WHERE moep = 'moep' AND 2 = tup_num";
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>();
+
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(1, tupNums.size());
+                    assertTrue(tupNums.remove(2));
+                }
+            }
+        }
     }
 
-    private Table createDummyTable(int... ids) throws IOException {
-        Table.Builder tableBuilder = Table.newBuilder("narf_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replaceAll("-", ""))
-                .withColumn("tup_num", Integer.class)
-                .withColumn("moep", String.class)
-                .withColumn("foo", String.class);
+    @Test
+    public void testQueryWithProjectToSingleValueInTuple() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT tup_num FROM " + t.getName();
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>();
 
-        Txn txn = txnManager.beginTransaction();
-        Table table = dsFactory.newTable(tableBuilder, txn);
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
 
-        for (int id : ids) {
-            Tuple tup = new Tuple(3);
-            tup.put(0, id);
-            tup.put(1, (id % 2 == 0) ? "moep" : "__moep__");
-            tup.put(2, id + "_tup_foo");
-            table.insert(tup, txn);
+                    assertEquals(3, tupNums.size());
+                    assertTrue(tupNums.remove(1));
+                    assertTrue(tupNums.remove(2));
+                    assertTrue(tupNums.remove(3));
+                }
+            }
         }
+    }
 
-        catalog.create(table, txn);
-        txn.commit();
+    @Test
+    public void testQueryWithProjectOnly() throws Exception {
+        Table t = createDummyTable();
+        try (Connection connection = getCalciteConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                String sql = "SELECT TUP_NUM, MOEP FROM " + t.getName();
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    Set<Integer> tupNums = new HashSet<>();
 
-        return table;
+                    while (resultSet.next()) {
+                        tupNums.add(resultSet.getInt("tup_num"));
+                    }
+
+                    assertEquals(3, tupNums.size());
+                    assertTrue(tupNums.remove(1));
+                    assertTrue(tupNums.remove(2));
+                    assertTrue(tupNums.remove(3));
+                }
+            }
+        }
     }
 }

@@ -53,4 +53,5 @@
 
     <logger name="co.paralleluniverse" level="warn" additivity="false" />
     <logger name="org.springframework" level="warn" additivity="false" />
+    <logger name="org.apache.calcite" level="info" additivity="false" />
 </configuration>

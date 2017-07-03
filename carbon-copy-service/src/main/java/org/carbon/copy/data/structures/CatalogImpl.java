@@ -27,7 +27,11 @@ import com.google.common.primitives.Longs;
 import com.google.inject.Inject;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * This guy keeps track of everything inside dist-bc (all top-level objects anyways).
@@ -72,6 +76,7 @@ class CatalogImpl implements Catalog {
 
     @Override
     public <T extends TopLevelDataStructure> T get(String name, Class<T> klass) {
+        name = name.toUpperCase();
         try {
             Long id = getIdForName(name);
             if (id != null && id != -1L) {
@@ -96,6 +101,24 @@ class CatalogImpl implements Catalog {
 
         ChainingHash<String, Long> namesToIds = dsFactory.loadChainingHashForWrites(namesToIdsId, txn);
         namesToIds.put(ds.getName(), ds.getId(), txn);
+    }
+
+    @Override
+    public Map<String, Table> listTables() throws IOException {
+        if (catalogRootId == null) {
+            try {
+                initCatalogRootId();
+            } catch (TimeoutException xcp) {
+                throw new IOException(xcp);
+            }
+        }
+
+        ChainingHash<String, Long> namesToIds = dsFactory.loadChainingHash(namesToIdsId);
+        return StreamSupport.stream(namesToIds.keys().spliterator(), false)
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        name -> get(name, Table.class)
+                ));
     }
 
 //    public List<String> getIndexesFor(Table table) throws TimeoutException, IOException {
