@@ -14,17 +14,23 @@ import org.carbon.copy.data.structures.TxnManagerModule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class, CalciteModule.class })
 abstract class AbstractEndToEndTest {
+    private static Logger logger = LoggerFactory.getLogger(AbstractEndToEndTest.class);
+
     @Inject
     private DataStructureFactory dsFactory;
 
@@ -34,17 +40,23 @@ abstract class AbstractEndToEndTest {
     @Inject
     private Catalog catalog;
 
-    @Inject
-    private AvaticaServer avaticaServer;
+    AvaticaServer avaticaServer;
 
     @Before
-    public void setup() {
+    public void setupAvaticaServer() {
+        if (avaticaServer != null) {
+            logger.warn("Somebody didn't clean up after himself");
+            avaticaServer.stop();
+            avaticaServer = null;
+        }
+        avaticaServer = getTestSpecificAvaticaServer();
         avaticaServer.start();
     }
 
     @After
-    public void tearDown() {
+    public void tearDownAvaticaServer() {
         avaticaServer.stop();
+        avaticaServer = null;
     }
 
     Connection getCalciteConnection() throws SQLException {
@@ -94,5 +106,19 @@ abstract class AbstractEndToEndTest {
         txn.commit();
 
         return table;
+    }
+
+    private AvaticaServer getTestSpecificAvaticaServer() {
+        try {
+            int testPort = new Random().nextInt(58000) + 1024;
+            // I rather compromise on writing ugly test code than polluting my production interface with test-methods
+            // hence I need to jump through these four burning rings on order to get a test-specific server
+            Class<?> klass = Class.forName("org.carbon.copy.calcite.AvaticaServerImpl");
+            Constructor<?> ctor = klass.getDeclaredConstructor(int.class);
+            ctor.setAccessible(true);
+            return (AvaticaServer) ctor.newInstance(testPort);
+        } catch (Exception xcp) {
+            throw new RuntimeException(xcp);
+        }
     }
 }
