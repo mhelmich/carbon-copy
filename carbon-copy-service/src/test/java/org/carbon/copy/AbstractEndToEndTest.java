@@ -1,6 +1,7 @@
 package org.carbon.copy;
 
 import com.google.inject.Inject;
+import org.carbon.copy.calcite.AvaticaServer;
 import org.carbon.copy.calcite.CalciteModule;
 import org.carbon.copy.data.structures.Catalog;
 import org.carbon.copy.data.structures.DataStructureFactory;
@@ -10,6 +11,8 @@ import org.carbon.copy.data.structures.Tuple;
 import org.carbon.copy.data.structures.Txn;
 import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.data.structures.TxnManagerModule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -30,6 +33,19 @@ abstract class AbstractEndToEndTest {
 
     @Inject
     private Catalog catalog;
+
+    @Inject
+    private AvaticaServer avaticaServer;
+
+    @Before
+    public void setup() {
+        avaticaServer.start();
+    }
+
+    @After
+    public void tearDown() {
+        avaticaServer.stop();
+    }
 
     Connection getCalciteConnection() throws SQLException {
         Properties props = new Properties();

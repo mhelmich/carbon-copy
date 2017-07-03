@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class CarbonCopyDriverTest extends AbstractEndToEndTest {
 
     @BeforeClass
-    public static void setup() {
+    public static void suiteSetup() {
         try {
             Class.forName("org.carbon.copy.jdbc.CarbonCopyDriver");
         } catch (ClassNotFoundException xcp) {
