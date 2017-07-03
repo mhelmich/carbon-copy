@@ -19,6 +19,7 @@
 package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Comparator;
 import java.util.List;
@@ -78,6 +79,19 @@ public abstract class TopLevelDataStructure extends DataStructure {
     public List<Tuple> getColumnMetadata() {
         return getColumnNames().stream()
                 .map(cn -> columnMetadata.get(cn))
+                .collect(Collectors.toList());
+    }
+
+    public int getColumnIndexForName(String columnName) {
+        Tuple t = getColumnMetadataByColumnName(columnName);
+        return (t != null) ? (int) t.get(1) : -1;
+    }
+
+    public List<Pair<String, Tuple>> getSortedColumnMetadata() {
+        return StreamSupport.stream(columnMetadata.keys().spliterator(), false)
+                .map(cn -> columnMetadata.get(cn))
+                .sorted(Comparator.comparingInt(o -> (Integer) o.get(1)))
+                .map(t -> Pair.of((String) t.get(0), t))
                 .collect(Collectors.toList());
     }
 

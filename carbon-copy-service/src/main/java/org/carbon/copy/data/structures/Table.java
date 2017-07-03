@@ -120,12 +120,12 @@ public class Table extends TopLevelDataStructure {
         private final String name;
 
         private Builder(String name) {
-            this.name = name;
+            this.name = name.toUpperCase();
         }
 
         public Builder withColumn(String name, int index, Class type) {
             Tuple col = new Tuple(3);
-            col.put(0, name);
+            col.put(0, name.toUpperCase());
             col.put(1, index);
             col.put(2, type.getCanonicalName());
             columnMetadata.add(col);
