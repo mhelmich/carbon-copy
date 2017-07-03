@@ -27,4 +27,12 @@
     <artifactId>carbon-copy-api</artifactId>
     <packaging>jar</packaging>
     <name>carbon-copy-api</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+    </dependencies>
 </project>
