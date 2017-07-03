@@ -30,6 +30,20 @@
 
     <dependencies>
 
+        <!-- delicate ordering as avatica-server uses an old version of jetty under the covers -->
+        <!-- I need maven to use the old version as opposed to what dropwizard would like to use -->
+        <dependency>
+            <groupId>org.apache.calcite.avatica</groupId>
+            <artifactId>avatica-server</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.carbon.copy</groupId>
             <artifactId>carbon-copy-api</artifactId>
@@ -92,12 +106,6 @@
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
             <version>1.13.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.calcite.avatica</groupId>
-            <artifactId>avatica-server</artifactId>
-            <version>1.10.0</version>
         </dependency>
 
         <dependency>
