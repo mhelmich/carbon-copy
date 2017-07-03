@@ -11,11 +11,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 class AvaticaServerImpl implements AvaticaServer {
     private final HttpServer server;
     private final AtomicBoolean isStarted = new AtomicBoolean(false);
+
+    @SuppressWarnings("unused")
     AvaticaServerImpl() {
+        this(8765);
+    }
+
+    private AvaticaServerImpl(int port) {
         try {
             server = new HttpServer.Builder()
                     .withHandler(new AvaticaJsonHandler(new LocalService(new JdbcMeta(EmbeddedCarbonCopyDriver.CONNECTION_PREFIX))))
-                    .withPort(8765)
+                    .withPort(port)
                     .build();
         } catch (SQLException xcp) {
             throw new RuntimeException(xcp);
@@ -44,6 +50,11 @@ class AvaticaServerImpl implements AvaticaServer {
                 }
             }
         }
+    }
+
+    @Override
+    public int getPort() {
+        return server.getPort();
     }
 
     @Override

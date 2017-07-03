@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class CarbonCopyDriverTest extends AbstractEndToEndTest {
 
     @BeforeClass
-    public static void suiteSetup() {
+    public static void registerJdbcDriver() {
         try {
             Class.forName("org.carbon.copy.jdbc.CarbonCopyDriver");
         } catch (ClassNotFoundException xcp) {
@@ -26,10 +26,11 @@ public class CarbonCopyDriverTest extends AbstractEndToEndTest {
 
     @Test
     public void testDriver() throws Exception {
+        int usedPort = avaticaServer.getPort();
         Table t = createDummyTable();
         Properties props = new Properties();
         props.setProperty("Hello", "World");
-        try (Connection conn = DriverManager.getConnection("jdbc:carbon-copy:url=http://localhost:8765", props)) {
+        try (Connection conn = DriverManager.getConnection("jdbc:carbon-copy:url=http://localhost:" + usedPort, props)) {
             try (ResultSet tables = conn.getMetaData().getTables(null, "carbon-copy", null, null)) {
                 Set<String> tablesNames = new HashSet<>();
                 while (tables.next()) {
