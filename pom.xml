@@ -28,6 +28,7 @@
     <modules>
         <module>carbon-copy-service</module>
         <module>carbon-copy-api</module>
+        <module>carbon-copy-jdbc</module>
     </modules>
 
     <properties>
