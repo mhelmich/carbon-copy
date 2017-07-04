@@ -30,6 +30,26 @@
 
     <dependencies>
 
+        <!-- all the jackson dependencies need to reside before dropwizard -->
+        <!-- again avatica is very particular about the library versions to use -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
         <!-- delicate ordering as avatica-server uses an old version of jetty under the covers -->
         <!-- I need maven to use the old version as opposed to what dropwizard would like to use -->
         <dependency>
