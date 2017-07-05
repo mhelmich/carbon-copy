@@ -16,7 +16,7 @@
  *
  */
 
-package org.carbon.copy;
+package org.carbon.copy.health.checks;
 
 import co.paralleluniverse.galaxy.Cluster;
 import com.codahale.metrics.health.HealthCheck;
@@ -27,8 +27,7 @@ public class GalaxyHealthCheck extends HealthCheck {
     @Inject
     private Cluster cluster;
 
-    GalaxyHealthCheck() {
-    }
+    public GalaxyHealthCheck() { }
 
     protected Result check() throws Exception {
         return cluster.isOnline() ? Result.healthy() : Result.unhealthy("Galaxy cluster is not online!");
