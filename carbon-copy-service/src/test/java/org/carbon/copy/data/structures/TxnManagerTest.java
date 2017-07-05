@@ -19,11 +19,8 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
-import org.carbon.copy.GuiceJUnit4Runner;
-import org.carbon.copy.GuiceModules;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-@RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class TxnManagerTest {
+public class TxnManagerTest extends GalaxyBaseTest {
 
     @Inject
     private InternalDataStructureFactory dsFactory;

@@ -20,10 +20,7 @@ package org.carbon.copy.data.structures;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import org.carbon.copy.GuiceJUnit4Runner;
-import org.carbon.copy.GuiceModules;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,9 +29,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class GalaxyBTreeTest {
+public class GalaxyBTreeTest extends GalaxyBaseTest {
     @Inject
     private InternalDataStructureFactory dsFactory;
 
