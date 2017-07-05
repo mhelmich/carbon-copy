@@ -34,6 +34,8 @@ public class CarbonCopyDriver extends Driver {
         // if this is not concerning me, return null (as per contract)
         if (!url.startsWith(getConnectStringPrefix())) return null;
         Properties propertiesToPassOn = ConnectStringParser.parse(url.substring(getConnectStringPrefix().length()), info);
+        // force client to speak protobuf
+        propertiesToPassOn.setProperty("serialization", "protobuf");
         // forward this call to the embedded carbon copy driver at the specified location
         String connectionString = "jdbc:carbon-copy-embedded:" + url.substring(getConnectStringPrefix().length());
         AvaticaConnection connection = this.factory.newConnection(this, this.factory, connectionString, propertiesToPassOn);
