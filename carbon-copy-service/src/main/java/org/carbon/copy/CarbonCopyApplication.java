@@ -18,9 +18,17 @@
 
 package org.carbon.copy;
 
+import com.google.inject.Guice;
+import com.google.inject.Module;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.carbon.copy.calcite.CalciteModule;
+import org.carbon.copy.data.structures.DataStructureModule;
+import org.carbon.copy.data.structures.TxnManagerModule;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> {
     public static void main(String[] args) throws Exception {
@@ -34,12 +42,20 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
 
     @Override
     public void initialize(Bootstrap<CarbonCopyConfiguration> bootstrap) {
-        // no op
+        Guice.createInjector(allModules());
     }
 
     @Override
     public void run(CarbonCopyConfiguration configuration, Environment environment) {
         environment.jersey().register(CarbonCopyResourceImpl.class);
         environment.healthChecks().register("galaxy", new GalaxyHealthCheck());
+    }
+
+    private List<Module> allModules() {
+        return Arrays.asList(
+                new CalciteModule(),
+                new DataStructureModule(),
+                new TxnManagerModule()
+        );
     }
 }
