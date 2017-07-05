@@ -19,16 +19,17 @@
 package org.carbon.copy;
 
 import com.google.inject.Guice;
-import com.google.inject.Module;
+import com.google.inject.Injector;
 import io.dropwizard.Application;
+import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.carbon.copy.calcite.AvaticaServer;
 import org.carbon.copy.calcite.CalciteModule;
 import org.carbon.copy.data.structures.DataStructureModule;
+import org.carbon.copy.data.structures.GalaxyGrid;
 import org.carbon.copy.data.structures.TxnManagerModule;
-
-import java.util.Arrays;
-import java.util.List;
+import org.carbon.copy.health.checks.GalaxyHealthCheck;
 
 public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> {
     public static void main(String[] args) throws Exception {
@@ -37,25 +38,44 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
 
     @Override
     public String getName() {
-        return "dist-bc";
+        return "carbon-copy";
     }
 
     @Override
-    public void initialize(Bootstrap<CarbonCopyConfiguration> bootstrap) {
-        Guice.createInjector(allModules());
-    }
+    public void initialize(Bootstrap<CarbonCopyConfiguration> bootstrap) { }
 
     @Override
     public void run(CarbonCopyConfiguration configuration, Environment environment) {
         environment.jersey().register(CarbonCopyResourceImpl.class);
         environment.healthChecks().register("galaxy", new GalaxyHealthCheck());
-    }
-
-    private List<Module> allModules() {
-        return Arrays.asList(
-                new CalciteModule(),
-                new DataStructureModule(),
-                new TxnManagerModule()
+        Injector injector = Guice.createInjector(
+                new DataStructureModule(configuration.getDefaultPeerXml(), configuration.getDefaultPeerProperties()),
+                new TxnManagerModule(),
+                new CalciteModule()
         );
+
+        environment.lifecycle().manage(new Managed() {
+            @Override
+            public void start() throws Exception {
+                injector.getInstance(AvaticaServer.class).start();
+            }
+
+            @Override
+            public void stop() throws Exception {
+                injector.getInstance(AvaticaServer.class).stop();
+            }
+        });
+
+        environment.lifecycle().manage(new Managed() {
+            @Override
+            public void start() throws Exception {
+                injector.getInstance(GalaxyGrid.class).start();
+            }
+
+            @Override
+            public void stop() throws Exception {
+                injector.getInstance(GalaxyGrid.class).stop();
+            }
+        });
     }
 }
