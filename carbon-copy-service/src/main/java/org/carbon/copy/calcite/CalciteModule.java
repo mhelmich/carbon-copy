@@ -9,17 +9,10 @@ public class CalciteModule extends AbstractModule {
         // read the comment in Injector for more context
         requestStaticInjection(Injector.class);
 
-        bind(AvaticaServer.class).to(AvaticaServerImpl.class);
-
-//        try {
-//            HttpServer server = new HttpServer.Builder()
-//                    .withHandler(new AvaticaJsonHandler(new LocalService(new JdbcMeta(EmbeddedCarbonCopyDriver.CONNECTION_PREFIX))))
-//                    .withPort(8765)
-//                    .build();
-//            server.start();
-//        } catch (SQLException xcp) {
-//            throw new RuntimeException(xcp);
-//        }
+        // bind and start avatica server
+        AvaticaServer as = new AvaticaServerImpl();
+        bind(AvaticaServer.class).toInstance(as);
+        as.start();
 
         try {
             Class.forName(EmbeddedCarbonCopyDriver.class.getName());
