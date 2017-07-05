@@ -2,7 +2,7 @@ package org.carbon.copy.calcite;
 
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.remote.LocalService;
-import org.apache.calcite.avatica.server.AvaticaJsonHandler;
+import org.apache.calcite.avatica.server.AvaticaProtobufHandler;
 import org.apache.calcite.avatica.server.HttpServer;
 
 import java.sql.SQLException;
@@ -20,7 +20,8 @@ class AvaticaServerImpl implements AvaticaServer {
     private AvaticaServerImpl(int port) {
         try {
             server = new HttpServer.Builder()
-                    .withHandler(new AvaticaJsonHandler(new LocalService(new JdbcMeta(EmbeddedCarbonCopyDriver.CONNECTION_PREFIX))))
+                    // start protobuf server
+                    .withHandler(new AvaticaProtobufHandler(new LocalService(new JdbcMeta(EmbeddedCarbonCopyDriver.CONNECTION_PREFIX))))
                     .withPort(port)
                     .build();
         } catch (SQLException xcp) {
