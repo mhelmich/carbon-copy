@@ -1,5 +1,6 @@
 package org.carbon.copy.jdbc;
 
+import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.carbon.copy.CarbonCopyApplication;
 import org.carbon.copy.CarbonCopyConfiguration;
@@ -9,8 +10,6 @@ import org.carbon.copy.dtos.TableBuilder;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Entity;
 import java.io.IOException;
@@ -26,8 +25,6 @@ import java.util.UUID;
 import static org.junit.Assert.assertTrue;
 
 public class CarbonCopyDriverTest {
-    private static Logger logger = LoggerFactory.getLogger(CarbonCopyDriverTest.class);
-
     @BeforeClass
     public static void registerJdbcDriver() {
         try {
@@ -40,19 +37,9 @@ public class CarbonCopyDriverTest {
     @ClassRule
     public static final DropwizardAppRule<CarbonCopyConfiguration> RULE =
             new DropwizardAppRule<>(CarbonCopyApplication.class,
-                    // TODO -- this is a pretty clunky mock
-                    // there's probably a better way using config overrides
-                    new CarbonCopyConfiguration() {
-                @Override
-                public String getDefaultPeerXml() {
-                    return "../config/peer.xml";
-                }
-
-                @Override
-                public String getDefaultPeerProperties() {
-                    return "../config/peer.properties";
-                }
-            });
+                    "../config/carbon-copy.yml",
+                    ConfigOverride.config("defaultPeerXml", "../config/peer.xml"),
+                    ConfigOverride.config("defaultPeerProperties", "../config/peer.properties"));
 
     @Test
     public void testDriver() throws Exception {
