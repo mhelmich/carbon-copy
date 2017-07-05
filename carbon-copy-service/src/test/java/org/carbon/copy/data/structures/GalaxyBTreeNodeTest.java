@@ -19,18 +19,13 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
-import org.carbon.copy.GuiceJUnit4Runner;
-import org.carbon.copy.GuiceModules;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class GalaxyBTreeNodeTest {
+public class GalaxyBTreeNodeTest extends GalaxyBaseTest {
     @Inject
     private InternalDataStructureFactory dsFactory;
 

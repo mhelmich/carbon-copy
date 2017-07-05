@@ -19,10 +19,7 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
-import org.carbon.copy.GuiceJUnit4Runner;
-import org.carbon.copy.GuiceModules;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,9 +28,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(GuiceJUnit4Runner.class)
-@GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
-public class GalaxyIndexTest {
+public class GalaxyIndexTest extends GalaxyBaseTest {
     @Inject
     private InternalDataStructureFactory dsFactory;
 
