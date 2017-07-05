@@ -1,6 +1,7 @@
 package org.carbon.copy.calcite;
 
-import org.apache.calcite.avatica.remote.Driver;
+
+import org.apache.calcite.jdbc.Driver;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
