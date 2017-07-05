@@ -36,7 +36,7 @@ import java.util.Set;
 public interface CarbonCopyResource {
     @POST
     @Path("/query")
-    Set<Object> query(@QueryParam("query") String query) throws Exception;
+    Set<Object[]> query(@QueryParam("query") String query) throws Exception;
 
     @POST
     @Path("/createTable")

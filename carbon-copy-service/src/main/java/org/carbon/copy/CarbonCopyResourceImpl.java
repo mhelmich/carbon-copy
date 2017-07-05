@@ -19,6 +19,7 @@
 package org.carbon.copy;
 
 import com.google.inject.Inject;
+import org.carbon.copy.calcite.EmbeddedCarbonCopyDriver;
 import org.carbon.copy.data.structures.Catalog;
 import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.Txn;
@@ -26,24 +27,19 @@ import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.dtos.ColumnBuilder;
 import org.carbon.copy.dtos.Table;
 import org.carbon.copy.dtos.TableBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Map;
+import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 class CarbonCopyResourceImpl implements CarbonCopyResource {
-    private static Logger logger = LoggerFactory.getLogger(CarbonCopyResourceImpl.class);
-    private static final Map<String, Long> namesToId = new ConcurrentHashMap<>();
-
     private final DataStructureFactory dsFactory;
-
     private final TxnManager txnManager;
-
     private final Catalog catalog;
 
     @Inject
@@ -53,14 +49,24 @@ class CarbonCopyResourceImpl implements CarbonCopyResource {
         this.catalog = catalog;
     }
 
-    public Set<Object> query(String query) throws Exception {
-//        ParsingResult pr = queryParser.parse(query);
-//        logger.info("All the tables I want to access: {}", StringUtils.join(pr.getTableNames(), ", "));
-//        logger.info("All the columns I want to access: {}", StringUtils.join(pr.getProjectionColumnNames(), ", "));
-//        TempTable tuples = queryPlanner.generateQueryPlan(pr).execute(es);
-//        logger.info("#tuples {}", tuples.size());
-//        return tuples.keys().collect(Collectors.toSet());
-        return Collections.emptySet();
+    @Override
+    public Set<Object[]> query(String query) throws Exception {
+        try (Connection conn = DriverManager.getConnection(EmbeddedCarbonCopyDriver.CONNECT_STRING_PREFIX)) {
+            try (Statement stmt = conn.createStatement()) {
+                try (ResultSet rs = stmt.executeQuery(query)) {
+                    Set<Object[]> results = new HashSet<>();
+                    int numColumns = rs.getMetaData().getColumnCount();
+                    while (rs.next()) {
+                        Object[] objects = new Object[numColumns];
+                        for (int i = 0; i < numColumns; i++) {
+                            objects[i] = rs.getObject(i);
+                        }
+                        results.add(objects);
+                    }
+                    return results;
+                }
+            }
+        }
     }
 
     @Override
