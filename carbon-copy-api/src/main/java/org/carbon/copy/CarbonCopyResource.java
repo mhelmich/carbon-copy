@@ -18,24 +18,27 @@
 
 package org.carbon.copy;
 
-import com.codahale.metrics.annotation.Timed;
+import org.carbon.copy.dtos.Table;
+import org.carbon.copy.dtos.TableBuilder;
 
-import javax.ws.rs.GET;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import java.sql.SQLException;
 import java.util.Set;
 
 @Path("/carbon-copy")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public interface CarbonCopyResource {
-    @GET
-    @Path("/feedData/{index}")
-    @Timed
-    String feedData(@PathParam("index") String index);
-
     @POST
     @Path("/query")
-    @Timed
     Set<Object> query(@QueryParam("query") String query) throws Exception;
+
+    @POST
+    @Path("/createTable")
+    Table createTable(TableBuilder tableBuilder) throws SQLException;
 }

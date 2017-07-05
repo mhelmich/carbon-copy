@@ -18,6 +18,7 @@
 
 package org.carbon.copy;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.dropwizard.Application;
@@ -46,12 +47,17 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
 
     @Override
     public void run(CarbonCopyConfiguration configuration, Environment environment) {
-        environment.jersey().register(CarbonCopyResourceImpl.class);
         environment.healthChecks().register("galaxy", new GalaxyHealthCheck());
         Injector injector = Guice.createInjector(
                 new DataStructureModule(configuration.getDefaultPeerXml(), configuration.getDefaultPeerProperties()),
                 new TxnManagerModule(),
-                new CalciteModule()
+                new CalciteModule(),
+                new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        bind(CarbonCopyResource.class).to(CarbonCopyResourceImpl.class);
+                    }
+                }
         );
 
         environment.lifecycle().manage(new Managed() {
@@ -77,5 +83,8 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
                 injector.getInstance(GalaxyGrid.class).stop();
             }
         });
+
+        // register from the guice injector
+        environment.jersey().register(injector.getInstance(CarbonCopyResource.class));
     }
 }

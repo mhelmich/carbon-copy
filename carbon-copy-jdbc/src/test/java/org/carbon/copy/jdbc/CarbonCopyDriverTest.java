@@ -3,18 +3,21 @@ package org.carbon.copy.jdbc;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.carbon.copy.CarbonCopyApplication;
 import org.carbon.copy.CarbonCopyConfiguration;
-import org.carbon.copy.data.structures.Table;
+import org.carbon.copy.dtos.ColumnBuilder;
+import org.carbon.copy.dtos.Table;
+import org.carbon.copy.dtos.TableBuilder;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.Entity;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -36,10 +39,22 @@ public class CarbonCopyDriverTest {
 
     @ClassRule
     public static final DropwizardAppRule<CarbonCopyConfiguration> RULE =
-            new DropwizardAppRule<>(CarbonCopyApplication.class, "../config/carbon-copy.yml");
+            new DropwizardAppRule<>(CarbonCopyApplication.class,
+                    // TODO -- this is a pretty clunky mock
+                    // there's probably a better way using config overrides
+                    new CarbonCopyConfiguration() {
+                @Override
+                public String getDefaultPeerXml() {
+                    return "../config/peer.xml";
+                }
+
+                @Override
+                public String getDefaultPeerProperties() {
+                    return "../config/peer.properties";
+                }
+            });
 
     @Test
-    @Ignore
     public void testDriver() throws Exception {
         Table t = createDummyTable();
         Properties props = new Properties();
@@ -61,27 +76,14 @@ public class CarbonCopyDriverTest {
     }
 
     private Table createDummyTable(String tableName, int... ids) throws IOException {
-//        Table.Builder tableBuilder = Table.newBuilder(tableName.toUpperCase())
-//                .withColumn("TUP_NUM".toUpperCase(), Integer.class)
-//                .withColumn("MOEP".toUpperCase(), String.class)
-//                .withColumn("FOO".toUpperCase(), String.class);
-//
-//        Txn txn = txnManager.beginTransaction();
-//        Table table = dsFactory.newTable(tableBuilder, txn);
-//
-//        for (int id : ids) {
-//            Tuple tup = new Tuple(3);
-//            tup.put(0, id);
-//            tup.put(1, (id % 2 == 0) ? "moep" : "__moep__");
-//            tup.put(2, id + "_tup_foo");
-//            table.insert(tup, txn);
-//        }
-//
-//        catalog.create(table, txn);
-//        txn.commit();
-//
-//        return table;
+        ColumnBuilder cb1 = new ColumnBuilder("column1", 0, String.class.getName());
+        ColumnBuilder cb2 = new ColumnBuilder("column2", 1, Integer.class.getName());
+        TableBuilder dtoTableBuilder = new TableBuilder(tableName, Arrays.asList(cb1, cb2));
 
-        return null;
+        return RULE.client()
+                .target(String.format("http://localhost:%d/carbon-copy/createTable", RULE.getLocalPort()))
+                .request()
+                .post(Entity.json(dtoTableBuilder))
+                .readEntity(Table.class);
     }
 }

@@ -18,7 +18,11 @@
 
 package org.carbon.copy;
 
+import com.google.inject.Inject;
+import org.carbon.copy.data.structures.Catalog;
+import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.DataStructureModule;
+import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.data.structures.TxnManagerModule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,10 +32,19 @@ import org.junit.runner.RunWith;
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
 public class CarbonCopyResourceImplTest {
 
+    @Inject
+    private DataStructureFactory dsFactory;
+
+    @Inject
+    private TxnManager txnManager;
+
+    @Inject
+    private Catalog catalog;
+
     @Test(expected = IllegalArgumentException.class)
     @Ignore
     public void testNoTablePresent() throws Exception {
-        CarbonCopyResource r = new CarbonCopyResourceImpl(null);
+        CarbonCopyResource r = new CarbonCopyResourceImpl(dsFactory, txnManager, catalog);
         r.query("select * from table1");
     }
 }
