@@ -21,14 +21,36 @@ package org.carbon.copy.data.structures;
 import co.paralleluniverse.galaxy.Cluster;
 import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 
 /**
  * This class configures all things data structures and below
  */
 public class DataStructureModule extends AbstractModule {
-    private final String configFile = "../config/peer.xml";
-    private final String propertiesFile = "../config/peer.properties";
+    private final String configFile;
+    private final String propertiesFile;
+
+    /**
+     * This is for tests only.
+     * This will be used by the guice test runner.
+     * Tests are being run out of a different directory (inside the carbon-copy-service module for example).
+     * That means the path to the galaxy config files are different (*sigh*).
+     * One of these days I need to find a better way to do this.
+     * Options include:
+     * - read the config files out of the jar
+     * - guice inject config values that change in tests
+     */
+    @VisibleForTesting
+    @SuppressWarnings("unused")
+    public DataStructureModule() {
+        this("../config/peer.xml", "../config/peer.properties");
+    }
+
+    public DataStructureModule(String configFile, String propertiesFile) {
+        this.configFile = configFile;
+        this.propertiesFile = propertiesFile;
+    }
 
     @Override
     protected void configure() {
