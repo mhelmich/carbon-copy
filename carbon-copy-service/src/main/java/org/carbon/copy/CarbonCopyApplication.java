@@ -18,7 +18,6 @@
 
 package org.carbon.copy;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.dropwizard.Application;
@@ -31,6 +30,8 @@ import org.carbon.copy.data.structures.DataStructureModule;
 import org.carbon.copy.data.structures.GalaxyGrid;
 import org.carbon.copy.data.structures.TxnManagerModule;
 import org.carbon.copy.health.checks.GalaxyHealthCheck;
+import org.carbon.copy.resources.CarbonCopyResource;
+import org.carbon.copy.resources.ResourcesModule;
 
 public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> {
     public static void main(String[] args) throws Exception {
@@ -52,12 +53,7 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
                 new DataStructureModule(configuration.getDefaultPeerXml(), configuration.getDefaultPeerProperties()),
                 new TxnManagerModule(),
                 new CalciteModule(),
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bind(CarbonCopyResource.class).to(CarbonCopyResourceImpl.class);
-                    }
-                }
+                new ResourcesModule()
         );
 
         environment.lifecycle().manage(new Managed() {

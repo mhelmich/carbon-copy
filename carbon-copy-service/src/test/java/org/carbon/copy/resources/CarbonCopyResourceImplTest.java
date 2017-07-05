@@ -16,9 +16,11 @@
  *
  */
 
-package org.carbon.copy;
+package org.carbon.copy.resources;
 
 import com.google.inject.Inject;
+import org.carbon.copy.GuiceJUnit4Runner;
+import org.carbon.copy.GuiceModules;
 import org.carbon.copy.data.structures.Catalog;
 import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.DataStructureModule;

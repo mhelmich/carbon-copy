@@ -16,7 +16,7 @@
  *
  */
 
-package org.carbon.copy;
+package org.carbon.copy.resources;
 
 import com.google.inject.Inject;
 import org.carbon.copy.calcite.EmbeddedCarbonCopyDriver;

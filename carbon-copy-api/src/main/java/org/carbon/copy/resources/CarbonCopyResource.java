@@ -16,7 +16,7 @@
  *
  */
 
-package org.carbon.copy;
+package org.carbon.copy.resources;
 
 import org.carbon.copy.dtos.Table;
 import org.carbon.copy.dtos.TableBuilder;
