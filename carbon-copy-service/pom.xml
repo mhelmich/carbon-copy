@@ -50,12 +50,28 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.4.2.v20170220</version>
+        </dependency>
+
         <!-- delicate ordering as avatica-server uses an old version of jetty under the covers -->
         <!-- I need maven to use the old version as opposed to what dropwizard would like to use -->
         <dependency>
             <groupId>org.apache.calcite.avatica</groupId>
             <artifactId>avatica-server</artifactId>
             <version>1.10.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-server</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-util</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -126,6 +142,12 @@
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
             <version>1.13.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>janino</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -163,5 +185,28 @@
         </dependency>
 
     </dependencies>
+
+    <!--<build>-->
+        <!--<plugins>-->
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-enforcer-plugin</artifactId>-->
+                <!--<version>1.4.1</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>enforce</id>-->
+                        <!--<configuration>-->
+                            <!--<rules>-->
+                                <!--<DependencyConvergence/>-->
+                            <!--</rules>-->
+                        <!--</configuration>-->
+                        <!--<goals>-->
+                            <!--<goal>enforce</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+        <!--</plugins>-->
+    <!--</build>-->
 
 </project>
