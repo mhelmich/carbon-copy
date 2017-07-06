@@ -23,11 +23,15 @@ import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class configures all things data structures and below
  */
 public class DataStructureModule extends AbstractModule {
+    private static Logger logger = LoggerFactory.getLogger(DataStructureModule.class);
+
     private final String configFile;
     private final String propertiesFile;
 
@@ -54,6 +58,7 @@ public class DataStructureModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        logger.info("Starting galaxy grid with the following config files: {} {}", this.configFile, this.propertiesFile);
         GalaxyGridImpl g = new GalaxyGridImpl(configFile, propertiesFile);
         bind(GalaxyGrid.class).toInstance(g);
         bind(Store.class).toInstance(g.store());
