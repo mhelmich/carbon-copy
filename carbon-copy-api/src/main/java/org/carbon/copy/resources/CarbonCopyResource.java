@@ -18,9 +18,11 @@
 
 package org.carbon.copy.resources;
 
+import io.dropwizard.validation.Validated;
 import org.carbon.copy.dtos.Table;
 import org.carbon.copy.dtos.TableBuilder;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -40,5 +42,5 @@ public interface CarbonCopyResource {
 
     @POST
     @Path("/createTable")
-    Table createTable(TableBuilder tableBuilder) throws SQLException;
+    Table createTable(@NotNull @Validated TableBuilder tableBuilder) throws SQLException;
 }
