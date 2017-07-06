@@ -26,9 +26,10 @@ import org.carbon.copy.data.structures.DataStructureFactory;
 import org.carbon.copy.data.structures.DataStructureModule;
 import org.carbon.copy.data.structures.TxnManager;
 import org.carbon.copy.data.structures.TxnManagerModule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.sql.SQLException;
 
 @RunWith(GuiceJUnit4Runner.class)
 @GuiceModules({ DataStructureModule.class, TxnManagerModule.class })
@@ -43,10 +44,9 @@ public class CarbonCopyResourceImplTest {
     @Inject
     private Catalog catalog;
 
-    @Test(expected = IllegalArgumentException.class)
-    @Ignore
+    @Test(expected = SQLException.class)
     public void testNoTablePresent() throws Exception {
         CarbonCopyResource r = new CarbonCopyResourceImpl(dsFactory, txnManager, catalog);
-        r.query("select * from table1");
+        r.query("select * from doesnt_exist");
     }
 }
