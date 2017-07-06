@@ -32,8 +32,12 @@ import org.carbon.copy.data.structures.TxnManagerModule;
 import org.carbon.copy.health.checks.GalaxyHealthCheck;
 import org.carbon.copy.resources.CarbonCopyResource;
 import org.carbon.copy.resources.ResourcesModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> {
+    private static Logger logger = LoggerFactory.getLogger(CarbonCopyApplication.class);
+
     public static void main(String[] args) throws Exception {
         new CarbonCopyApplication().run(args);
     }
@@ -48,6 +52,7 @@ public class CarbonCopyApplication extends Application<CarbonCopyConfiguration> 
 
     @Override
     public void run(CarbonCopyConfiguration configuration, Environment environment) {
+        logger.info("Starting carbon copy node with the following galaxy config files: {} {}", configuration.getDefaultPeerXml(), configuration.getDefaultPeerProperties());
         environment.healthChecks().register("galaxy", new GalaxyHealthCheck());
         Injector injector = Guice.createInjector(
                 new DataStructureModule(configuration.getDefaultPeerXml(), configuration.getDefaultPeerProperties()),
