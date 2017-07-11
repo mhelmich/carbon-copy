@@ -47,7 +47,7 @@
     <bean id="messenger" class="co.paralleluniverse.galaxy.core.MessengerImpl">
         <constructor-arg name="threadPool">
             <bean class="co.paralleluniverse.galaxy.core.NodeOrderedThreadPoolExecutor">
-                <constructor-arg name="corePoolSize" value="2"/>
+                <constructor-arg name="corePoolSize" value="3"/>
                 <constructor-arg name="maximumPoolSize" value="8"/>
                 <constructor-arg name="keepAliveTime" value="5000"/>
                 <constructor-arg name="unit" value="MILLISECONDS"/>
