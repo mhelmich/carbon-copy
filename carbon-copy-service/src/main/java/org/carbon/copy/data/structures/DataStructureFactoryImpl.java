@@ -18,16 +18,21 @@
 
 package org.carbon.copy.data.structures;
 
+import co.paralleluniverse.galaxy.Cluster;
+import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 
 class DataStructureFactoryImpl implements InternalDataStructureFactory {
-
     private final Store store;
+    private final Cluster cluster;
+    private final Messenger messenger;
 
     @Inject
-    DataStructureFactoryImpl(Store store) {
+    DataStructureFactoryImpl(Store store, Cluster cluster, Messenger messenger) {
         this.store = store;
+        this.cluster = cluster;
+        this.messenger = messenger;
     }
 
     @Override
@@ -98,6 +103,12 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
     @Override
     public <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTreeForWrites(long id, Txn txn) {
         return new BTree<>(store, this, id, txn);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn) {
+        //return new DistHash<>(store, this, cluster, messenger, txn);
+        return null;
     }
 
     @Override

@@ -138,6 +138,6 @@ public class BTreeTest {
         Txn txn = Mockito.mock(Txn.class);
         when(txn.getStoreTransaction()).thenReturn(null);
         Store s = Mockito.mock(Store.class);
-        return new BTree<>(s, new DataStructureFactoryImpl(s), txn);
+        return new BTree<>(s, new DataStructureFactoryImpl(s, null, null), txn);
     }
 }

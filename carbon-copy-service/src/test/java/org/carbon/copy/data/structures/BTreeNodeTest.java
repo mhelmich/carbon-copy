@@ -119,14 +119,14 @@ public class BTreeNodeTest {
         Txn txn = Mockito.mock(Txn.class);
         when(txn.getStoreTransaction()).thenReturn(null);
         Store s = Mockito.mock(Store.class);
-        return new BTreeNode<>(s, new DataStructureFactoryImpl(s), numChildren, txn);
+        return new BTreeNode<>(s, new DataStructureFactoryImpl(s, null, null), numChildren, txn);
     }
 
     private <Key extends Comparable<Key>, Value> BTreeNode<Key, Value> newBTreeNodeWithId(long id) {
         Txn txn = Mockito.mock(Txn.class);
         when(txn.getStoreTransaction()).thenReturn(null);
         Store s = Mockito.mock(Store.class);
-        return new BTreeNode<>(s, new DataStructureFactoryImpl(s), id);
+        return new BTreeNode<>(s, new DataStructureFactoryImpl(s, null, null), id);
     }
 
     private <Key extends Comparable<Key>, Value> void primeEntriesList(BTreeNode<Key, Value> node) throws NoSuchFieldException, IllegalAccessException {
