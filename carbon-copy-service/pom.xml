@@ -112,6 +112,10 @@
                     <groupId>com.esotericsoftware.kryo</groupId>
                     <artifactId>kryo</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.codahale.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -171,6 +175,12 @@
             <artifactId>janino</artifactId>
             <version>2.7.8</version>
         </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.ehcache</groupId>-->
+            <!--<artifactId>sizeof</artifactId>-->
+            <!--<version>0.3.0</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>junit</groupId>
