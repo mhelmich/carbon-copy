@@ -23,16 +23,12 @@ import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
 public class GalaxyDistHashTest extends GalaxyBaseTest {
-    private static Logger logger = LoggerFactory.getLogger(GalaxyDistHashTest.class);
-
     @Inject
     private InternalDataStructureFactory dsFactory;
 
