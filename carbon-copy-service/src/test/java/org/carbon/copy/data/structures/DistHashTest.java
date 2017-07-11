@@ -37,6 +37,5 @@ public class DistHashTest {
 //        SizeOf sizeOf = SizeOf.newInstance();
 //        long shallowSize = sizeOf.sizeOf(someObject);
 //        long deepSize = sizeOf.deepSizeOf(someObject);
-
     }
 }
