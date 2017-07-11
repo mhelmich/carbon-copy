@@ -45,7 +45,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         this.hashTableSize = initNumBuckets;
         Vector<DataBlock<Key, Value>> v = new Vector<>(initNumBuckets);
         v.setSize(initNumBuckets);
-        hashTable = new ArrayList<>(v);
+        this.hashTable = new ArrayList<>(v);
         // increment object (this is the hash) since we allocate
         // a DataBlock pointer (which is a Long)
         for (int i = 0; i < initNumBuckets; i++) {
