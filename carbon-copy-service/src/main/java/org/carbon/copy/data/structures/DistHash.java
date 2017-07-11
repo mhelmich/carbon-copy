@@ -57,7 +57,6 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
     private final Funnel<Short> nodeInfoFunnel = (Funnel<Short>) (nodeId, into) ->
             into.putShort(nodeId);
 
-    private final InternalDataStructureFactory dsFactory;
     private final Cluster cluster;
     private final Messenger messenger;
     private final HashFunction hf;
@@ -65,13 +64,12 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
     private int hashTableSize;
     private HashMap<Short, Long> hashTable;
 
-    DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, Txn txn) {
+    DistHash(Store store, Cluster cluster, Messenger messenger, Txn txn) {
         super(store);
         this.hashTableSize = cluster.getNodes().size();
         this.hashTable = new HashMap<>(this.hashTableSize);
         asyncUpsert(txn);
 
-        this.dsFactory = dsFactory;
         this.cluster = cluster;
         this.messenger = messenger;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
@@ -80,9 +78,8 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         txn.addToChangedObjects(this);
     }
 
-    DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, long id) {
+    DistHash(Store store, Cluster cluster, Messenger messenger, long id) {
         super(store, id);
-        this.dsFactory = dsFactory;
         this.cluster = cluster;
         this.messenger = messenger;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
