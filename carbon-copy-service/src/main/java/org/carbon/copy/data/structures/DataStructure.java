@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * an implementation of DataStructureFactory.
  */
 abstract class DataStructure extends Sizable implements Persistable {
-    private static final int TIMEOUT_SECS = 5;
+    static final int TIMEOUT_SECS = 5;
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
         kryo.setRegistrationRequired(true);
@@ -75,7 +75,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         return kryo;
     };
 
-    private static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
+    static KryoPool kryoPool = new KryoPool.Builder(kryoFactory).build();
 
     private final Store store;
     private long id = -1;
@@ -315,7 +315,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     //////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////
     //////////////////////////////////////
-    // This classes deal with kryo and galaxy.
+    // These classes deal with kryo and galaxy.
     // They make sure kryo instances are returned to the pool properly.
     // These are being passed on to the implementations of this class
     // so that implementors have it easy to serialize their data structures.
