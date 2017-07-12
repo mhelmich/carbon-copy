@@ -60,6 +60,11 @@ abstract class BaseMessage {
             kryo.writeClassAndObject(out, o);
         }
 
+        <T> void writeNull(T o, Class<T> klass) {
+            kryo.writeClass(out, klass);
+            kryo.writeObjectOrNull(out, o, klass);
+        }
+
         @Override
         public void close() throws Exception {
             try {

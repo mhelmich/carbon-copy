@@ -19,7 +19,6 @@
 package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Cluster;
-import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
@@ -63,7 +62,7 @@ public class DataStructureModule extends AbstractModule {
         bind(GalaxyGrid.class).toInstance(g);
         bind(Store.class).toInstance(g.store());
         bind(Cluster.class).toInstance(g.cluster());
-        bind(Messenger.class).toInstance(g.messenger());
+        bind(co.paralleluniverse.galaxy.Messenger.class).toInstance(g.messenger());
         bind(org.carbon.copy.data.structures.Messenger.class).to(MessengerImpl.class);
 
         bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
@@ -72,7 +71,7 @@ public class DataStructureModule extends AbstractModule {
         bind(Catalog.class).to(CatalogImpl.class);
 
         g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC,
-                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(org.carbon.copy.data.structures.Messenger.class)));
+                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class)));
 
         g.messenger().addMessageListener(DistHash.PutResponseMessageListener.TOPIC,
                 new DistHash.PutResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
@@ -81,6 +80,6 @@ public class DataStructureModule extends AbstractModule {
                 new DistHash.GetRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(Messenger.class)));
 
         g.messenger().addMessageListener(DistHash.GetResponseMessageListener.TOPIC,
-                new DistHash.GetResponseMessageListener());
+                new DistHash.GetResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
     }
 }

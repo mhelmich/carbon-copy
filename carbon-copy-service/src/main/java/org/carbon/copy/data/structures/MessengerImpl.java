@@ -40,6 +40,8 @@ class MessengerImpl implements Messenger {
     @Override
     public void complete(UUID requestId, Object result) {
         CarbonCopyFuture f = inProgressRequests.remove(requestId);
-        f.complete(result);
+        if (f != null) {
+            f.complete(result);
+        }
     }
 }

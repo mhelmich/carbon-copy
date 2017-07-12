@@ -59,7 +59,7 @@ public class ChainingHashTest {
         Store s = Mockito.mock(Store.class);
         Txn txn = Mockito.mock(Txn.class);
         when(txn.getStoreTransaction()).thenReturn(null);
-        ChainingHash<String, String> h = new ChainingHash<String, String>(s, new DataStructureFactoryImpl(s, null, null, null), txn) {
+        ChainingHash<String, String> h = new ChainingHash<String, String>(s, new DataStructureFactoryImpl(s, null, null), txn) {
             @Override
             DataBlock<String, String> newDataBlock(Txn txn) {
                 return new DataBlock<String, String>(s, txn) {
@@ -195,7 +195,7 @@ public class ChainingHashTest {
 
     private <Key extends Comparable<Key>, Value> ChainingHash<Key, Value> newChainingHash(Txn txn) {
         Store s = Mockito.mock(Store.class);
-        return new ChainingHash<>(s, new DataStructureFactoryImpl(s, null, null, null), txn);
+        return new ChainingHash<>(s, new DataStructureFactoryImpl(s, null, null), txn);
     }
 
     private String getValueForNotLastBucket() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
