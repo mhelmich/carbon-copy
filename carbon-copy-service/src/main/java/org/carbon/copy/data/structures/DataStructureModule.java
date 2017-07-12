@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * This class configures all things data structures and below
  */
 public class DataStructureModule extends AbstractModule {
-    private static Logger logger = LoggerFactory.getLogger(DataStructureModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataStructureModule.class);
 
     private final String configFile;
     private final String propertiesFile;
@@ -62,6 +62,7 @@ public class DataStructureModule extends AbstractModule {
         bind(GalaxyGrid.class).toInstance(g);
         bind(Store.class).toInstance(g.store());
         bind(Cluster.class).toInstance(g.cluster());
+        // maybe we shouldn't expose the galaxy messenger in the injector anymore
         bind(co.paralleluniverse.galaxy.Messenger.class).toInstance(g.messenger());
         bind(org.carbon.copy.data.structures.Messenger.class).to(MessengerImpl.class);
 
@@ -70,6 +71,8 @@ public class DataStructureModule extends AbstractModule {
 
         bind(Catalog.class).to(CatalogImpl.class);
 
+        // attach all galaxy listeners
+        // there must be a better way to do this
         g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC,
                 new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class)));
 

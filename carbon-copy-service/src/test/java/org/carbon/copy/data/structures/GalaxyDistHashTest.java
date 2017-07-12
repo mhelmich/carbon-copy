@@ -24,9 +24,11 @@ import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class GalaxyDistHashTest extends GalaxyBaseTest {
     @Inject
@@ -55,5 +57,18 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
 
         String receivedStr = dh.get(123);
         assertEquals(str, receivedStr);
+    }
+
+    @Test
+    public void testNullKey() throws IOException {
+        String str = UUID.randomUUID().toString();
+
+        Txn txn = txnManager.beginTransaction();
+        DistHash<Integer, String> dh = dsFactory.newDistHash(txn);
+        dh.put(123, str, txn);
+        txn.commit();
+
+        String receivedStr = dh.get(456);
+        assertNull(receivedStr);
     }
 }

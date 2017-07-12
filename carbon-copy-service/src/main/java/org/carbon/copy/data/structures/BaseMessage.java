@@ -23,7 +23,7 @@ abstract class BaseMessage {
         messenger.send(nodeId, getTopic(), toByteArray());
     }
 
-    private byte[] toByteArray() {
+    byte[] toByteArray() {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             try (Output out = new Output(baos)) {
                 Kryo kryo = kryoPool.borrow();
