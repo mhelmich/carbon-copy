@@ -41,11 +41,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
-    private static final Map<UUID, Pair<CountDownLatch, Long>> outstandingPutRequests = new HashMap<>();
-    private static final Map<String, Pair<CountDownLatch, Object>> outstandingGetRequests = new HashMap<>();
+    private static final Map<UUID, Pair<CountDownLatch, Object>> outstandingGetRequests = new HashMap<>();
 
     private final Funnel<Key> keyFunnel = (Funnel<Key>) (key, into) ->
             into.putString(key.toString(), Charsets.UTF_8);
@@ -55,12 +57,13 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
 
     private final Cluster cluster;
     private final Messenger messenger;
+    private final org.carbon.copy.data.structures.Messenger myMessenger;
     private final HashFunction hf;
 
     private int hashTableSize;
     private HashMap<Short, Long> hashTable;
 
-    DistHash(Store store, Cluster cluster, Messenger messenger, Txn txn) {
+    DistHash(Store store, Cluster cluster, Messenger messenger, org.carbon.copy.data.structures.Messenger myMessenger, Txn txn) {
         super(store);
         this.hashTableSize = cluster.getNodes().size();
         this.hashTable = new HashMap<>(this.hashTableSize);
@@ -68,6 +71,7 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
 
         this.cluster = cluster;
         this.messenger = messenger;
+        this.myMessenger = myMessenger;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
 
         checkDataStructureRetrieved();
@@ -78,6 +82,7 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         super(store, id);
         this.cluster = cluster;
         this.messenger = messenger;
+        this.myMessenger = null;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
         checkDataStructureRetrieved();
     }
@@ -87,29 +92,18 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         checkDataStructureRetrieved();
         Short nodeId = findNodeInCluster(key);
         Long blockId = hashTable.get(nodeId);
-        blockId = sendPutRequest(nodeId, key, val, blockId);
+        try {
+            blockId = sendPutRequest(nodeId, key, val, blockId);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
         hashTable.put(nodeId, blockId);
     }
 
-    private Long sendPutRequest(Short nodeId, Key key, Value val, Long blockId) {
-        UUID requestId = UUID.randomUUID();
-        CountDownLatch latch = new CountDownLatch(1);
-        PutRequest pr = new PutRequest(key, val, requestId.toString(), blockId);
-        outstandingPutRequests.put(requestId, Pair.of(latch, null));
-        pr.send(messenger, nodeId);
-
-        try {
-            latch.await(TIMEOUT_SECS, TimeUnit.MINUTES);
-        } catch (InterruptedException xcp) {
-            throw new RuntimeException(xcp);
-        }
-
-        Pair<CountDownLatch, Long> pair = outstandingPutRequests.remove(requestId);
-        if (pair != null) {
-            return pair.getRight();
-        } else {
-            throw new IllegalStateException("Couldn't find request id " + requestId);
-        }
+    private Long sendPutRequest(Short nodeId, Key key, Value val, Long blockId) throws InterruptedException, ExecutionException, TimeoutException {
+        PutRequest pr = new PutRequest(key, val, blockId);
+        Future<Long> f = myMessenger.send(nodeId, pr);
+        return f.get(TIMEOUT_SECS, TimeUnit.SECONDS);
     }
 
     public Value get(Key key) {
@@ -163,7 +157,7 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
             return null;
         }
 
-        String requestId = UUID.randomUUID().toString();
+        UUID requestId = UUID.randomUUID();
         CountDownLatch latch = new CountDownLatch(1);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -186,7 +180,7 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
             if (pair != null) {
                 return (Value) pair.getRight();
             } else {
-                throw new IllegalStateException("Couldn't find request id " + requestId);
+                throw new IllegalStateException("Couldn't find request id " + requestId.toString());
             }
         } catch (IOException | InterruptedException xcp) {
             throw new RuntimeException(xcp);
@@ -227,87 +221,95 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
     //////////////////////////////////////////////
     // galaxy-specific messenger classes
 
-    static abstract class Message {
-        abstract String getTopic();
-        abstract byte[] toByteArray();
-//        abstract Map<UUID, Pair<CountDownLatch, Object>> getRequestMap();
-        void send(Messenger messenger, short nodeId) {
-            messenger.send(nodeId, getTopic(), toByteArray());
-        }
-    }
+    private static final String PUT_REQUEST_TOPIC = "req:P";
+    private static final String PUT_RESPONSE_TOPIC = "resp:P";
+    private static final String GET_REQUEST_TOPIC = "req:G";
+    private static final String GET_RESPONSE_TOPIC = "resp:G";
 
-    static class PutRequest extends Message {
-        final static String TOPIC = "req:P";
+    private static class PutRequest extends BaseMessage {
         // wire format:
-        //  1. key
-        //  2. value
-        //  3. requestId
+        //  1. requestId
+        //  2. key
+        //  3. value
         //  4. blockId (optional)
-        final Comparable key;
-        final Object value;
-        final String requestId;
-        final Long blockId;
+        private final Comparable key;
+        private final Object value;
+        private final Long blockId;
 
-        PutRequest(Comparable key, Object value, String requestId, Long blockId) {
+        PutRequest(Comparable key, Object value, Long blockId) {
             this.key = key;
             this.value = value;
-            this.requestId = requestId;
             this.blockId = blockId;
         }
 
         PutRequest(byte[] bytes) {
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-                try (Input in = new Input(bais)) {
-                    Kryo kryo = kryoPool.borrow();
-                    try {
-                        this.key = (Comparable) kryo.readClassAndObject(in);
-                        this.value = kryo.readClassAndObject(in);
-                        this.requestId = (String) kryo.readClassAndObject(in);
-                        this.blockId = (Long) kryo.readClassAndObject(in);
-                    } finally {
-                        kryoPool.release(kryo);
-                    }
-                }
-            } catch (IOException xcp) {
+            try (In in = getIn(bytes)) {
+                this.requestId = (UUID) in.read();
+                this.key = (Comparable) in.read();
+                this.value = in.read();
+                this.blockId = (Long) in.read();
+            } catch (Exception xcp) {
                 throw new RuntimeException(xcp);
             }
         }
 
         @Override
         String getTopic() {
-            return TOPIC;
+            return PUT_REQUEST_TOPIC;
         }
 
         @Override
-        byte[] toByteArray() {
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                try (Output out = new Output(baos)) {
-                    Kryo kryo = kryoPool.borrow();
-                    try {
-                        kryo.writeClassAndObject(out, key);
-                        kryo.writeClassAndObject(out, value);
-                        kryo.writeClassAndObject(out, requestId);
-                        kryo.writeClassAndObject(out, blockId);
-                    } finally {
-                        kryoPool.release(kryo);
-                    }
-                }
+        void toBytes(Out out) {
+            out.write(requestId);
+            out.write(key);
+            out.write(value);
+            out.write(blockId);
+        }
+    }
 
-                return baos.toByteArray();
-            } catch (IOException xcp) {
+    private static class PutResponse extends BaseMessage {
+        // wire format:
+        //  1. requestId
+        //  2. blockId
+        private final Long blockId;
+
+        PutResponse(Long blockId) {
+            this.blockId = blockId;
+        }
+
+        PutResponse(byte[] bytes) {
+            try (In in = getIn(bytes)) {
+                this.requestId = (UUID) in.read();
+                this.blockId = (Long) in.read();
+            } catch (Exception xcp) {
                 throw new RuntimeException(xcp);
             }
+        }
+
+        @Override
+        String getTopic() {
+            return PUT_RESPONSE_TOPIC;
+        }
+
+        @Override
+        void toBytes(Out out) {
+            out.write(requestId);
+            out.write(blockId);
         }
     }
 
     static class PutRequestMessageListener extends BaseMessageListener {
-        final static String TOPIC = "req:P";
+        final static String TOPIC = PUT_REQUEST_TOPIC;
 
         private final Provider<InternalDataStructureFactory> dsFactory;
         private final Provider<TxnManager> txnManager;
-        private final Provider<Messenger> messenger;
+        private final Provider<org.carbon.copy.data.structures.Messenger> messenger;
 
-        PutRequestMessageListener(Provider<InternalDataStructureFactory> dsFactory, Provider<TxnManager> txnManager, Provider<Messenger> messenger) {
+        PutRequestMessageListener(
+                Provider<InternalDataStructureFactory> dsFactory,
+                Provider<TxnManager> txnManager,
+                Provider<org.carbon.copy.data.structures.Messenger> messenger
+        ) {
             this.dsFactory = dsFactory;
             this.txnManager = txnManager;
             this.messenger = messenger;
@@ -315,40 +317,24 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void handle(short fromNode, byte[] bytes) {
+        public void handle(short fromNode, byte[] bytes) throws IOException {
+            PutRequest req = new PutRequest(bytes);
+            Long blockId;
+            Txn txn = txnManager.get().beginTransaction();
+
             try {
-                PutRequest pr = new PutRequest(bytes);
-                Long blockId;
-                Txn txn = txnManager.get().beginTransaction();
-                try {
-                    ChainingHash ch = (pr.blockId == null) ?
-                            dsFactory.get().newChainingHash(txn) :
-                            dsFactory.get().loadChainingHashForWrites(pr.blockId, txn);
+                ChainingHash ch = (req.blockId == null) ?
+                        dsFactory.get().newChainingHash(txn) :
+                        dsFactory.get().loadChainingHashForWrites(req.blockId, txn);
 
-                    ch.put(pr.key, pr.value, txn);
-                    blockId = ch.getId();
-                } finally {
-                    txn.commit();
-                }
-
-                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                    try (Output out = new Output(baos)) {
-                        Kryo kryo = kryoPool.borrow();
-                        try {
-                            kryo.writeClassAndObject(out, pr.requestId);
-                            kryo.writeClassAndObject(out, blockId);
-                        } finally {
-                            kryoPool.release(kryo);
-                        }
-                    }
-                    messenger.get().send(fromNode, PutResponseMessageListener.TOPIC, baos.toByteArray());
-                } catch (IOException xcp) {
-                    throw new RuntimeException(xcp);
-                }
-
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
+                ch.put(req.key, req.value, txn);
+                blockId = ch.getId();
+            } finally {
+                txn.commit();
             }
+
+            PutResponse resp = new PutResponse(blockId);
+            messenger.get().replyTo(fromNode, req.requestId, resp);
         }
     }
 
@@ -356,32 +342,18 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         // wire format:
         //  1. requestId
         //  2. blockId
-        final static String TOPIC = "resp:P";
+        final static String TOPIC = PUT_RESPONSE_TOPIC;
+
+        private final Provider<org.carbon.copy.data.structures.Messenger> myMessenger;
+
+        PutResponseMessageListener(Provider<org.carbon.copy.data.structures.Messenger> myMessenger) {
+            this.myMessenger = myMessenger;
+        }
 
         @Override
         public void handle(short fromNode, byte[] bytes) {
-            try {
-                String requestId;
-                Long blockId;
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-                    try (Input in = new Input(bais)) {
-                        Kryo kryo = kryoPool.borrow();
-                        try {
-                            requestId = (String) kryo.readClassAndObject(in);
-                            blockId = (Long) kryo.readClassAndObject(in);
-                        } finally {
-                            kryoPool.release(kryo);
-                        }
-                    }
-                }
-
-                UUID requestUUID = UUID.fromString(requestId);
-                Pair<CountDownLatch, Long> oldPair = outstandingPutRequests.get(requestUUID);
-                outstandingPutRequests.put(requestUUID, Pair.of(oldPair.getLeft(), blockId));
-                oldPair.getLeft().countDown();
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
-            }
+            PutResponse resp = new PutResponse(bytes);
+            myMessenger.get().complete(resp.requestId, resp.blockId);
         }
     }
 
@@ -390,7 +362,7 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         //  1. key
         //  2. request id
         //  3. blockId
-        final static String TOPIC = "req:G";
+        final static String TOPIC = GET_REQUEST_TOPIC;
 
         private final Provider<InternalDataStructureFactory> dsFactory;
         private final Provider<Messenger> messenger;
@@ -402,52 +374,47 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void handle(short fromNode, byte[] bytes) {
-            try {
-                Comparable key;
-                String requestId;
-                Long blockId;
+        public void handle(short fromNode, byte[] bytes) throws IOException {
+            Comparable key;
+            UUID requestId;
+            Long blockId;
 
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-                    try (Input in = new Input(bais)) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+                try (Input in = new Input(bais)) {
+                    Kryo kryo = kryoPool.borrow();
+                    try {
+                        key = (Comparable) kryo.readClassAndObject(in);
+                        requestId = (UUID) kryo.readClassAndObject(in);
+                        blockId = kryo.readObjectOrNull(in, Long.class);
+                    } finally {
+                        kryoPool.release(kryo);
+                    }
+                }
+            }
+
+            if (blockId != null) {
+                ChainingHash ch = dsFactory.get().loadChainingHash(blockId);
+                Object value = ch.get(key);
+
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    try (Output out = new Output(baos)) {
                         Kryo kryo = kryoPool.borrow();
                         try {
-                            key = (Comparable) kryo.readClassAndObject(in);
-                            requestId = (String) kryo.readClassAndObject(in);
-                            blockId = kryo.readObjectOrNull(in, Long.class);
+                            kryo.writeClassAndObject(out, requestId);
+                            if (value == null) {
+                                kryo.writeClass(out, String.class);
+                                kryo.writeObjectOrNull(out, null, String.class);
+                            } else {
+                                kryo.writeClassAndObject(out, value);
+                            }
                         } finally {
                             kryoPool.release(kryo);
                         }
                     }
+                    messenger.get().send(fromNode, GetResponseMessageListener.TOPIC, baos.toByteArray());
                 }
-
-                if (blockId != null) {
-                    ChainingHash ch = dsFactory.get().loadChainingHash(blockId);
-                    Object value = ch.get(key);
-
-                    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                        try (Output out = new Output(baos)) {
-                            Kryo kryo = kryoPool.borrow();
-                            try {
-                                kryo.writeClassAndObject(out, requestId);
-                                if (value == null) {
-                                    kryo.writeClass(out, String.class);
-                                    kryo.writeObjectOrNull(out, null, String.class);
-                                } else {
-                                    kryo.writeClassAndObject(out, value);
-                                }
-                            } finally {
-                                kryoPool.release(kryo);
-                            }
-                        }
-                        messenger.get().send(fromNode, GetResponseMessageListener.TOPIC, baos.toByteArray());
-                    }
-                } else {
-                    throw new RuntimeException("blockId is null");
-                }
-
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
+            } else {
+                throw new RuntimeException("blockId is null");
             }
         }
     }
@@ -456,31 +423,27 @@ class DistHash <Key extends Comparable<Key>, Value> extends DataStructure {
         // wire format:
         //  1. request id
         //  2. value (optional)
-        final static String TOPIC = "resp:G";
+        final static String TOPIC = GET_RESPONSE_TOPIC;
 
         @Override
-        public void handle(short i, byte[] bytes) {
-            try {
-                String requestId;
-                Object value;
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-                    try (Input in = new Input(bais)) {
-                        Kryo kryo = kryoPool.borrow();
-                        try {
-                            requestId = (String) kryo.readClassAndObject(in);
-                            value = kryo.readClassAndObject(in);
-                        } finally {
-                            kryoPool.release(kryo);
-                        }
+        public void handle(short i, byte[] bytes) throws IOException {
+            UUID requestId;
+            Object value;
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+                try (Input in = new Input(bais)) {
+                    Kryo kryo = kryoPool.borrow();
+                    try {
+                        requestId = (UUID) kryo.readClassAndObject(in);
+                        value = kryo.readClassAndObject(in);
+                    } finally {
+                        kryoPool.release(kryo);
                     }
                 }
-
-                Pair<CountDownLatch, Object> oldPair = outstandingGetRequests.get(requestId);
-                outstandingGetRequests.put(requestId, Pair.of(oldPair.getLeft(), value));
-                oldPair.getLeft().countDown();
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
             }
+
+            Pair<CountDownLatch, Object> oldPair = outstandingGetRequests.get(requestId);
+            outstandingGetRequests.put(requestId, Pair.of(oldPair.getLeft(), value));
+            oldPair.getLeft().countDown();
         }
     }
 }

@@ -27,12 +27,14 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
     private final Store store;
     private final Cluster cluster;
     private final Messenger messenger;
+    private final org.carbon.copy.data.structures.Messenger myMessenger;
 
     @Inject
-    DataStructureFactoryImpl(Store store, Cluster cluster, Messenger messenger) {
+    DataStructureFactoryImpl(Store store, Cluster cluster, Messenger messenger, org.carbon.copy.data.structures.Messenger myMessenger) {
         this.store = store;
         this.cluster = cluster;
         this.messenger = messenger;
+        this.myMessenger = myMessenger;
     }
 
     @Override
@@ -107,7 +109,7 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
 
     @Override
     public <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn) {
-        return new DistHash<>(store, cluster, messenger, txn);
+        return new DistHash<>(store, cluster, messenger, myMessenger, txn);
     }
 
     @Override

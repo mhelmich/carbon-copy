@@ -64,6 +64,7 @@ public class DataStructureModule extends AbstractModule {
         bind(Store.class).toInstance(g.store());
         bind(Cluster.class).toInstance(g.cluster());
         bind(Messenger.class).toInstance(g.messenger());
+        bind(org.carbon.copy.data.structures.Messenger.class).to(MessengerImpl.class);
 
         bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
         bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
@@ -71,10 +72,10 @@ public class DataStructureModule extends AbstractModule {
         bind(Catalog.class).to(CatalogImpl.class);
 
         g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC,
-                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class)));
+                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(org.carbon.copy.data.structures.Messenger.class)));
 
         g.messenger().addMessageListener(DistHash.PutResponseMessageListener.TOPIC,
-                new DistHash.PutResponseMessageListener());
+                new DistHash.PutResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
 
         g.messenger().addMessageListener(DistHash.GetRequestMessageListener.TOPIC,
                 new DistHash.GetRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(Messenger.class)));

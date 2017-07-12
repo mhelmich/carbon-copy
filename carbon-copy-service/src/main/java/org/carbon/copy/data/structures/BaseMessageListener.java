@@ -11,9 +11,9 @@ abstract class BaseMessageListener implements MessageListener {
         try {
             handle(fromNode, bytes);
         } catch (Exception xcp) {
-            logger.error("", xcp);
+            logger.error("Handling a message failed", xcp);
         }
     }
 
-    protected abstract void handle(short fromNode, byte[] bytes);
+    protected abstract void handle(short fromNode, byte[] bytes) throws Exception;
 }
