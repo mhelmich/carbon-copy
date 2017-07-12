@@ -6,6 +6,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * CarbonCopys own Future. Using in conjunction with Messenger
+ * to make it easier for people to use galaxys messenging infrastructure.
+ */
 class CarbonCopyFuture<T> implements Future<T> {
     private final CountDownLatch latch = new CountDownLatch(1);
     private Object result;
@@ -28,21 +32,21 @@ class CarbonCopyFuture<T> implements Future<T> {
     @Override
     public T get() throws InterruptedException, ExecutionException {
         latch.await();
-        return getT(result);
+        return castToGeneric(result);
     }
 
     @Override
     public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         latch.await(timeout, unit);
-        return getT(result);
+        return castToGeneric(result);
     }
 
     @SuppressWarnings("unchecked")
-    private T getT(Object o) {
+    private T castToGeneric(Object o) {
         return (T) o;
     }
 
-    public void complete(Object result) {
+    void complete(Object result) {
         this.result = result;
     }
 }

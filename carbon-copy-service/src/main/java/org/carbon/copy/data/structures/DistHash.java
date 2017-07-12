@@ -38,9 +38,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * This is an implementation of a distributed hash map.
+ * It achieves distribution by agreeing on a node for a key by rendez-vous hashing and message-passing.
+ * This guarantees that the key in question is at most one hop away.
+ * As galaxy sends messages using the same mechanism as it uses the reach consensus about data, messages
+ * are pretty much guaranteed to arrive as long as data updates are delivered and ordered with those data updates.
+ * In theory this means a nice order and *somewhat* consistent view on data.
+ */
 class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
-//    private static Logger logger = LoggerFactory.getLogger(DistHash.class);
-
     private final Funnel<Key> keyFunnel = (Funnel<Key>) (key, into) ->
             into.putString(key.toString(), Charsets.UTF_8);
 
@@ -79,7 +85,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
     public void put(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
-        Short nodeId = findNodeInCluster(key);
+        Short nodeId = rendezVousHashTheKeyToANode(key);
         Long blockId = hashTable.get(nodeId);
         try {
             blockId = sendPutRequest(nodeId, key, val, blockId);
@@ -106,7 +112,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
     }
 
     private Value sendGetRequest(Key key) throws InterruptedException, ExecutionException, TimeoutException {
-        Short nodeId = findNodeInCluster(key);
+        Short nodeId = rendezVousHashTheKeyToANode(key);
         Long blockId = hashTable.get(nodeId);
 
         // if the blockId is null, there's no record
@@ -125,7 +131,12 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         return true;
     }
 
-    Short findNodeInCluster(Key key) {
+    public Iterable<Key> keys() {
+        return null;
+    }
+
+    // my little implementation of rendez-vous hashing
+    Short rendezVousHashTheKeyToANode(Key key) {
         Set<Short> allNodes = getNodes();
         Map<Short, Long> nodeToHash = new HashMap<>(allNodes.size());
         allNodes.forEach(nodeId -> nodeToHash.put(nodeId, computeHashForGalaxyNode(key, nodeId)));
@@ -186,28 +197,44 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////
     // galaxy-specific messenger classes
+    // messaging in galaxy is cool as a mechanism
+    // but a little cumbersome to implement
+    // there is listeners listening to topics and galaxy dispatches
+    // messages of a particular topic to the respective messenger
+    // mostly though you want to have conversations with other nodes
+    // and therefore you need to implement a protocol of messages sent back and forth
+    // this clutters up a little bit but I guess that's what it is
+    // until I sit down and build something like the avro protocol servers
 
     private static final String PUT_REQUEST_TOPIC = "req:P";
     private static final String PUT_RESPONSE_TOPIC = "resp:P";
     private static final String GET_REQUEST_TOPIC = "req:G";
     private static final String GET_RESPONSE_TOPIC = "resp:G";
 
-    private static class PutRequest extends BaseMessage {
+    /**
+     * This class is a data container for a put request.
+     * It's mostly used as encapsulation of de-serialization logic
+     * and the wire format.
+     */
+    static class PutRequest extends BaseMessage {
         // wire format:
         //  1. requestId
         //  2. key
         //  3. value
         //  4. blockId (optional)
-        private final Comparable key;
-        private final Object value;
-        private final Long blockId;
+        final Comparable key;
+        final Object value;
+        final Long blockId;
 
+        // data constructor for sending a message
         PutRequest(Comparable key, Object value, Long blockId) {
             this.key = key;
             this.value = value;
             this.blockId = blockId;
         }
 
+        // constructor for receiving a put request
+        // and converting that into a pojo
         PutRequest(byte[] bytes) {
             try (In in = getIn(bytes)) {
                 this.requestId = (UUID) in.read();
@@ -233,11 +260,14 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
-    private static class PutResponse extends BaseMessage {
+    /**
+     * data container for the response to a put request
+     */
+    static class PutResponse extends BaseMessage {
         // wire format:
         //  1. requestId
         //  2. blockId
-        private final Long blockId;
+        final Long blockId;
 
         PutResponse(Long blockId) {
             this.blockId = blockId;
@@ -264,6 +294,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
     }
 
+    /**
+     * This listener receives a put request (including key and value).
+     * The recipient of this message executes the request locally
+     * and replies with the root of the hash containing the value.
+     */
     static class PutRequestMessageListener extends BaseMessageListener {
         final static String TOPIC = PUT_REQUEST_TOPIC;
 
@@ -328,8 +363,8 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         //  1. request id
         //  2. key
         //  3. blockId
-        private final Comparable key;
-        private final Long blockId;
+        final Comparable key;
+        final Long blockId;
 
         GetRequest(Comparable key, Long blockId) {
             this.key = key;
@@ -363,7 +398,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         // wire format:
         //  1. request id
         //  2. value (optional)
-        private final Object value;
+        final Object value;
 
         GetResponse(Object value) {
             this.value = value;
@@ -409,8 +444,6 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         @Override
         public void handle(short fromNode, byte[] bytes) throws IOException {
             GetRequest req = new GetRequest(bytes);
-            // DEBUG
-//            logger.info("got request " + req.requestId);
 
             if (req.blockId != null) {
                 ChainingHash ch = dsFactory.get().loadChainingHash(req.blockId);
@@ -439,8 +472,6 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         @Override
         public void handle(short fromNode, byte[] bytes) throws IOException {
             GetResponse resp = new GetResponse(bytes);
-            // DEBUG
-//            logger.info("got response " + resp.requestId);
             messenger.get().complete(resp.requestId, resp.value);
         }
     }
