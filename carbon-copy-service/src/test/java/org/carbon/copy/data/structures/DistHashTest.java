@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 public class DistHashTest {
     @Test
     public void testHashing() throws IOException {
-        DistHash<Integer, String> dh = new DistHash<Integer, String>(Mockito.mock(Store.class), Mockito.mock(Cluster.class), Mockito.mock(Messenger.class), Mockito.mock(Txn.class)) {
+        DistHash<Integer, String> dh = new DistHash<Integer, String>(Mockito.mock(Store.class), Mockito.mock(Cluster.class), Mockito.mock(Messenger.class), Mockito.mock(org.carbon.copy.data.structures.Messenger.class), Mockito.mock(Txn.class)) {
             @Override
             protected Set<Short> getNodes() {
                 return ImmutableSet.of(
