@@ -318,24 +318,45 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void handle(short fromNode, byte[] bytes) throws IOException {
+        protected void handle(short fromNode, byte[] bytes) throws IOException {
             PutRequest req = new PutRequest(bytes);
-            Long blockId;
-            Txn txn = txnManager.get().beginTransaction();
 
+            Long blockId;
+            Txn txn = beginTransaction();
             try {
                 ChainingHash ch = (req.blockId == null) ?
-                        dsFactory.get().newChainingHash(txn) :
-                        dsFactory.get().loadChainingHashForWrites(req.blockId, txn);
+                        newChainingHash(txn) :
+                        loadChainingHashForWrites(req.blockId, txn);
 
-                ch.put(req.key, req.value, txn);
+                put(ch, req.key, req.value, txn);
                 blockId = ch.getId();
             } finally {
                 txn.commit();
             }
 
             PutResponse resp = new PutResponse(blockId);
-            messenger.get().replyTo(fromNode, req.requestId, resp);
+            replyTo(fromNode, req.requestId, resp);
+        }
+
+        @SuppressWarnings("unchecked")
+        protected void put(ChainingHash ch, Comparable key, Object value, Txn txn) {
+            ch.put(key, value, txn);
+        }
+
+        protected void replyTo(short toNode, UUID requestId, BaseMessage messageToSend) {
+            messenger.get().replyTo(toNode, requestId, messageToSend);
+        }
+
+        protected Txn beginTransaction() {
+            return txnManager.get().beginTransaction();
+        }
+
+        protected ChainingHash newChainingHash(Txn txn) {
+            return dsFactory.get().newChainingHash(txn);
+        }
+
+        protected ChainingHash loadChainingHashForWrites(long blockId, Txn txn) {
+            return dsFactory.get().loadChainingHashForWrites(blockId, txn);
         }
     }
 
@@ -352,9 +373,13 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
 
         @Override
-        public void handle(short fromNode, byte[] bytes) {
+        protected void handle(short fromNode, byte[] bytes) {
             PutResponse resp = new PutResponse(bytes);
-            messenger.get().complete(resp.requestId, resp.blockId);
+            complete(resp.requestId, resp.blockId);
+        }
+
+        protected void complete(UUID requestId, Object blockId) {
+            messenger.get().complete(requestId, blockId);
         }
     }
 
@@ -442,18 +467,26 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void handle(short fromNode, byte[] bytes) throws IOException {
+        protected void handle(short fromNode, byte[] bytes) throws IOException {
             GetRequest req = new GetRequest(bytes);
 
             if (req.blockId != null) {
-                ChainingHash ch = dsFactory.get().loadChainingHash(req.blockId);
+                ChainingHash ch = loadChainingHash(req.blockId);
                 Object value = ch.get(req.key);
 
                 GetResponse resp = new GetResponse(value);
-                messenger.get().replyTo(fromNode, req.requestId, resp);
+                replyTo(fromNode, req.requestId, resp);
             } else {
                 throw new RuntimeException("blockId is null");
             }
+        }
+
+        protected ChainingHash loadChainingHash(long blockId) {
+            return dsFactory.get().loadChainingHash(blockId);
+        }
+
+        protected void replyTo(short toNode, UUID requestId, BaseMessage messageToSend) {
+            messenger.get().replyTo(toNode, requestId, messageToSend);
         }
     }
 
@@ -470,9 +503,13 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
 
         @Override
-        public void handle(short fromNode, byte[] bytes) throws IOException {
+        protected void handle(short fromNode, byte[] bytes) throws IOException {
             GetResponse resp = new GetResponse(bytes);
-            messenger.get().complete(resp.requestId, resp.value);
+            complete(resp.requestId, resp.value);
+        }
+
+        protected void complete(UUID requestId, Object value) {
+            messenger.get().complete(requestId, value);
         }
     }
 }
