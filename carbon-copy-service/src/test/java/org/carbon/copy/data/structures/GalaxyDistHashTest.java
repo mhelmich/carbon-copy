@@ -25,10 +25,14 @@ import com.google.inject.Inject;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GalaxyDistHashTest extends GalaxyBaseTest {
     @Inject
@@ -70,5 +74,32 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
 
         String receivedStr = dh.get(456);
         assertNull(receivedStr);
+    }
+
+    @Test
+    public void testListAllKeys() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        DistHash<String, Long> dh = dsFactory.newDistHash(txn);
+        for (int i = 0; i < 10; i++) {
+            String key = "key_" + i;
+            Long value = r.nextLong();
+            dh.put(key, value, txn);
+            keys.add(key);
+            values.add(value);
+        }
+
+        txn.commit();
+
+        dh.keys().forEach(key -> {
+            assertTrue(keys.remove(key));
+            assertTrue(values.remove(dh.get(key)));
+        });
+
+        assertTrue(keys.isEmpty());
+        assertTrue(values.isEmpty());
     }
 }

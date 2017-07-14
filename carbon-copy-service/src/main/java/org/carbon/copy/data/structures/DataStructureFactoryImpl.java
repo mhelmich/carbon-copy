@@ -106,7 +106,7 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
 
     @Override
     public <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn) {
-        return new DistHash<>(store, cluster, myMessenger, txn);
+        return new DistHash<>(store, this, cluster, myMessenger, txn);
     }
 
     @Override

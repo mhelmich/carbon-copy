@@ -53,8 +53,9 @@ class MessengerImpl implements Messenger {
     public void complete(UUID requestId, Object result) {
         CarbonCopyFuture f = inProgressRequests.remove(requestId);
         if (f != null) {
-            logger.warn("Couldn't find future with id " + requestId);
             f.complete(result);
+        } else {
+            logger.warn("Couldn't find future with id " + requestId);
         }
     }
 }
