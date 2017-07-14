@@ -28,7 +28,10 @@ import com.google.common.hash.Hashing;
 import com.google.inject.Provider;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,6 +56,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
     private final Funnel<Short> nodeInfoFunnel = (Funnel<Short>) (nodeId, into) ->
             into.putShort(nodeId);
 
+    private final InternalDataStructureFactory dsFactory;
     private final Cluster cluster;
     private final Messenger messenger;
     private final HashFunction hf;
@@ -60,12 +64,13 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
     private int hashTableSize;
     private HashMap<Short, Long> hashTable;
 
-    DistHash(Store store, Cluster cluster, Messenger messenger, Txn txn) {
+    DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, Txn txn) {
         super(store);
         this.hashTableSize = cluster.getNodes().size();
         this.hashTable = new HashMap<>(this.hashTableSize);
         asyncUpsert(txn);
 
+        this.dsFactory = dsFactory;
         this.cluster = cluster;
         this.messenger = messenger;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
@@ -76,6 +81,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     DistHash(Store store, Cluster cluster, Messenger messenger, long id) {
         super(store, id);
+        this.dsFactory = null;
         this.cluster = cluster;
         this.messenger = null;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
@@ -131,8 +137,39 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         return true;
     }
 
+    /**
+     * This is equivalent of a distributed full table scan.
+     * It might make sense to move all the data since that's what will happen anyway.
+     * So no message-passing here. On top of that this is also a very lazy way to implement this :)
+     */
     public Iterable<Key> keys() {
-        return null;
+        return () -> new Iterator<Key>() {
+            private int iterHashTableIndex = 0;
+            private int iterHashTableSize = hashTable.size();
+            private List<Long> iterHashTable = new ArrayList<>(hashTable.values());
+            private Iterator<Key> iter;
+
+            @Override
+            public boolean hasNext() {
+                if ((iter == null || !iter.hasNext()) && iterHashTableIndex < iterHashTableSize) {
+                    do {
+                        Long nextHashRoot = iterHashTable.get(iterHashTableIndex);
+                        iterHashTableIndex++;
+                        ChainingHash<Key, Value> ch = dsFactory.loadChainingHash(nextHashRoot);
+                        iter = ch.keys().iterator();
+                        if (iter.hasNext()) {
+                            return true;
+                        }
+                    } while (iterHashTableIndex < iterHashTableSize);
+                }
+                return iter != null && iter.hasNext();
+            }
+
+            @Override
+            public Key next() {
+                return iter.next();
+            }
+        };
     }
 
     // my little implementation of rendez-vous hashing
