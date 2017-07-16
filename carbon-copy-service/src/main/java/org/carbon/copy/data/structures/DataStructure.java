@@ -172,6 +172,14 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     /**
+     * Tells the caller whether a block with that id is known in the grid.
+     * Is used to find out whether a block has to be written during a commit.
+     */
+    boolean existsInGrid() {
+        return store.getVersion(getId()) > -1;
+    }
+
+    /**
      * Was the data you ask for retrieved?
      */
     boolean checkDataStructureRetrieved() {
@@ -309,7 +317,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     // I saw this mostly in tests but never went to the bottom of it
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " - " + String.valueOf(id);
+        return getClass().getSimpleName() + " - " + String.valueOf(id) + " - " + size();
     }
 
     //////////////////////////////////////////////////////////////
