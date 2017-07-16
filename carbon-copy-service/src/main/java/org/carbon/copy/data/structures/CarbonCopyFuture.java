@@ -48,5 +48,6 @@ class CarbonCopyFuture<T> implements Future<T> {
 
     void complete(Object result) {
         this.result = result;
+        latch.countDown();
     }
 }
