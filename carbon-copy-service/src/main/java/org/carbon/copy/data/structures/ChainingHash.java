@@ -168,12 +168,14 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
             DataBlock<Key, Value> db = getDataBlock(i);
             if (db != null) {
                 db.keys().forEach(k -> temp.put(k, db.get(k), txn));
-                db.asyncDelete(txn);
+                txn.addToDeletedObjects(db);
             }
         }
 
         this.hashTableSize  = temp.hashTableSize;
         this.hashTable = temp.hashTable;
+        setObjectSize(temp.size());
+        txn.addToDeletedObjects(temp);
     }
 
     private DataBlock<Key, Value> getDataBlock(int hash, Txn txn) {
