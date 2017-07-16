@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -144,5 +145,18 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
 
         DataBlock<UUID, String> db2 = dsFactory.loadDataBlock(db.getId());
         assertNull(db2.get(UUID.randomUUID()));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testTonsToValues() throws IOException {
+        Random r = new Random();
+        Txn t = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(t);
+
+        for (int i = 0; i < 10000; i++) {
+            db.put(UUID.randomUUID().toString(), r.nextLong(), t);
+        }
+
+        t.commit();
     }
 }
