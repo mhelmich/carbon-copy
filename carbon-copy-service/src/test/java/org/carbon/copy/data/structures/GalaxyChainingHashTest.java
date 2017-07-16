@@ -119,6 +119,21 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
         t.commit();
     }
 
+    @Test
+    public void testTonsOfPairs() throws IOException {
+        int count = 10000;
+        Txn t = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash = dsFactory.newChainingHash(t);
+        for (int i = 0; i < count; i++) {
+            hash.put(i, (long) i, t);
+        }
+        t.commit();
+
+        for (int i = 0; i < count; i++) {
+            assertEquals(Long.valueOf(i), hash.get(i));
+        }
+    }
+
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {
         for (int i = from; i < to; i++) {
             assertEquals(Long.valueOf(i), hash.get(i));
