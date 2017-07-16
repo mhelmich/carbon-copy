@@ -20,12 +20,16 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 public class Txn {
+    private static Logger logger = LoggerFactory.getLogger(Txn.class);
+
     private final Store store;
     private final StoreTransaction stxn;
     private final Set<DataStructure> changedObjects = new HashSet<>();
@@ -49,6 +53,7 @@ public class Txn {
             changedObjects.forEach(ds -> ds.asyncUpsert(ds, this));
             store.commit(stxn);
         } catch (Exception xcp) {
+            logger.error("Committing txn failed with {}", changedObjects);
             throw new IOException(xcp);
         } finally {
             changedObjects.clear();
