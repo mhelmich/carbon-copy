@@ -62,6 +62,15 @@ abstract class Sizable {
         return Snappy.maxCompressedLength(8 + 16 + currentObjectSize);
     }
 
+    /**
+     * Be careful when calling this!
+     * This blindly overrides the current size of the object.
+     * It seems to be necessary when data structures are resized internally.
+     */
+    void setObjectSize(int newSize) {
+        currentObjectSize = Math.max(newSize, 0);
+    }
+
     void addObjectToObjectSize(Object o) {
         currentObjectSize += sizeOfObject(o);
     }
