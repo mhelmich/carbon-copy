@@ -19,9 +19,13 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -132,6 +136,34 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
         for (int i = 0; i < count; i++) {
             assertEquals(Long.valueOf(i), hash.get(i));
         }
+    }
+
+    @Test
+    @Ignore
+    public void testOverflow() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        ChainingHash<String, Long> ch = dsFactory.newChainingHash(txn);
+        for (int i = 0; i < 10000; i++) {
+            String key = "key_" + i;
+            Long value = r.nextLong();
+            ch.put(key, value, txn);
+            keys.add(key);
+            values.add(value);
+        }
+
+        txn.commit();
+
+        ch.keys().forEach(key -> {
+            assertTrue(keys.remove(key));
+            assertTrue(values.remove(ch.get(key)));
+        });
+
+        assertTrue(keys.isEmpty());
+        assertTrue(values.isEmpty());
     }
 
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {
