@@ -27,6 +27,7 @@ import java.util.Iterator;
  * It's merely a linked list of keys and values that is being shoved into a blob of data.
  */
 class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
+//    private static Logger logger = LoggerFactory.getLogger(DataBlock.class);
     /**
      * Internal node implementing a linked list
      * insertion is O(1)
@@ -82,7 +83,10 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
         txn.addToChangedObjects(this);
-        innerPut(key, val);
+        if (!innerPutIfPossible(key, val)) {
+            int size = sizeOfObject(key) + sizeOfObject(val);
+            throw new IllegalStateException("Object size is " + (size + size()) + " bytes and exceeds the limit of " + getMaxByteSize() + " bytes");
+        }
     }
 
     boolean putIfPossible(Key key, Value val, Txn txn) {
@@ -121,6 +125,16 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
             }
         };
     }
+
+//    void getByteSize() throws IOException {
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream(size());
+//        SerializerOutputStream out = new SerializerOutputStream(baos);
+//        serialize(out);
+//        logger.info("raw byte size {}", baos.size());
+//        byte[] compressed = Snappy.compress(baos.toByteArray());
+//        logger.info("compressed byte size {}", compressed.length);
+//        logger.info("calculated byte size {}", size());
+//    }
 
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////

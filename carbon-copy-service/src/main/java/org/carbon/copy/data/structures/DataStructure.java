@@ -18,8 +18,6 @@
 
 package org.carbon.copy.data.structures;
 
-import co.paralleluniverse.common.io.ByteBufferInputStream;
-import co.paralleluniverse.common.io.ByteBufferOutputStream;
 import co.paralleluniverse.common.io.Persistable;
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.TimeoutException;
@@ -33,6 +31,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import de.javakaffee.kryoserializers.UUIDSerializer;
 import org.xerial.snappy.Snappy;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -205,47 +205,30 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     // has to be public because of Galaxy
     public void write(ByteBuffer compressedBB) {
-        ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
-        try (SerializerOutputStream out = new SerializerOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
+        CompressingByteBufferOutputStream baos = new CompressingByteBufferOutputStream(compressedBB.capacity());
+        try (SerializerOutputStream out = new SerializerOutputStream(baos)) {
             serialize(out);
-        } catch (IOException xcp) {
-            throw new RuntimeException(xcp);
+        } catch (IOException | KryoException xcp) {
+            throw new RuntimeException("Byte Array [" + baos.size() + "] ByteBuffer [" + compressedBB.capacity() + "]", xcp);
         }
 
-        if (uncompressedBB.position() > 0) {
-            try {
-                uncompressedBB.rewind();
-                int compressedSize = Snappy.compress(uncompressedBB, compressedBB);
-                compressedBB.position(compressedSize);
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
-            } catch (IllegalArgumentException xcp) {
-                throw new IllegalArgumentException("Compressing " + this.getClass().getSimpleName() + " _ " + getId() + " failed! uncompressedBB: " + uncompressedBB.capacity() + " compressedBB: " + compressedBB.capacity(), xcp);
-            }
+        try {
+            baos.writeTo(compressedBB);
+        } catch (IOException xcp) {
+            throw new RuntimeException("Byte Array [" + baos.size() + "] ByteBuffer [" + compressedBB.capacity() + "]", xcp);
         }
     }
 
     // has to be public because of Galaxy
     public void read(ByteBuffer compressedBB) {
-        ByteBuffer uncompressedBB;
         // snappy doesn't like it when you give it a ByteBuffer out of
         // which it can't read data (aka remaining == 0)
         // in that case we skip this code all together and don't call into
         // deserialize of the data structure either
         if (compressedBB.remaining() > 0) {
-            try {
-                int uncompressedLength = Snappy.uncompressedLength(compressedBB);
-                uncompressedBB = ByteBuffer.allocateDirect(uncompressedLength);
-                Snappy.uncompress(compressedBB, uncompressedBB);
-            } catch (IOException xcp) {
-                throw new RuntimeException(xcp);
-            } catch (IllegalArgumentException xcp) {
-                throw new IllegalArgumentException("Uncompressing " + this.getClass().getSimpleName() + " _ " + getId() + " failed!", xcp);
-            }
-
-            try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
+            try (SerializerInputStream in = new SerializerInputStream(new UncompressingByteBufferInputStream(compressedBB))) {
                 deserialize(in);
-            } catch (IOException xcp) {
+            } catch (IOException | KryoException xcp) {
                 throw new RuntimeException(xcp);
             }
         }
@@ -309,7 +292,7 @@ abstract class DataStructure extends Sizable implements Persistable {
     // I saw this mostly in tests but never went to the bottom of it
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " - " + String.valueOf(id);
+        return getClass().getSimpleName() + " - " + String.valueOf(id) + " - " + size();
     }
 
     //////////////////////////////////////////////////////////////
@@ -384,6 +367,48 @@ abstract class DataStructure extends Sizable implements Persistable {
                 } finally {
                     super.close();
                 }
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////
+    //////////////////////////////////////
+    // These stream implementations let us deal with compressed and uncompressed
+    // various byte representations
+    // They will interfere with a ByteBuffer and Snappy
+    static class CompressingByteBufferOutputStream extends ByteArrayOutputStream {
+        CompressingByteBufferOutputStream(int size) {
+            super(size);
+        }
+
+        synchronized void writeTo(ByteBuffer out) throws IOException {
+            if (!out.isDirect()) {
+                throw new IllegalArgumentException("out is not direct ByteBuffer");
+            } else {
+                // this makes a copy of the byte buffer
+                byte[] compressed = Snappy.compress(buf);
+                out.put(compressed);
+                out.position(compressed.length);
+                out.limit(compressed.length);
+            }
+        }
+    }
+
+    static class UncompressingByteBufferInputStream extends ByteArrayInputStream {
+        UncompressingByteBufferInputStream(ByteBuffer in) throws IOException {
+            super(readFrom(in));
+        }
+
+        private static byte[] readFrom(ByteBuffer in) throws IOException {
+            if (!in.isDirect()) {
+                throw new IllegalArgumentException("in is not direct ByteBuffer");
+            } else {
+                // this makes a copy of the byte buffer
+                byte[] compressed = new byte[in.limit()];
+                in.get(compressed);
+                // and this makes another one
+                return Snappy.uncompress(compressed);
             }
         }
     }
