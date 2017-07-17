@@ -19,7 +19,6 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -139,7 +138,6 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
     }
 
     @Test
-    @Ignore
     public void testOverflow() throws IOException {
         Set<String> keys = new HashSet<>();
         Set<Long> values = new HashSet<>();

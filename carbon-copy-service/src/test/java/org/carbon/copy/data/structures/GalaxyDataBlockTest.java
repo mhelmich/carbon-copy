@@ -22,11 +22,14 @@ import com.google.inject.Inject;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class GalaxyDataBlockTest extends GalaxyBaseTest {
@@ -158,5 +161,39 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
         }
 
         t.commit();
+    }
+
+    @Test
+    public void testOverflow() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(txn);
+        String key;
+        Long value;
+        int i = 0;
+        boolean shouldDoIt;
+        do {
+            key = "key_" + i++;
+            value = r.nextLong();
+            shouldDoIt = db.putIfPossible(key, value, txn);
+            if (shouldDoIt) {
+                keys.add(key);
+                values.add(value);
+            }
+        } while (shouldDoIt);
+
+        txn.commit();
+
+        DataBlock<String, Long> db2 = dsFactory.loadDataBlock(db.getId());
+        db2.keys().forEach(k -> {
+            assertTrue(keys.remove(k));
+            assertTrue(values.remove(db2.get(k)));
+        });
+
+        assertTrue(keys.isEmpty());
+        assertTrue(values.isEmpty());
     }
 }
