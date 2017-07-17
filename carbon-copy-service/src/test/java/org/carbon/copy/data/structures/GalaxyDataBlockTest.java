@@ -196,4 +196,35 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
         assertTrue(keys.isEmpty());
         assertTrue(values.isEmpty());
     }
+
+    @Test
+    public void testUnderflow() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(txn);
+        String key;
+        Long value;
+        int i = 0;
+        boolean shouldDoIt;
+        do {
+            key = "key_" + i++;
+            value = r.nextLong();
+            shouldDoIt = db.putIfPossible(key, value, txn);
+            if (shouldDoIt) {
+                keys.add(key);
+                values.add(value);
+            }
+        } while (shouldDoIt && i < 7000);
+
+        txn.commit();
+
+        DataBlock<String, Long> db2 = dsFactory.loadDataBlock(db.getId());
+        db2.keys().forEach(k -> {
+            assertTrue(keys.remove(k));
+            assertTrue(values.remove(db2.get(k)));
+        });
+    }
 }
