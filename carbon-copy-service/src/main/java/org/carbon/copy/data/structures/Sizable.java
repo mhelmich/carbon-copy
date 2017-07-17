@@ -59,7 +59,11 @@ abstract class Sizable {
         // this sometimes yields counter-intuitive results where the compressed size
         // is greater than the uncompressed size
         // it could be worth (in the long run) doing compression in certain cases and not always
-        return Snappy.maxCompressedLength(8 + 16 + currentObjectSize);
+        return Snappy.maxCompressedLength(magicSize());
+    }
+
+    private int magicSize() {
+        return 8 + 16 + currentObjectSize;
     }
 
     /**
@@ -112,7 +116,7 @@ abstract class Sizable {
     }
 
     boolean isUnderMaxByteSize(int addSize) {
-        return Snappy.maxCompressedLength(currentObjectSize + addSize) <= getMaxByteSize();
+        return Snappy.maxCompressedLength(magicSize() + addSize) <= getMaxByteSize();
     }
 
     int getMaxByteSize() {
