@@ -208,7 +208,7 @@ abstract class DataStructure extends Sizable implements Persistable {
         ByteBuffer uncompressedBB = ByteBuffer.allocateDirect(compressedBB.capacity());
         try (SerializerOutputStream out = new SerializerOutputStream(new ByteBufferOutputStream(uncompressedBB))) {
             serialize(out);
-        } catch (IOException xcp) {
+        } catch (IOException | KryoException xcp) {
             throw new RuntimeException(xcp);
         }
 
@@ -245,7 +245,7 @@ abstract class DataStructure extends Sizable implements Persistable {
 
             try (SerializerInputStream in = new SerializerInputStream(new ByteBufferInputStream(uncompressedBB))) {
                 deserialize(in);
-            } catch (IOException xcp) {
+            } catch (IOException | KryoException xcp) {
                 throw new RuntimeException(xcp);
             }
         }
