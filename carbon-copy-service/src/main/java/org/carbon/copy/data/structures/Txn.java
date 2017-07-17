@@ -64,6 +64,7 @@ public class Txn {
             throw new IOException(xcp);
         } finally {
             changedObjects.clear();
+            deletedObjects.clear();
         }
     }
 
@@ -90,6 +91,7 @@ public class Txn {
     }
 
     void addToDeletedObjects(DataStructure ds) {
+        changedObjects.remove(ds);
         deletedObjects.add(ds);
     }
 }
