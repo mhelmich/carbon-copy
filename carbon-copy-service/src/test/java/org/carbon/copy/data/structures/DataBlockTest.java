@@ -110,7 +110,7 @@ public class DataBlockTest {
         DataBlock<Integer, Integer> db = new DataBlock<Integer, Integer>(s, txn) {
             @Override
             int getMaxByteSize() {
-                return 50;
+                return 80;
             }
         };
 

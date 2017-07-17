@@ -65,7 +65,7 @@ public class ChainingHashTest {
                 return new DataBlock<String, String>(s, txn) {
                     @Override
                     int getMaxByteSize() {
-                        return 128;
+                        return 256;
                     }
                 };
             }
