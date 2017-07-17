@@ -20,15 +20,23 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 public class Txn {
+    private static Logger logger = LoggerFactory.getLogger(Txn.class);
+
     private final Store store;
     private final StoreTransaction stxn;
+    // any data structures in this set will be upserted
+    // this obviously doesn't work well when data is deleted ;)
     private final Set<DataStructure> changedObjects = new HashSet<>();
+    // all data structures in this set will be deleted
+    private final Set<DataStructure> deletedObjects = new HashSet<>();
 
     Txn(Store store) {
         this(store, store.beginTransaction());
@@ -46,12 +54,17 @@ public class Txn {
             // this is pretty pessimistic
             // it might be better to do this as early as
             // when we are getting the lock on the object
-            changedObjects.forEach(ds -> ds.asyncUpsert(ds, this));
+            changedObjects.stream()
+                    .filter(ds -> !deletedObjects.contains(ds))
+                    .forEach(ds -> ds.asyncUpsert(ds, this));
+            deletedObjects.forEach(ds -> ds.asyncDelete(ds, this));
             store.commit(stxn);
         } catch (Exception xcp) {
+            logger.error("Committing txn failed with {}", changedObjects);
             throw new IOException(xcp);
         } finally {
             changedObjects.clear();
+            deletedObjects.clear();
         }
     }
 
@@ -77,7 +90,8 @@ public class Txn {
         changedObjects.add(ds);
     }
 
-    void removeFromChangedObjects(DataStructure ds) {
+    void addToDeletedObjects(DataStructure ds) {
         changedObjects.remove(ds);
+        deletedObjects.add(ds);
     }
 }

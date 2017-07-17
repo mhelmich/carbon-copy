@@ -22,6 +22,9 @@ import com.google.inject.Inject;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -117,6 +120,48 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
         hash.put("bar", t3, t);
 
         t.commit();
+    }
+
+    @Test
+    public void testTonsOfPairs() throws IOException {
+        int count = 10000;
+        Txn t = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash = dsFactory.newChainingHash(t);
+        for (int i = 0; i < count; i++) {
+            hash.put(i, (long) i, t);
+        }
+        t.commit();
+
+        for (int i = 0; i < count; i++) {
+            assertEquals(Long.valueOf(i), hash.get(i));
+        }
+    }
+
+    @Test
+    public void testOverflow() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        ChainingHash<String, Long> ch = dsFactory.newChainingHash(txn);
+        for (int i = 0; i < 10000; i++) {
+            String key = "key_" + i;
+            Long value = r.nextLong();
+            ch.put(key, value, txn);
+            keys.add(key);
+            values.add(value);
+        }
+
+        txn.commit();
+
+        ch.keys().forEach(key -> {
+            assertTrue(keys.remove(key));
+            assertTrue(values.remove(ch.get(key)));
+        });
+
+        assertTrue(keys.isEmpty());
+        assertTrue(values.isEmpty());
     }
 
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {

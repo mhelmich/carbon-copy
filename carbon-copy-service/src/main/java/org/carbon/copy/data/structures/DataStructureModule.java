@@ -19,7 +19,6 @@
 package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Cluster;
-import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
@@ -30,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * This class configures all things data structures and below
  */
 public class DataStructureModule extends AbstractModule {
-    private static Logger logger = LoggerFactory.getLogger(DataStructureModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataStructureModule.class);
 
     private final String configFile;
     private final String propertiesFile;
@@ -63,11 +62,27 @@ public class DataStructureModule extends AbstractModule {
         bind(GalaxyGrid.class).toInstance(g);
         bind(Store.class).toInstance(g.store());
         bind(Cluster.class).toInstance(g.cluster());
-        bind(Messenger.class).toInstance(g.messenger());
+        // maybe we shouldn't expose the galaxy messenger in the injector anymore
+        bind(co.paralleluniverse.galaxy.Messenger.class).toInstance(g.messenger());
+        bind(org.carbon.copy.data.structures.Messenger.class).to(MessengerImpl.class);
 
         bind(InternalDataStructureFactory.class).to(DataStructureFactoryImpl.class);
         bind(DataStructureFactory.class).to(DataStructureFactoryImpl.class);
 
         bind(Catalog.class).to(CatalogImpl.class);
+
+        // attach all galaxy listeners
+        // there must be a better way to do this
+        g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC,
+                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class)));
+
+        g.messenger().addMessageListener(DistHash.PutResponseMessageListener.TOPIC,
+                new DistHash.PutResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
+
+        g.messenger().addMessageListener(DistHash.GetRequestMessageListener.TOPIC,
+                new DistHash.GetRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(Messenger.class)));
+
+        g.messenger().addMessageListener(DistHash.GetResponseMessageListener.TOPIC,
+                new DistHash.GetResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
     }
 }
