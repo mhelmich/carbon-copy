@@ -20,6 +20,8 @@ package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -31,6 +33,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class GalaxyChainingHashTest extends GalaxyBaseTest {
+    private static Logger logger = LoggerFactory.getLogger(GalaxyChainingHashTest.class);
+
     @Inject
     private InternalDataStructureFactory dsFactory;
 
@@ -123,6 +127,33 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
     }
 
     @Test
+    public void testCreateAddRead() throws IOException {
+        Txn t = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash = dsFactory.newChainingHash(t);
+        for (int i = 0; i < 50; i++) {
+            hash.put(i, (long) i, t);
+        }
+        t.commit();
+
+        ChainingHash<Integer, Long> readHash = dsFactory.loadChainingHash(hash.getId());
+        for (int i = 0; i < 50; i++) {
+            assertEquals(Long.valueOf(i), readHash.get(i));
+        }
+
+        Txn t2 = txnManager.beginTransaction();
+        ChainingHash<Integer, Long> hash2 = dsFactory.loadChainingHashForWrites(hash.getId(), t2);
+        for (int i = 50; i < 150; i++) {
+            hash.put(i, (long) i, t);
+        }
+        t2.commit();
+
+        ChainingHash<Integer, Long> readHash2 = dsFactory.loadChainingHash(hash2.getId());
+        for (int i = 0; i < 50; i++) {
+            assertEquals(Long.valueOf(i), readHash2.get(i));
+        }
+    }
+
+    @Test
     public void testTonsOfPairs() throws IOException {
         int count = 10000;
         Txn t = txnManager.beginTransaction();
@@ -139,33 +170,6 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
 
     @Test
     public void testOverflow() throws IOException {
-        Set<String> keys = new HashSet<>();
-        Set<Long> values = new HashSet<>();
-        Random r = new Random();
-
-        Txn txn = txnManager.beginTransaction();
-        ChainingHash<String, Long> ch = dsFactory.newChainingHash(txn);
-        for (int i = 0; i < 10000; i++) {
-            String key = "key_" + i;
-            Long value = r.nextLong();
-            ch.put(key, value, txn);
-            keys.add(key);
-            values.add(value);
-        }
-
-        txn.commit();
-
-        ch.keys().forEach(key -> {
-            assertTrue(keys.remove(key));
-            assertTrue(values.remove(ch.get(key)));
-        });
-
-        assertTrue(keys.isEmpty());
-        assertTrue(values.isEmpty());
-    }
-
-    @Test
-    public void testUnderflow() throws IOException {
         Set<String> keys = new HashSet<>();
         Set<Long> values = new HashSet<>();
         Random r = new Random();
