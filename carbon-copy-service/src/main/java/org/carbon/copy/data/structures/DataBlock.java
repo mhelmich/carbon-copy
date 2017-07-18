@@ -99,12 +99,14 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         return didPut;
     }
 
-    public void delete(Key key, Txn txn) {
+    public boolean delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
-        if (innerDelete(key)) {
+        boolean didDelete = innerDelete(key);
+        if (didDelete) {
             txn.addToChangedObjects(this);
         }
+        return didDelete;
     }
 
     public Iterable<Key> keys() {
