@@ -51,6 +51,9 @@ import java.util.concurrent.TimeUnit;
  *
  * Don't you ever call any of these constructors directly! They are made to be called by
  * an implementation of DataStructureFactory.
+ *
+ * TODO -- build read only flag into data structure
+ * TODO -- build use after committed exception into data structure
  */
 abstract class DataStructure extends Sizable implements Persistable {
     static final int TIMEOUT_SECS = 5;
