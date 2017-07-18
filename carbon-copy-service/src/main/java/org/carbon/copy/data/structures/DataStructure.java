@@ -20,7 +20,6 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.common.io.Persistable;
 import co.paralleluniverse.galaxy.Store;
-import co.paralleluniverse.galaxy.TimeoutException;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -102,49 +101,51 @@ abstract class DataStructure extends Sizable implements Persistable {
         return id;
     }
 
-    private boolean isLoaded() {
+    boolean isLoaded() {
         return isLoaded;
     }
 
-    void asyncLoadForReads() {
-        asyncLoadForReads(this);
+    ListenableFuture<Persistable> asyncLoadForReads() {
+        return asyncLoadForReads(this);
     }
 
-    private <T extends DataStructure> void asyncLoadForReads(T o) {
-        if (isLoaded()) return;
+    private <T extends DataStructure> ListenableFuture<Persistable> asyncLoadForReads(T o) {
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
         dataFuture = getAsync(getId(), o);
+        return dataFuture;
     }
 
-    void asyncLoadForWrites(Txn txn) {
-        asyncLoadForWrites(this, txn);
+    ListenableFuture asyncLoadForWrites(Txn txn) {
+        return asyncLoadForWrites(this, txn);
     }
 
-    private <T extends DataStructure> void asyncLoadForWrites(T o, Txn txn) {
-        if (isLoaded()) return;
+    private <T extends DataStructure> ListenableFuture asyncLoadForWrites(T o, Txn txn) {
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
 
         if (getId() == -1) {
             creationFuture = putAsync(o, txn);
+            return creationFuture;
         } else {
             dataFuture = getxAsync(getId(), o, txn);
+            return dataFuture;
         }
     }
 
-    void asyncUpsert(Txn txn) {
-        asyncUpsert(this, txn);
+    ListenableFuture asyncUpsert(Txn txn) {
+        return asyncUpsert(this, txn);
     }
 
-    <T extends DataStructure> void asyncUpsert(T o, Txn txn) {
+    <T extends DataStructure> ListenableFuture asyncUpsert(T o, Txn txn) {
         try {
             if (getId() == -1) {
                 creationFuture = putAsync(o, txn);
+                return creationFuture;
             } else {
-                store.set(o.getId(), o, txn.getStoreTransaction());
+                return setAsync(o.getId(), o, txn);
             }
         } catch (KryoException xcp) {
             // this error handling gives us a better clue on what exactly went wrong
@@ -154,20 +155,22 @@ abstract class DataStructure extends Sizable implements Persistable {
             o.write(bb);
             int actuallyUsed = bb.position();
             throw new RuntimeException("cache line " + toString() + " failed to upsert! Estimated size: [" + estimatedSize + "]; Actual size: [" + actuallyUsed + "]", xcp);
-        } catch (TimeoutException xcp) {
-            throw new RuntimeException(xcp);
         }
     }
 
-    <T extends DataStructure> void asyncDelete(Txn txn) {
+    <T extends DataStructure> ListenableFuture<Void> asyncDelete(Txn txn) {
         if (getId() > -1) {
-            deleteAsync(this, txn);
+            return deleteAsync(this, txn);
+        } else {
+            return null;
         }
     }
 
-    <T extends DataStructure> void asyncDelete(T o, Txn txn) {
+    <T extends DataStructure> ListenableFuture<Void> asyncDelete(T o, Txn txn) {
         if (getId() > -1) {
-            deleteAsync(o, txn);
+            return deleteAsync(o, txn);
+        } else {
+            return null;
         }
     }
 
@@ -234,6 +237,10 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
+    private <T extends DataStructure> ListenableFuture<Void> setAsync(long id, T o, Txn txn) {
+        return store.setAsync(id, o, txn.getStoreTransaction());
+    }
+
     private <T extends DataStructure> ListenableFuture<Persistable> getAsync(long id, T o) {
         return store.getAsync(id, o);
     }
@@ -246,8 +253,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         return store.putAsync(o, txn.getStoreTransaction());
     }
 
-    private <T extends DataStructure> void deleteAsync(T o, Txn txn) {
-        store.delAsync(o.getId(), txn.getStoreTransaction());
+    private <T extends DataStructure> ListenableFuture<Void> deleteAsync(T o, Txn txn) {
+        return store.delAsync(o.getId(), txn.getStoreTransaction());
     }
 
     // implementations get to decide how to serialize themselves
