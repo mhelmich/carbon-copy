@@ -20,12 +20,19 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 import co.paralleluniverse.galaxy.StoreTransaction;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.carbon.copy.data.structures.DataStructure.TIMEOUT_SECS;
 
 public class Txn {
     private static Logger logger = LoggerFactory.getLogger(Txn.class);
@@ -54,10 +61,19 @@ public class Txn {
             // this is pretty pessimistic
             // it might be better to do this as early as
             // when we are getting the lock on the object
-            changedObjects.stream()
+            List<ListenableFuture> f1 = changedObjects.stream()
                     .filter(ds -> !deletedObjects.contains(ds))
-                    .forEach(ds -> ds.asyncUpsert(ds, this));
-            deletedObjects.forEach(ds -> ds.asyncDelete(ds, this));
+                    .map(ds -> ds.asyncUpsert(ds, this))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            List<ListenableFuture> f2 = deletedObjects.stream()
+                    .map(ds -> ds.asyncDelete(ds, this))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            f1.forEach(f -> wait(f, TIMEOUT_SECS));
+            f2.forEach(f -> wait(f, TIMEOUT_SECS));
+
             store.commit(stxn);
         } catch (Exception xcp) {
             logger.error("Committing txn failed with {}", changedObjects);
@@ -65,6 +81,14 @@ public class Txn {
         } finally {
             changedObjects.clear();
             deletedObjects.clear();
+        }
+    }
+
+    private void wait(ListenableFuture f, int timeoutSecs) {
+        try {
+            f.get(timeoutSecs, TimeUnit.SECONDS);
+        } catch (Exception xcp) {
+            throw new RuntimeException(xcp);
         }
     }
 
