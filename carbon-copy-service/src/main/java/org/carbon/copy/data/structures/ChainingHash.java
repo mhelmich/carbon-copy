@@ -179,7 +179,10 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private DataBlock<Key, Value> getDataBlock(int hash, Txn txn) {
         DataBlock<Key, Value> db = hashTable.get(hash);
-        if (db != null) {
+        // since loading the hash doesn't automatically
+        // pull in all data blocks, we need to double-check whether a data block
+        // has been loaded by hash or not
+        if (db != null && !db.isLoaded()) {
             db.asyncLoadForWrites(txn);
             db.checkDataStructureRetrieved();
         }
@@ -188,7 +191,10 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private DataBlock<Key, Value> getDataBlock(int hash) {
         DataBlock<Key, Value> db = hashTable.get(hash);
-        if (db != null) {
+        // since loading the hash doesn't automatically
+        // pull in all data blocks, we need to double-check whether a data block
+        // has been loaded by hash or not
+        if (db != null && !db.isLoaded()) {
             db.asyncLoadForReads();
             db.checkDataStructureRetrieved();
         }
