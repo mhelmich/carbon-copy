@@ -195,6 +195,45 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
         assertTrue(values.isEmpty());
     }
 
+    @Test
+    public void testUnderflow() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn txn = txnManager.beginTransaction();
+        ChainingHash<String, Long> ch = dsFactory.newChainingHash(txn);
+        for (int i = 0; i < 100; i++) {
+            String key = "key_" + i;
+            Long value = r.nextLong();
+            ch.put(key, value, txn);
+            keys.add(key);
+            values.add(value);
+        }
+
+        txn.commit();
+        txn = txnManager.beginTransaction();
+        ch = dsFactory.loadChainingHashForWrites(ch.getId(), txn);
+        for (int i = 150; i < 10000; i++) {
+            String key = "key_" + i;
+            Long value = r.nextLong();
+            ch.put(key, value, txn);
+            keys.add(key);
+            values.add(value);
+        }
+
+        txn.commit();
+
+        ChainingHash<String, Long> ch2 = dsFactory.loadChainingHash(ch.getId());
+        ch2.keys().forEach(key -> {
+            assertTrue(keys.remove(key));
+            assertTrue(values.remove(ch2.get(key)));
+        });
+
+        assertTrue(keys.isEmpty());
+        assertTrue(values.isEmpty());
+    }
+
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {
         for (int i = from; i < to; i++) {
             assertEquals(Long.valueOf(i), hash.get(i));
