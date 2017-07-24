@@ -89,4 +89,39 @@ public class GalaxyTest {
         f2.get();
         g.store().commit(txn);
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void testTwoTransactionsNotPinnedException() throws InterruptedException, TimeoutException {
+        Random r = new Random();
+        byte[] originalBites = new byte[32768];
+        r.nextBytes(originalBites);
+        byte[] bites1 = new byte[32768];
+        r.nextBytes(bites1);
+        byte[] bites2 = new byte[32768];
+        r.nextBytes(bites2);
+
+        Grid g = Grid.getInstance(PEER_XML, PEER_PROPS);
+        StoreTransaction puttingTxn = g.store().beginTransaction();
+
+        long blockId = g.store().put(originalBites, puttingTxn);
+
+        StoreTransaction txn1 = g.store().beginTransaction();
+        StoreTransaction txn2 = g.store().beginTransaction();
+
+        g.store().getx(blockId, txn1);
+        g.store().getx(blockId, txn2);
+
+        g.store().set(blockId, bites1, txn1);
+        g.store().set(blockId, bites2, txn2);
+
+        g.store().commit(txn1);
+        // this should fail
+        // the two transactions trample on each others feet because
+        // the cache (the underlying galaxy class) keeps track of blocks by id
+        // and in this case we
+        // 1. pinned a block on this machine
+        // 2. committed the first transaction -> we unpinned the block
+        // 3. committing the second transaction and as prerequisite the cache checks whether the block is pinned ... which it isn't
+        g.store().commit(txn2);
+    }
 }
