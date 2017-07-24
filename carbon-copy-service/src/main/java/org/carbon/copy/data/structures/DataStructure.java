@@ -28,6 +28,8 @@ import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.javakaffee.kryoserializers.UUIDSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
 
 import java.io.ByteArrayInputStream;
@@ -35,6 +37,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +56,7 @@ import java.util.concurrent.TimeUnit;
  * an implementation of DataStructureFactory.
  */
 abstract class DataStructure extends Sizable implements Persistable {
+    private static final Logger logger = LoggerFactory.getLogger(DataStructure.class);
     static final int TIMEOUT_SECS = 5;
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
@@ -397,9 +401,26 @@ abstract class DataStructure extends Sizable implements Persistable {
             } else {
                 // this makes a copy of the byte buffer
                 byte[] compressed = Snappy.compress(buf);
-                out.put(compressed);
-                out.position(compressed.length);
-                out.limit(compressed.length);
+                try {
+                    if (compressed.length > out.capacity()) {
+                        // CRAP!!!
+                        // this puts us in a *very* uncomfortable situation
+                        // we simply can't write this block and need to explode this transaction
+                        String errorMessage = String.format("Data with length %d doesn't fit in buffer with size %d", compressed.length, out.capacity());
+                        throw new IllegalStateException(errorMessage);
+                    }
+                    out.position(0);
+                    // make sure the limit of the byte buffer has the length
+                    // of the byte array we want to put in there
+                    out.limit(compressed.length);
+                    // put my byte array at the beginning of the byte buffer
+                    out.put(compressed, 0, compressed.length);
+                    // galaxy expects the pointer to be where we stopped writing
+                    out.position(compressed.length);
+                } catch (BufferOverflowException | IllegalArgumentException | IllegalStateException xcp) {
+                    logger.error("Bytebuffer size [{}] pos [{}] lim [{}] compressed length [{}]", out.capacity(), out.position(), out.limit(), compressed.length, xcp);
+                    throw new IllegalStateException(xcp);
+                }
             }
         }
     }
