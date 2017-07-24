@@ -20,8 +20,6 @@ package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -33,8 +31,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class GalaxyChainingHashTest extends GalaxyBaseTest {
-    private static Logger logger = LoggerFactory.getLogger(GalaxyChainingHashTest.class);
-
     @Inject
     private InternalDataStructureFactory dsFactory;
 
