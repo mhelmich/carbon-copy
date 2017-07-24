@@ -81,12 +81,14 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
     public void put(Key key, Value val, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         innerPut(key, val, txn);
     }
 
     public boolean delete(Key key, Txn txn) {
         if (txn == null) throw new IllegalArgumentException("Txn cannot be null");
         checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
         return innerDelete(key, txn);
     }
 
