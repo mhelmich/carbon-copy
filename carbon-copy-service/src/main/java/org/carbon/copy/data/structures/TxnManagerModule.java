@@ -19,10 +19,11 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
 
 public class TxnManagerModule extends AbstractModule {
     @Override
     protected void configure() {
-        bind(TxnManager.class).to(TxnManagerImpl.class);
+        bind(TxnManager.class).to(TxnManagerImpl.class).in(Singleton.class);
     }
 }
