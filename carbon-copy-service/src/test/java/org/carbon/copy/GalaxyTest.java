@@ -19,6 +19,7 @@
 package org.carbon.copy;
 
 import co.paralleluniverse.galaxy.Grid;
+import co.paralleluniverse.galaxy.ItemState;
 import co.paralleluniverse.galaxy.StoreTransaction;
 import co.paralleluniverse.galaxy.TimeoutException;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -123,5 +125,30 @@ public class GalaxyTest {
         // 2. committed the first transaction -> we unpinned the block
         // 3. committing the second transaction and as prerequisite the cache checks whether the block is pinned ... which it isn't
         g.store().commit(txn2);
+    }
+
+    @Test
+    public void testAsyncStoreMethods() throws InterruptedException, java.util.concurrent.TimeoutException, ExecutionException {
+        Random r = new Random();
+        byte[] bites = new byte[32768];
+        r.nextBytes(bites);
+        Grid g = Grid.getInstance(PEER_XML, PEER_PROPS);
+        ListenableFuture<Long> f = g.store().putAsync(bites, null);
+        long id = f.get(5, TimeUnit.SECONDS);
+        assertTrue(id > 0);
+        g.store().release(id);
+
+        byte[] newBites = new byte[32768];
+        r.nextBytes(newBites);
+
+        boolean isPinned = g.store().tryPin(id, ItemState.OWNED, null);
+        assertTrue(isPinned);
+        ListenableFuture<Void> f2 = g.store().setAsync(id, newBites, null);
+        g.store().release(id);
+
+        Void v = f2.get(5, TimeUnit.SECONDS);
+        ListenableFuture<byte[]> f3 = g.store().getAsync(id);
+        byte[] readBites = f3.get(5, TimeUnit.SECONDS);
+        assertTrue(Arrays.equals(newBites, readBites));
     }
 }
