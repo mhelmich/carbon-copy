@@ -18,9 +18,10 @@
 
 package org.carbon.copy.data.structures;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 public interface TxnManager {
     Txn beginTransaction();
-    void doTransactionally(Consumer<Txn> lambda) throws Exception;
+    void doTransactionally(Consumer<Txn> lambda) throws IOException;
 }
