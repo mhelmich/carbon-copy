@@ -114,7 +114,6 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     private <T extends DataStructure> ListenableFuture<Persistable> asyncLoadForReads(T o) {
-        if (isLoaded()) return null;
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
@@ -127,7 +126,6 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     private <T extends DataStructure> ListenableFuture asyncLoadForWrites(T o, Txn txn) {
-        if (isLoaded()) return null;
         if (dataFuture != null) {
             throw new IllegalStateException("Can't override loadable future");
         }
