@@ -24,7 +24,14 @@ import com.google.inject.Inject;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public class TxnManagerImpl implements TxnManager {
+/**
+ * Galaxy only provides inter-node synchronization. The application (us) needs to implement intra-node synchronization.
+ * Today we create a new Txn object for each transaction we want to open. We map from data structures to byte[] ids
+ * and the transaction itself only thinks in terms of ids. It pins, releases, and rolls back those ids instead of data structures.
+ * This mechanism only allows for one galaxy transaction at a time per node. But that might not be bad for now.
+ * Later on you think about folding multiple transaction with disjoint change sets into the same transaction...maybe.
+ */
+class TxnManagerImpl implements TxnManager {
     private final Store store;
 
     @Inject
@@ -32,7 +39,7 @@ public class TxnManagerImpl implements TxnManager {
         this.store = store;
     }
 
-    public void doTransactionally(Consumer<Txn> lambda) throws Exception {
+    public void doTransactionally(Consumer<Txn> lambda) throws IOException {
         Txn txn = beginTransaction();
         try {
             lambda.accept(txn);
