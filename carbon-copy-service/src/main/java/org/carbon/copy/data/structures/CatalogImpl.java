@@ -165,6 +165,7 @@ class CatalogImpl implements Catalog {
         } catch (Exception xcp) {
             txn.rollback();
             txn.abort();
+            throw new IOException(xcp);
         }
     }
 
