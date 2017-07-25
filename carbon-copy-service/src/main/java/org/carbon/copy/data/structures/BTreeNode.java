@@ -103,7 +103,12 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
     //
     BTreeNode<Key, Value> getChildNodeAt(int idx) {
         BTreeNode<Key, Value> node = entries.get(idx).getChildNode();
-        node.asyncLoadForReads();
+        // we might be reading an uncommitted BTreeNode here
+        // the uncommitted node will be present but empty
+        // that will practically throw away all data in it
+        if (!node.isLoaded()) {
+            node.asyncLoadForReads();
+        }
         return node;
     }
 
