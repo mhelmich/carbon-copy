@@ -151,4 +151,29 @@ public class GalaxyTest {
         byte[] readBites = f3.get(5, TimeUnit.SECONDS);
         assertTrue(Arrays.equals(newBites, readBites));
     }
+
+    @Test
+    public void testAsyncPutMethod() throws InterruptedException, java.util.concurrent.TimeoutException, ExecutionException {
+        Random r = new Random();
+        byte[] bites = new byte[32768];
+        r.nextBytes(bites);
+        Grid g = Grid.getInstance(PEER_XML, PEER_PROPS);
+        ListenableFuture<Long> f = g.store().putAsync(bites, null);
+        long id = f.get(5, TimeUnit.SECONDS);
+        assertTrue(id > 0);
+        g.store().release(id);
+
+        byte[] newBites = new byte[32768];
+        r.nextBytes(newBites);
+
+        boolean isPinned = g.store().tryPin(id, ItemState.OWNED, null);
+        assertTrue(isPinned);
+        ListenableFuture<Void> f2 = g.store().setAsync(id, newBites, null);
+        g.store().release(id);
+
+        Void v = f2.get(5, TimeUnit.SECONDS);
+        ListenableFuture<byte[]> f3 = g.store().getAsync(id);
+        byte[] readBites = f3.get(5, TimeUnit.SECONDS);
+        assertTrue(Arrays.equals(newBites, readBites));
+    }
 }
