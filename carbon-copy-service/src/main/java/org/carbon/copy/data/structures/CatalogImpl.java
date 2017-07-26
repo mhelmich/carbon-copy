@@ -140,8 +140,15 @@ class CatalogImpl implements Catalog {
     private synchronized void initCatalogRootId() throws TimeoutException, IOException {
         if (catalogRootId != null) return;
 
+        // this will be a little bit dicey
+        // I'm starting two transactions locally in order to bootstrap myself
+        // I hope that's not a big problem since this method is synchronized
+        // and getRoot should get a lock on the block in question
+        // in other words: there should only be one thread at a time running this code
+        // the rollback should be taken of as well by virtue of rolling back on my implementation
+        // of a transaction in case the galaxy transaction fails
         Txn txn = txnManager.beginTransaction();
-        StoreTransaction internalTxn = txn.getStoreTransaction();
+        StoreTransaction internalTxn = store.beginTransaction();
         try {
             catalogRootId = store.getRoot(CATALOG_ROOT_NAME, internalTxn);
             ///////////////////////////////////////////////////////
@@ -161,6 +168,11 @@ class CatalogImpl implements Catalog {
                 namesToIdsId = readLongAtIndex(catalogRoot, 0);
                 tablesToIndexesId = readLongAtIndex(catalogRoot, 1);
             }
+
+            // commit on the galaxy transaction first
+            store.commit(internalTxn);
+            // if that fails, we can easily rollback the other transaction
+            // FIXME - if committing this transaction fails though, we're in a persistent failure state
             txn.commit();
         } catch (Exception xcp) {
             txn.rollback();
