@@ -19,6 +19,7 @@
 package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.common.io.Persistable;
+import co.paralleluniverse.galaxy.RefNotFoundException;
 import co.paralleluniverse.galaxy.Store;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -110,7 +111,11 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     ListenableFuture<Persistable> asyncLoadForReads() {
-        return asyncLoadForReads(this);
+        try {
+            return asyncLoadForReads(this);
+        } catch (RefNotFoundException xcp) {
+            throw new IllegalStateException(xcp);
+        }
     }
 
     private <T extends DataStructure> ListenableFuture<Persistable> asyncLoadForReads(T o) {
