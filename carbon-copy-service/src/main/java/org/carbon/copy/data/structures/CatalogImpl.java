@@ -164,7 +164,6 @@ class CatalogImpl implements Catalog {
             txn.commit();
         } catch (Exception xcp) {
             txn.rollback();
-            txn.abort();
             throw new IOException(xcp);
         }
     }
