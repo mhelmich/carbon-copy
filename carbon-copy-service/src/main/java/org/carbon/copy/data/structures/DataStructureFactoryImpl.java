@@ -25,13 +25,13 @@ import com.google.inject.Inject;
 class DataStructureFactoryImpl implements InternalDataStructureFactory {
     private final Store store;
     private final Cluster cluster;
-    private final Messenger myMessenger;
+    private final Messenger messenger;
 
     @Inject
-    DataStructureFactoryImpl(Store store, Cluster cluster, Messenger myMessenger) {
+    DataStructureFactoryImpl(Store store, Cluster cluster, Messenger messenger) {
         this.store = store;
         this.cluster = cluster;
-        this.myMessenger = myMessenger;
+        this.messenger = messenger;
     }
 
     @Override
@@ -106,7 +106,12 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
 
     @Override
     public <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn) {
-        return new DistHash<>(store, this, cluster, myMessenger, txn);
+        return new DistHash<>(store, this, cluster, messenger, txn);
+    }
+
+    @Override
+    public <Key extends Comparable<Key>, Value> DistHash<Key, Value> loadDistHash(long id) {
+        return new DistHash<>(store, this, cluster, messenger, id);
     }
 
     @Override

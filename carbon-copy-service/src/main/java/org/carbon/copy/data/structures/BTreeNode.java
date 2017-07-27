@@ -67,6 +67,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
 
         // happens after upsert is kicked off
         addObjectToObjectSize(numChildren);
+        txn.addToCreatedObjects(this);
     }
 
     int getNumChildren() {

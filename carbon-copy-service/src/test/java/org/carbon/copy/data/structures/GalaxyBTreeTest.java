@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -445,5 +446,18 @@ public class GalaxyBTreeTest extends GalaxyBaseTest {
             i++;
         }
         assertEquals(11, i);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNewBTreeRollback() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        BTree<String, Long> btree = dsFactory.newBTree(txn);
+        long blockId = btree.getId();
+        btree.put(UUID.randomUUID().toString(), r.nextLong(), txn);
+        txn.rollback();
+
+        // this call will throw
+        dsFactory.loadBTree(blockId);
     }
 }

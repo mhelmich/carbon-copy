@@ -77,15 +77,16 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
         checkDataStructureRetrieved();
         txn.addToChangedObjects(this);
+        txn.addToCreatedObjects(this);
     }
 
-    DistHash(Store store, Cluster cluster, Messenger messenger, long id) {
+    DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, long id) {
         super(store, id);
-        this.dsFactory = null;
+        this.dsFactory = dsFactory;
         this.cluster = cluster;
-        this.messenger = null;
+        this.messenger = messenger;
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
-        checkDataStructureRetrieved();
+        asyncLoadForReads();
     }
 
     public void put(Key key, Value val, Txn txn) {

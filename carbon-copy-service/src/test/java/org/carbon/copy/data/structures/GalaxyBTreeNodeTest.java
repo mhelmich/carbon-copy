@@ -21,6 +21,9 @@ package org.carbon.copy.data.structures;
 import com.google.inject.Inject;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -52,5 +55,18 @@ public class GalaxyBTreeNodeTest extends GalaxyBaseTest {
         assertEquals("booooyeah", node2.getEntryAt(1).getValue());
         assertEquals("one_more_key", node2.getEntryAt(2).getKey());
         assertEquals("testing_test", node2.getEntryAt(2).getValue());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNewBTreeNodeRollback() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        BTreeNode<String, Long> btree = dsFactory.newBTreeNode(2, txn);
+        long blockId = btree.getId();
+        btree.setEntryAt(0, new BTreeEntry<>(UUID.randomUUID().toString(), r.nextLong()), txn);
+        txn.rollback();
+
+        // this call will throw
+        dsFactory.loadBTreeNode(blockId);
     }
 }
