@@ -47,6 +47,7 @@ class BTree<Key extends Comparable<Key>, Value> extends DataStructure {
         root = newNode(0, txn);
         addObjectToObjectSize(height);
         root.checkDataStructureRetrieved();
+        txn.addToCreatedObjects(this);
     }
 
     BTree(Store store, InternalDataStructureFactory dsFactory, long id) {

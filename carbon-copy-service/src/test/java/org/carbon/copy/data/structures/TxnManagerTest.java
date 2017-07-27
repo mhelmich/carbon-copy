@@ -19,9 +19,9 @@
 package org.carbon.copy.data.structures;
 
 import com.google.inject.Inject;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -60,12 +60,7 @@ public class TxnManagerTest extends GalaxyBaseTest {
         map.forEach((key, value) -> assertEquals(value, db.get(key)));
     }
 
-    /**
-     * Rolling back an empty object fails with an NPE.
-     * I still need to find a way around that...
-     */
-    @Test
-    @Ignore
+    @Test(expected = IOException.class)
     public void testChangingExistingHash() throws Exception {
         AtomicLong id = new AtomicLong(-1L);
 

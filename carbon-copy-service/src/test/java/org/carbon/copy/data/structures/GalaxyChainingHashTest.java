@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -228,6 +229,19 @@ public class GalaxyChainingHashTest extends GalaxyBaseTest {
 
         assertTrue(keys.isEmpty());
         assertTrue(values.isEmpty());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNewChainingHashRollback() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        ChainingHash<String, Long> hash = dsFactory.newChainingHash(txn);
+        long blockId = hash.getId();
+        hash.put(UUID.randomUUID().toString(), r.nextLong(), txn);
+        txn.rollback();
+
+        // this call will throw
+        dsFactory.loadChainingHash(blockId);
     }
 
     private void assertPresent(int from, int to, ChainingHash<Integer, Long> hash) {

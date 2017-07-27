@@ -27,7 +27,6 @@ import java.util.Iterator;
  * It's merely a linked list of keys and values that is being shoved into a blob of data.
  */
 class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
-//    private static Logger logger = LoggerFactory.getLogger(DataBlock.class);
     /**
      * Internal node implementing a linked list
      * insertion is O(1)
@@ -43,6 +42,13 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
             this.value = value;
             this.next = next;
         }
+
+        // mostly done for debugging purposes
+        // remove this if it's too much
+        @Override
+        public String toString() {
+            return key.toString() + " - " + value.toString();
+        }
     }
 
     private Node first;
@@ -50,6 +56,7 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     DataBlock(Store store, Txn txn) {
         super(store);
         asyncUpsert(txn);
+        txn.addToCreatedObjects(this);
     }
 
     DataBlock(Store store, long id, boolean shouldLoad) {
@@ -127,16 +134,6 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
             }
         };
     }
-
-//    void getByteSize() throws IOException {
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream(size());
-//        SerializerOutputStream out = new SerializerOutputStream(baos);
-//        serialize(out);
-//        logger.info("raw byte size {}", baos.size());
-//        byte[] compressed = Snappy.compress(baos.toByteArray());
-//        logger.info("compressed byte size {}", compressed.length);
-//        logger.info("calculated byte size {}", size());
-//    }
 
     /////////////////////////////////////////////////////////////
     //////////////////////////////////////////////
