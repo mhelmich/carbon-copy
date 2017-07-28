@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,12 +83,14 @@ public class Txn {
             lockingFutures.addAll(
                     changedObjects.stream()
                             .filter(ds -> !deletedObjects.contains(ds))
+                            .sorted(Comparator.comparingLong(DataStructure::getId))
                             .map(ds -> asyncLockBlocks(ds.getId()))
                             .collect(Collectors.toList())
             );
 
             lockingFutures.addAll(
                     deletedObjects.stream()
+                            .sorted(Comparator.comparingLong(DataStructure::getId))
                             .map(ds -> asyncLockBlocks(ds.getId()))
                             .collect(Collectors.toList())
             );
