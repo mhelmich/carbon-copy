@@ -143,6 +143,21 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
         if (key == null) throw new IllegalArgumentException("key can't be null");
         addObjectToObjectSize(key);
         addObjectToObjectSize(val);
+
+        Node x = first;
+        // iterate through all keys :/
+        // I know, I know
+        while (x != null) {
+            if (x.key.equals(key)) {
+                x.value = val;
+                // we're done...let's get out of here
+                return;
+            }
+            x = x.next;
+        }
+
+        // we reached here that means, there is no node with the key in question
+        // hence we go and create a new node
         first = new Node(key, val, first);
     }
 
