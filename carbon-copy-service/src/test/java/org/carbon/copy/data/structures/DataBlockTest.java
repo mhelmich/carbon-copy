@@ -23,9 +23,13 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -196,6 +200,24 @@ public class DataBlockTest {
         assertTrue(keys.contains(5));
         assertTrue(keys.contains(7));
         assertFalse(keys.contains(2));
+    }
+
+    @Test
+    public void testOverrideKeys() {
+        DataBlock<Integer, Integer> db = newDataBlock();
+        db.innerPut(3, 3);
+        db.innerPut(5, 5);
+        db.innerPut(7, 7);
+
+        assertEquals(Integer.valueOf(3), db.get(3));
+        assertEquals(Integer.valueOf(5), db.get(5));
+        assertEquals(Integer.valueOf(7), db.get(7));
+
+        db.innerPut(5, 17);
+        assertEquals(Integer.valueOf(17), db.get(5));
+        List<Integer> allKeys = new LinkedList<>();
+        StreamSupport.stream(db.keys().spliterator(), false).forEach(allKeys::add);
+        assertEquals(1, Collections.frequency(allKeys, 5));
     }
 
     private <Key extends Comparable<Key>, Value> DataBlock<Key, Value> newDataBlock() {
