@@ -40,6 +40,10 @@ public class Txn {
     private static Logger logger = LoggerFactory.getLogger(Txn.class);
 
     private final Store store;
+    // the TxnManagerImpl is the place where local locking happens and multiple threads coordinate
+    // I'm explicitly touching the implementing class (as opposed to the interface)
+    // what looks like a breach of abstraction enables me to not expose the "internal" methods in the interface
+    private final TxnManagerImpl txnManager;
     // any data structures in this set will be upserted
     // this obviously doesn't work well when data is deleted ;)
     private final Set<DataStructure> changedObjects = new HashSet<>();
@@ -54,23 +58,25 @@ public class Txn {
     // you can't reuse a Txn object ever!
     private boolean txnEnded = false;
 
-    Txn(Store store) {
+    Txn(Store store, TxnManagerImpl txnManager) {
         this.store = store;
+        this.txnManager = txnManager;
     }
 
-    // All changes so far have been done in memory only with the notable exception of newly created data structures
-    // This method flushes them all into the galaxy cluster.
-    // As opposed to the rest of the application this class is well aware of what cache lines are and galaxy primitives -- this class only things in terms of ids.
-    // 1. get the exclusive, node-internal transaction lock
-    // 2. get a lock on all cache lines necessary
+    // As opposed to the rest of the application this class (as well as the TxnManager internally) is
+    // well aware of what cache lines are and galaxy primitives -- this class only thinks in terms of ids.
+    // Assumptions for things that happened already before entering this method
+    //   - remote and local locks for all blocks in this transaction have been acquired and are still being held
+    // What we do from then on is:
+    // 1. double-check we have the exclusive Galaxy lock for all cache lines necessary
     //    - call asyncGetX on all of the cache lines that have changed or will be deleted
-    // 3. make all changes to the cache lines that have changed
-    // 4. call delete on all cache lines that have been deleted
-    // 5. wait for all async calls to finish
+    // 2. make all changes to the cache lines that have changed
+    // 3. call delete on all cache lines that have been deleted
+    // 4. wait for all async calls to finish
     //    - if successful, just proceed
     //    - if unsuccessful, roll back all other changes
     //      - this might include deleting all newly created cache lines
-    // 6. release the exclusive, node-internal transaction lock
+    // 5. release the exclusive, node-internal transaction lock
     public void commit() throws IOException {
         if (txnEnded) {
             throw new IOException("Txn ended already! You can't reuse a Txn ever!");
@@ -78,24 +84,7 @@ public class Txn {
 
         try {
             // in a first step we try to acquire locks for all objects in our transaction
-            List<ListenableFuture> lockingFutures = new LinkedList<>();
-
-            lockingFutures.addAll(
-                    changedObjects.stream()
-                            .filter(ds -> !deletedObjects.contains(ds))
-                            .sorted(Comparator.comparingLong(DataStructure::getId))
-                            .map(ds -> asyncLockBlocks(ds.getId()))
-                            .collect(Collectors.toList())
-            );
-
-            lockingFutures.addAll(
-                    deletedObjects.stream()
-                            .sorted(Comparator.comparingLong(DataStructure::getId))
-                            .map(ds -> asyncLockBlocks(ds.getId()))
-                            .collect(Collectors.toList())
-            );
-
-            lockingFutures.forEach(f -> wait(f, TIMEOUT_SECS));
+            doubleCheckAllBlocksArePinned();
 
             // this is a very naive implementation for now
             // all the work is happening at commit time
@@ -128,6 +117,27 @@ public class Txn {
             releaseAllTheBlocksYouHave();
             txnEnded = true;
         }
+    }
+
+    private void doubleCheckAllBlocksArePinned() {
+        List<ListenableFuture> lockingFutures = new LinkedList<>();
+
+        lockingFutures.addAll(
+                changedObjects.stream()
+                        .filter(ds -> !deletedObjects.contains(ds))
+                        .sorted(Comparator.comparingLong(DataStructure::getId))
+                        .map(ds -> asyncLockBlocks(ds.getId()))
+                        .collect(Collectors.toList())
+        );
+
+        lockingFutures.addAll(
+                deletedObjects.stream()
+                        .sorted(Comparator.comparingLong(DataStructure::getId))
+                        .map(ds -> asyncLockBlocks(ds.getId()))
+                        .collect(Collectors.toList())
+        );
+
+        lockingFutures.forEach(f -> wait(f, TIMEOUT_SECS));
     }
 
     private void wait(ListenableFuture f, int timeoutSecs) {
@@ -180,6 +190,7 @@ public class Txn {
     // that this data structure needs to be serialized and updated
     void addToChangedObjects(DataStructure ds) {
         deletedObjects.remove(ds);
+        txnManager.lock(ds.getId());
         changedObjects.add(ds);
     }
 
@@ -187,6 +198,7 @@ public class Txn {
     // that this data structure will be deleted
     void addToDeletedObjects(DataStructure ds) {
         changedObjects.remove(ds);
+        txnManager.lock(ds.getId());
         deletedObjects.add(ds);
     }
 
@@ -194,6 +206,7 @@ public class Txn {
     // that this data structure is newly created just now.
     // This is mostly interesting for the rollback case.
     void addToCreatedObjects(DataStructure ds) {
+        txnManager.lock(ds.getId());
         createdObjects.add(ds);
     }
 
@@ -217,7 +230,10 @@ public class Txn {
         );
 
         try {
-            allTheLockedIds.forEach(store::release);
+            // this calls into the TxnManager to release blocks from this transaction
+            // we might still choose to hold on to the remote lock and pass the local lock
+            // to a different thread
+            allTheLockedIds.forEach(txnManager::release);
         } finally {
             changedObjects.clear();
             deletedObjects.clear();
