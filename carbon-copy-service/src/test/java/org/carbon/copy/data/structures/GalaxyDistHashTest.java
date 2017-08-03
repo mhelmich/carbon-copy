@@ -104,4 +104,17 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
         assertTrue(keys.isEmpty());
         assertTrue(values.isEmpty());
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNewDistHashRollback() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        DistHash<String, Long> db = dsFactory.newDistHash(txn);
+        long blockId = db.getId();
+        db.put(UUID.randomUUID().toString(), r.nextLong(), txn);
+        txn.rollback();
+
+        // this call will throw
+        dsFactory.loadDistHash(blockId);
+    }
 }

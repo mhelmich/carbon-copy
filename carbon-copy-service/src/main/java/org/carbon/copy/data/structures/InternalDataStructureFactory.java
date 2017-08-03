@@ -46,4 +46,5 @@ public interface InternalDataStructureFactory extends DataStructureFactory {
     <Key extends Comparable<Key>, Value> BTree<Key, Value> loadBTreeForWrites(long id, Txn txn);
 
     <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn);
+    <Key extends Comparable<Key>, Value> DistHash<Key, Value> loadDistHash(long id);
 }
