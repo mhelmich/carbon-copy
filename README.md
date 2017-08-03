@@ -78,7 +78,7 @@ On top of these DataBlocks, the other data structures were built:
 
 ### Query Execution
 
-All the heavy lifting of SQL parsing and optimizing is done by Apache Calcite. We're merely implementing their interfaces and feed their optimizer with data. A relatively optimized SQL operation then hits our API and we take it from there. Calcite doesn't know anything about distributed data structures or data placement in the cluster. We have to do all the work of finding out where data resides and what the smartest way to get it is.
+All the heavy lifting of SQL parsing and optimizing is done by Apache Calcite. We're merely implementing their interfaces and feed their optimizer with data. A relatively optimized SQL operation then hits our API and we take it from there. Calcite doesn't know anything about distributed data structures or data placement in the cluster. We have to do all the work of finding out where data resides and what the smartest way to get it is. Implementations to Calcites interfaces and the carbon copy implementation of their API can be found in [this package](carbon-copy-service/src/main/java/org/carbon/copy/calcite).
 
 ### Intra-Node Transaction Management
 
@@ -86,6 +86,10 @@ Galaxy maintains transactions between nodes in the cluster and makes sure only o
 That leaves it to us to implement some basic way of transaction isolation just to make sure different "transactions" don't trample all over each other.
 
 Bookkeeping of cache lines on galaxy side happens once per line. Meaning if different transactions pin the same block. There's only a record showing this block was pinned once. Committing transactions releases the cache lines question and the second transaction committing is left in the rain.
+
+Pretty much all of the transaction business happens in the TxnManager (as it should). The [TxnManager](carbon-copy-service/src/main/java/org/carbon/copy/data/structures/TxnManagerImpl.java) deals with local and remote locks and pinning. Local locks refer to locks that prevent different threads inside a node to trample on each other. Remote locks prevents different nodes inside the cluster to trample on each other. The notion was introduced as Galaxy only supports remote locks out of the box. Internal transactions boil down to a lock mutex that is being created on a per block basis. Each thread needs to acquire a local lock and remote lock in order to modify a DataBlock.
+
+The behavior is similar to a SQL query where the session waits until locks for all blocks in questions were acquired.
 
 ## How to build it
 

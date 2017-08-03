@@ -54,6 +54,7 @@ class ChainingHash<Key extends Comparable<Key>, Value> extends DataStructure {
         // make sure we have an id before we add this to the txn
         checkDataStructureRetrieved();
         txn.addToChangedObjects(this);
+        txn.addToCreatedObjects(this);
     }
 
     ChainingHash(Store store, InternalDataStructureFactory dsFactory, long id) {

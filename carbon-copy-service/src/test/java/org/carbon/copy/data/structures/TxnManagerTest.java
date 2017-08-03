@@ -18,19 +18,32 @@
 
 package org.carbon.copy.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TxnManagerTest extends GalaxyBaseTest {
+
+    @Inject
+    private Store store;
 
     @Inject
     private InternalDataStructureFactory dsFactory;
@@ -60,12 +73,7 @@ public class TxnManagerTest extends GalaxyBaseTest {
         map.forEach((key, value) -> assertEquals(value, db.get(key)));
     }
 
-    /**
-     * Rolling back an empty object fails with an NPE.
-     * I still need to find a way around that...
-     */
-    @Test
-    @Ignore
+    @Test(expected = IOException.class)
     public void testChangingExistingHash() throws Exception {
         AtomicLong id = new AtomicLong(-1L);
 
@@ -84,5 +92,114 @@ public class TxnManagerTest extends GalaxyBaseTest {
         assertNull(db.get(7));
         assertNull(db.get(3));
         assertNull(db.get(5));
+    }
+
+    @Test
+    public void testLocalLocksDoubleLockingSameThread() throws IOException {
+        long dbId = createNewDataBlockAndGetId();
+        TxnManagerImpl impl = (TxnManagerImpl) txnManager;
+
+        impl.lock(dbId);
+        impl.lock(dbId);
+    }
+
+    @Test
+    public void testLocalLocksDoubleLockingDifferentThreads() throws IOException, InterruptedException {
+        long dbId = createNewDataBlockAndGetId();
+        TxnManagerImpl impl = (TxnManagerImpl) txnManager;
+        ExecutorService es = Executors.newFixedThreadPool(1);
+
+        FailingToLockCallable callable = new FailingToLockCallable(dbId, impl);
+
+        try {
+            impl.lock(dbId);
+            es.submit(callable);
+            callable.exceptionLatch.await(60, TimeUnit.SECONDS);
+        } finally {
+            es.shutdown();
+        }
+    }
+
+    private static class FailingToLockCallable implements Callable<Void> {
+        private final CountDownLatch exceptionLatch = new CountDownLatch(1);
+        private final long blockId;
+        private final TxnManagerImpl impl;
+
+        FailingToLockCallable(long blockId, TxnManagerImpl impl) {
+            this.blockId = blockId;
+            this.impl = impl;
+        }
+
+        @Override
+        public Void call() throws Exception {
+            try {
+                impl.lock(blockId);
+            } catch (Exception xcp) {
+                exceptionLatch.countDown();
+            }
+            return null;
+        }
+    }
+
+    @Test
+    public void testLocalLocksPassingOnALockDifferentThreads() throws IOException, InterruptedException {
+        long dbId = createNewDataBlockAndGetId();
+        CountDownLatch addToWaitingListLatch = new CountDownLatch(1);
+        TxnManagerImpl impl = new TxnManagerImpl(store) {
+            @Override
+            protected void waitFor(Future f) throws InterruptedException, ExecutionException, TimeoutException {
+                addToWaitingListLatch.countDown();
+                super.waitFor(f);
+            }
+        };
+        ExecutorService es = Executors.newFixedThreadPool(1);
+        SucceedingToLockCallable succeedingCallable = new SucceedingToLockCallable(dbId, impl);
+
+        try {
+            impl.lock(dbId);
+            es.submit(succeedingCallable);
+            addToWaitingListLatch.await(60, TimeUnit.SECONDS);
+            impl.release(dbId);
+            assertTrue(succeedingCallable.gotLockLatch.await(60, TimeUnit.SECONDS));
+        } finally {
+            es.shutdown();
+        }
+
+        assertEquals(1, succeedingCallable.exceptionLatch.getCount());
+    }
+
+    private static class SucceedingToLockCallable implements Callable<Void> {
+        private final CountDownLatch exceptionLatch = new CountDownLatch(1);
+        private final CountDownLatch gotLockLatch = new CountDownLatch(1);
+        private final long blockId;
+        private final TxnManagerImpl impl;
+
+        SucceedingToLockCallable(long blockId, TxnManagerImpl impl) {
+            this.blockId = blockId;
+            this.impl = impl;
+        }
+
+        @Override
+        public Void call() throws Exception {
+            try {
+                impl.lock(blockId);
+                gotLockLatch.countDown();
+            } catch (Exception xcp) {
+                exceptionLatch.countDown();
+            }
+            return null;
+        }
+    }
+
+    private DataBlock<Integer, Integer> createNewDataBlock() throws IOException {
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<Integer, Integer> db = dsFactory.newDataBlock(txn);
+        db.put(17, 17, txn);
+        txn.commit();
+        return db;
+    }
+
+    private long createNewDataBlockAndGetId() throws IOException {
+        return createNewDataBlock().getId();
     }
 }

@@ -227,4 +227,52 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
             assertTrue(values.remove(db2.get(k)));
         });
     }
+
+    @Test
+    public void testConcurrentTransactionsDifferentBlocks() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<String, Long> db1 = dsFactory.newDataBlock(txn);
+        DataBlock<String, Long> db2 = dsFactory.newDataBlock(txn);
+        txn.commit();
+
+        Txn txn1 = txnManager.beginTransaction();
+        Txn txn2 = txnManager.beginTransaction();
+
+        db1.put(UUID.randomUUID().toString(), r.nextLong(), txn1);
+        db2.put(UUID.randomUUID().toString(), r.nextLong(), txn2);
+
+        txn1.commit();
+        txn2.commit();
+    }
+
+    @Test
+    public void testTransactionCanLockSameBlockAfterRelease() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(txn);
+        txn.commit();
+
+        Txn txn1 = txnManager.beginTransaction();
+        db.put(UUID.randomUUID().toString(), r.nextLong(), txn1);
+        txn1.commit();
+
+        Txn txn2 = txnManager.beginTransaction();
+        DataBlock<String, Long> db2 = dsFactory.loadDataBlockForWrites(db.getId(), txn2);
+        db2.put(UUID.randomUUID().toString(), r.nextLong(), txn2);
+        txn2.commit();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNewDataBlockRollback() throws IOException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(txn);
+        long blockId = db.getId();
+        db.put(UUID.randomUUID().toString(), r.nextLong(), txn);
+        txn.rollback();
+
+        // this call will throw
+        dsFactory.loadDataBlock(blockId);
+    }
 }
