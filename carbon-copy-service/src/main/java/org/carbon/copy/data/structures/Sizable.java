@@ -116,7 +116,7 @@ abstract class Sizable {
     }
 
     boolean isUnderMaxByteSize(int addSize) {
-        return Snappy.maxCompressedLength(magicSize() + addSize) <= getMaxByteSize();
+        return Snappy.maxCompressedLength(magicSize() + addSize) < getMaxByteSize();
     }
 
     int getMaxByteSize() {
