@@ -275,4 +275,39 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
         // this call will throw
         dsFactory.loadDataBlock(blockId);
     }
+
+    @Test
+    public void testSingleCommits() throws IOException {
+        Set<String> keys = new HashSet<>();
+        Set<Long> values = new HashSet<>();
+        Random r = new Random();
+
+        Txn creationTxn = txnManager.beginTransaction();
+        DataBlock<String, Long> db = dsFactory.newDataBlock(creationTxn);
+        creationTxn.commit();
+        String key;
+        Long value;
+        int i = 0;
+        boolean shouldDoIt;
+        do {
+            Txn txn = txnManager.beginTransaction();
+            DataBlock<String, Long> db2 = dsFactory.loadDataBlockForWrites(db.getId(), txn);
+            key = "key_" + i++;
+            value = r.nextLong();
+            shouldDoIt = db2.putIfPossible(key, value, txn);
+            if (shouldDoIt) {
+                keys.add(key);
+                values.add(value);
+                txn.commit();
+            } else {
+                txn.rollback();
+            }
+        } while (shouldDoIt && i < 7000);
+
+        DataBlock<String, Long> db3 = dsFactory.loadDataBlock(db.getId());
+        db3.keys().forEach(k -> {
+            assertTrue(keys.remove(k));
+            assertTrue(values.remove(db3.get(k)));
+        });
+    }
 }
