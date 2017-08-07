@@ -47,4 +47,5 @@ public interface InternalDataStructureFactory extends DataStructureFactory {
 
     <Key extends Comparable<Key>, Value> DistHash<Key, Value> newDistHash(Txn txn);
     <Key extends Comparable<Key>, Value> DistHash<Key, Value> loadDistHash(long id);
+    <Key extends Comparable<Key>, Value> DistHash<Key, Value> loadDistHashForWrites(long id, Txn txn);
 }

@@ -115,6 +115,11 @@ class DataStructureFactoryImpl implements InternalDataStructureFactory {
     }
 
     @Override
+    public <Key extends Comparable<Key>, Value> DistHash<Key, Value> loadDistHashForWrites(long id, Txn txn) {
+        return new DistHash(store, this, cluster, messenger, id, txn);
+    }
+
+    @Override
     public Table newTable(Table.Builder builder, Txn txn) {
         return new Table(store, this, builder, txn);
     }

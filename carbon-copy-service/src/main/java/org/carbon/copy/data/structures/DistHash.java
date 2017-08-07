@@ -63,10 +63,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private int hashTableSize;
     private HashMap<Short, Long> hashTable;
+    private final Object hashTableLock = new Object();
 
     DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, Txn txn) {
         super(store);
-        this.hashTableSize = cluster.getNodes().size();
+        this.hashTableSize = getNodes(cluster).size();
         this.hashTable = new HashMap<>(this.hashTableSize);
         asyncUpsert(txn);
 
@@ -85,8 +86,17 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         this.dsFactory = dsFactory;
         this.cluster = cluster;
         this.messenger = messenger;
-        this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
         asyncLoadForReads();
+        this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
+    }
+
+    DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, long id, Txn txn) {
+        super(store, id);
+        this.dsFactory = dsFactory;
+        this.cluster = cluster;
+        this.messenger = messenger;
+        asyncLoadForWrites(txn);
+        this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
     }
 
     public void put(Key key, Value val, Txn txn) {
@@ -194,9 +204,13 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
                 .asLong();
     }
 
-    protected Set<Short> getNodes() {
+    protected Set<Short> getNodes(Cluster cluster) {
         Set<Short> nodes = cluster.getNodes();
         return (nodes.size() > 0) ? nodes : ImmutableSet.of(cluster.getMyNodeId());
+    }
+
+    protected Set<Short> getNodes() {
+        return getNodes(cluster);
     }
 
     protected short getMyNodeId(Cluster cluster) {
@@ -221,6 +235,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         try {
             Integer tmp = (Integer) in.readObject();
             hashTableSize = (tmp != null) ? tmp : 0;
+            hashTable = new HashMap<>(hashTableSize);
 
             for (int i = 0; i < hashTableSize && in.available() > 0; i++) {
                 Short nodeId = (Short) in.readObject();
