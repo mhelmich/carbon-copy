@@ -240,8 +240,11 @@ abstract class DataStructure extends Sizable implements Persistable {
         if (compressedBB.remaining() > 0) {
             try (SerializerInputStream in = new SerializerInputStream(new UncompressingByteBufferInputStream(compressedBB))) {
                 deserialize(in);
-            } catch (IOException | KryoException xcp) {
-                throw new RuntimeException(xcp);
+            } catch (IOException | KryoException | IllegalStateException xcp) {
+                compressedBB.rewind();
+                byte[] uncompressed = UncompressingByteBufferInputStream.readFrom(compressedBB);
+                int uncompressedLength = uncompressed.length;
+                throw new RuntimeException("Byte Array [" + uncompressedLength + "] ByteBuffer [" + compressedBB.capacity() + "]", xcp);
             }
         }
     }
@@ -429,11 +432,11 @@ abstract class DataStructure extends Sizable implements Persistable {
     }
 
     static class UncompressingByteBufferInputStream extends ByteArrayInputStream {
-        UncompressingByteBufferInputStream(ByteBuffer in) throws IOException {
+        UncompressingByteBufferInputStream(ByteBuffer in) {
             super(readFrom(in));
         }
 
-        private static byte[] readFrom(ByteBuffer in) throws IOException {
+        private static byte[] readFrom(ByteBuffer in) {
             if (!in.isDirect()) {
                 throw new IllegalArgumentException("in is not direct ByteBuffer");
             } else {
@@ -441,7 +444,11 @@ abstract class DataStructure extends Sizable implements Persistable {
                 byte[] compressed = new byte[in.limit()];
                 in.get(compressed);
                 // and this makes another one
-                return Snappy.uncompress(compressed);
+                try {
+                    return Snappy.uncompress(compressed);
+                } catch (IOException xcp) {
+                    throw new IllegalStateException(xcp);
+                }
             }
         }
     }
