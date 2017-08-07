@@ -20,6 +20,7 @@ package org.carbon.copy;
 
 import co.paralleluniverse.galaxy.Grid;
 import co.paralleluniverse.galaxy.ItemState;
+import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.StoreTransaction;
 import co.paralleluniverse.galaxy.TimeoutException;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -28,8 +29,10 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -175,5 +178,35 @@ public class GalaxyTest {
         ListenableFuture<byte[]> f3 = g.store().getAsync(id);
         byte[] readBites = f3.get(5, TimeUnit.SECONDS);
         assertTrue(Arrays.equals(newBites, readBites));
+    }
+
+    @Test
+    public void testMessenger() throws InterruptedException, java.util.concurrent.TimeoutException, ExecutionException {
+        Random r = new Random();
+        byte[] bites = new byte[32768];
+        r.nextBytes(bites);
+        Grid g = Grid.getInstance(PEER_XML, PEER_PROPS);
+        ListenableFuture<Long> f = g.store().putAsync(bites, null);
+        long id = f.get(5, TimeUnit.SECONDS);
+        assertTrue(id > 0);
+        g.store().release(id);
+
+        byte[] messageBytes = new byte[2048];
+        r.nextBytes(messageBytes);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger numInvoked = new AtomicInteger(0);
+
+        Messenger mess = g.messenger();
+        mess.addMessageListener("testMessenger", (fromNode, bytes) -> {
+            assertTrue(Arrays.equals(messageBytes, bytes));
+            numInvoked.incrementAndGet();
+            latch.countDown();
+        });
+        ListenableFuture<Void> f2 = mess.sendToOwnerOfAsync(id, "testMessenger", messageBytes);
+        f2.get(5, TimeUnit.SECONDS);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(3000);
+        assertEquals(1, numInvoked.get());
     }
 }
