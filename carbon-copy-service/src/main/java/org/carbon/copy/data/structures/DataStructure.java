@@ -57,7 +57,6 @@ import java.util.concurrent.TimeUnit;
  * an implementation of DataStructureFactory.
  */
 abstract class DataStructure extends Sizable implements Persistable {
-    private static final Logger logger = LoggerFactory.getLogger(DataStructure.class);
     static final int TIMEOUT_SECS = 5;
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
@@ -238,11 +237,11 @@ abstract class DataStructure extends Sizable implements Persistable {
         // in that case we skip this code all together and don't call into
         // deserialize of the data structure either
         if (compressedBB.remaining() > 0) {
-            try (SerializerInputStream in = new SerializerInputStream(new UncompressingByteBufferInputStream(compressedBB))) {
+            try (SerializerInputStream in = new SerializerInputStream(new DecompressingByteBufferInputStream(compressedBB))) {
                 deserialize(in);
             } catch (IOException | KryoException | IllegalStateException xcp) {
                 compressedBB.rewind();
-                byte[] uncompressed = UncompressingByteBufferInputStream.readFrom(compressedBB);
+                byte[] uncompressed = DecompressingByteBufferInputStream.readFrom(compressedBB);
                 int uncompressedLength = uncompressed.length;
                 throw new RuntimeException("Byte Array [" + uncompressedLength + "] ByteBuffer [" + compressedBB.capacity() + "]", xcp);
             }
@@ -271,7 +270,18 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     // implementations get to decide how to serialize themselves
     // this is the call back that will be eventually invoked by Galaxy
+
+    /**
+     * NB: Design your data structure in a way that it doesn't require trailing zeros.
+     * All trailing zeros in this output stream will be purged and not serialized.
+     */
     abstract void serialize(SerializerOutputStream out);
+
+    /**
+     * Is called with the byte stream that galaxy delivered.
+     * Beware: The byte stream might contain an unknown number of trailing zeros. This is likely to be an artifact of decompression.
+     * Data structure deserialization needs to accommodate for that.
+     */
     abstract void deserialize(SerializerInputStream in);
 
     ////////////////////////////////////////////////
@@ -335,6 +345,11 @@ abstract class DataStructure extends Sizable implements Persistable {
             out.write(b);
         }
 
+        // TODO -- explore type-less serialization further
+        <T> void writeObject(T o, Class<T> klass) {
+            kryo.writeObjectOrNull(out, o, klass);
+        }
+
         void writeObject(Object o) {
             kryo.writeClassAndObject(out, o);
         }
@@ -357,7 +372,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         private final Kryo kryo;
         private final Input in;
 
-        private SerializerInputStream(InputStream i) {
+        // visible for testing
+        SerializerInputStream(InputStream i) {
             in = new Input(i);
             kryo = kryoPool.borrow();
         }
@@ -365,6 +381,11 @@ abstract class DataStructure extends Sizable implements Persistable {
         @Override
         public int read() throws IOException {
             return in.read();
+        }
+
+        // TODO -- explore type-less serialization further
+        <T> T readObject(Class<T> klass) {
+            return kryo.readObjectOrNull(in, klass);
         }
 
         Object readObject() {
@@ -397,6 +418,8 @@ abstract class DataStructure extends Sizable implements Persistable {
     // various byte representations
     // They will interfere with a ByteBuffer and Snappy
     static class CompressingByteBufferOutputStream extends ByteArrayOutputStream {
+        private static final Logger logger = LoggerFactory.getLogger(CompressingByteBufferOutputStream.class);
+
         CompressingByteBufferOutputStream(int size) {
             super(size);
         }
@@ -405,8 +428,10 @@ abstract class DataStructure extends Sizable implements Persistable {
             if (!out.isDirect()) {
                 throw new IllegalArgumentException("out is not direct ByteBuffer");
             } else {
+                // this makes a copy of the original buffer
+                byte[] trimmed = trimTrailingZeros(buf);
                 // this makes a copy of the byte buffer
-                byte[] compressed = Snappy.compress(buf);
+                byte[] compressed = Snappy.compress(trimmed);
                 try {
                     if (compressed.length > out.capacity()) {
                         // CRAP!!!
@@ -431,8 +456,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
-    static class UncompressingByteBufferInputStream extends ByteArrayInputStream {
-        UncompressingByteBufferInputStream(ByteBuffer in) {
+    static class DecompressingByteBufferInputStream extends ByteArrayInputStream {
+        DecompressingByteBufferInputStream(ByteBuffer in) {
             super(readFrom(in));
         }
 
@@ -443,13 +468,41 @@ abstract class DataStructure extends Sizable implements Persistable {
                 // this makes a copy of the byte buffer
                 byte[] compressed = new byte[in.limit()];
                 in.get(compressed);
-                // and this makes another one
                 try {
-                    return Snappy.uncompress(compressed);
+                    // beware: sometimes decompression leads to (an unknown number of) trailing zeros
+                    // those trailing zeros can cause a problem in the deserialize method of data structures
+                    // we can either a) take care of that in data structures or b) trim all trailing zeros here
+                    // but really only the data structure knows what the byte stream is supposed to look like
+                    // however you could expect trailing zeros to be an optional part of a data structure
+                    // which can have a default value
+                    // at this point I'm enforcing all trailing zeros being purged off and we see how this goes
+                    // decompression makes another copy
+                    byte[] buf = Snappy.uncompress(compressed);
+                    // and trimming trailing zeros as well *sigh*
+                    return trimTrailingZeros(buf);
                 } catch (IOException xcp) {
                     throw new IllegalStateException(xcp);
                 }
             }
         }
+    }
+
+    // helper function for the byte buffer streams to purge off trailing zeros
+    // I know it's risky to do this in case data structures expect trailing zeros
+    private static byte[] trimTrailingZeros(byte[] a) {
+        // TODO -- this code trims trailing zeros
+        // in order to get this to work though
+        // and at the same time wrap my head around size guesstimation of byte buffers
+        // I need to first teach kryo not to write a leading int for types first
+//        int i = a.length - 1;
+//        // we leave at one byte at the beginning of the array
+//        // deserialization logic might depend on at least one leading byte
+//        // to read metadata or something
+//        while (i > 0 && a[i] == 0) {
+//            --i;
+//        }
+//
+//        return Arrays.copyOf(a, i + 1);
+        return a;
     }
 }

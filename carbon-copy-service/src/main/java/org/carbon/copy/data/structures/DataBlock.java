@@ -20,6 +20,7 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -213,13 +214,20 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     @Override
     void deserialize(SerializerInputStream in) {
         boolean shouldDoIt;
-        do {
-            Key key = (Key) in.readObject();
-            Value value = (Value) in.readObject();
-            shouldDoIt = key != null && value != null;
-            if (shouldDoIt) first = new Node(key, value, first);
-            addObjectToObjectSize(key);
-            addObjectToObjectSize(value);
-        } while (shouldDoIt);
+        try {
+            do {
+                Key key = (Key) in.readObject();
+                shouldDoIt = key != null;
+                if (shouldDoIt) {
+                    // if we have a key, there must be a value
+                    Value value = (Value) in.readObject();
+                    first = new Node(key, value, first);
+                    addObjectToObjectSize(key);
+                    addObjectToObjectSize(value);
+                }
+            } while (shouldDoIt && in.available() > 0);
+        } catch (IOException xcp) {
+            throw new IllegalStateException(xcp);
+        }
     }
 }
