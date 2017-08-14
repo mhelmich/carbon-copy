@@ -22,7 +22,6 @@ import co.paralleluniverse.galaxy.Cluster;
 import co.paralleluniverse.galaxy.Messenger;
 import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +105,6 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
     }
 
     @Test
-    @Ignore
     public void testListAllKeys() throws IOException {
         Set<String> keys = new HashSet<>();
         Set<Long> values = new HashSet<>();
