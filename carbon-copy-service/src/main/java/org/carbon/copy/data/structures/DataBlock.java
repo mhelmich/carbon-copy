@@ -213,9 +213,9 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     @SuppressWarnings("unchecked")
     @Override
     void deserialize(SerializerInputStream in) {
-        boolean shouldDoIt;
+        boolean shouldDoIt = true;
         try {
-            do {
+            while (shouldDoIt && in.available() > 0) {
                 Key key = (Key) in.readObject();
                 shouldDoIt = key != null;
                 if (shouldDoIt) {
@@ -225,7 +225,7 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
                     addObjectToObjectSize(key);
                     addObjectToObjectSize(value);
                 }
-            } while (shouldDoIt && in.available() > 0);
+            }
         } catch (IOException xcp) {
             throw new IllegalStateException(xcp);
         }
