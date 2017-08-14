@@ -346,15 +346,20 @@ abstract class DataStructure extends Sizable implements Persistable {
             out.write(b);
         }
 
+        // being called to just write type information
+        // the usual pattern would look like this:
+        // 1. write type information by grabbing the first value -- use writeType(Class)
+        // 2. stash the same class object you pass in here
+        // 3. use the same class object to write your object data -- use writeObject(Object,Class)
         void writeType(Class klass) {
             kryo.writeClass(out, klass);
         }
 
-        // TODO -- explore type-less serialization further
         void writeObject(Object o, Class klass) {
             kryo.writeObjectOrNull(out, o, klass);
         }
 
+        // write an object and its type information into the byte stream
         void writeObject(Object o) {
             kryo.writeClassAndObject(out, o);
         }
@@ -388,15 +393,17 @@ abstract class DataStructure extends Sizable implements Persistable {
             return in.read();
         }
 
+        // read type information from the byte stream
         Class readType() {
             return kryo.readClass(in).getType();
         }
 
-        // TODO -- explore type-less serialization further
+        // read an object from the byte stream after you know the type
         <T> T readObject(Class<T> klass) {
             return kryo.readObjectOrNull(in, klass);
         }
 
+        // read an object that has accompanying type information in the byte stream
         Object readObject() {
             return kryo.readClassAndObject(in);
         }
