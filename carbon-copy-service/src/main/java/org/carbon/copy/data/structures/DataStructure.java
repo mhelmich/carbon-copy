@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.javakaffee.kryoserializers.UUIDSerializer;
 import org.slf4j.Logger;
@@ -57,7 +58,6 @@ import java.util.concurrent.TimeUnit;
  * an implementation of DataStructureFactory.
  */
 abstract class DataStructure extends Sizable implements Persistable {
-    private static final Logger logger = LoggerFactory.getLogger(DataStructure.class);
     static final int TIMEOUT_SECS = 5;
     private static KryoFactory kryoFactory = () -> {
         Kryo kryo = new Kryo();
@@ -238,11 +238,11 @@ abstract class DataStructure extends Sizable implements Persistable {
         // in that case we skip this code all together and don't call into
         // deserialize of the data structure either
         if (compressedBB.remaining() > 0) {
-            try (SerializerInputStream in = new SerializerInputStream(new UncompressingByteBufferInputStream(compressedBB))) {
+            try (SerializerInputStream in = new SerializerInputStream(new DecompressingByteBufferInputStream(compressedBB))) {
                 deserialize(in);
             } catch (IOException | KryoException | IllegalStateException xcp) {
                 compressedBB.rewind();
-                byte[] uncompressed = UncompressingByteBufferInputStream.readFrom(compressedBB);
+                byte[] uncompressed = DecompressingByteBufferInputStream.readFrom(compressedBB);
                 int uncompressedLength = uncompressed.length;
                 throw new RuntimeException("Byte Array [" + uncompressedLength + "] ByteBuffer [" + compressedBB.capacity() + "]", xcp);
             }
@@ -271,7 +271,18 @@ abstract class DataStructure extends Sizable implements Persistable {
 
     // implementations get to decide how to serialize themselves
     // this is the call back that will be eventually invoked by Galaxy
+
+    /**
+     * NB: Design your data structure in a way that it doesn't require trailing zeros.
+     * All trailing zeros in this output stream will be purged and not serialized.
+     */
     abstract void serialize(SerializerOutputStream out);
+
+    /**
+     * Is called with the byte stream that galaxy delivered.
+     * Beware: The byte stream might contain an unknown number of trailing zeros. This is likely to be an artifact of decompression.
+     * Data structure deserialization needs to accommodate for that.
+     */
     abstract void deserialize(SerializerInputStream in);
 
     ////////////////////////////////////////////////
@@ -335,6 +346,20 @@ abstract class DataStructure extends Sizable implements Persistable {
             out.write(b);
         }
 
+        // being called to just write type information
+        // the usual pattern would look like this:
+        // 1. write type information by grabbing the first value -- use writeType(Class)
+        // 2. stash the same class object you pass in here
+        // 3. use the same class object to write your object data -- use writeObject(Object,Class)
+        void writeType(Class klass) {
+            kryo.writeClass(out, klass);
+        }
+
+        void writeObject(Object o, Class klass) {
+            kryo.writeObjectOrNull(out, o, klass);
+        }
+
+        // write an object and its type information into the byte stream
         void writeObject(Object o) {
             kryo.writeClassAndObject(out, o);
         }
@@ -357,7 +382,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         private final Kryo kryo;
         private final Input in;
 
-        private SerializerInputStream(InputStream i) {
+        // visible for testing
+        SerializerInputStream(InputStream i) {
             in = new Input(i);
             kryo = kryoPool.borrow();
         }
@@ -367,6 +393,17 @@ abstract class DataStructure extends Sizable implements Persistable {
             return in.read();
         }
 
+        // read type information from the byte stream
+        Class readType() {
+            return kryo.readClass(in).getType();
+        }
+
+        // read an object from the byte stream after you know the type
+        <T> T readObject(Class<T> klass) {
+            return kryo.readObjectOrNull(in, klass);
+        }
+
+        // read an object that has accompanying type information in the byte stream
         Object readObject() {
             return kryo.readClassAndObject(in);
         }
@@ -397,6 +434,8 @@ abstract class DataStructure extends Sizable implements Persistable {
     // various byte representations
     // They will interfere with a ByteBuffer and Snappy
     static class CompressingByteBufferOutputStream extends ByteArrayOutputStream {
+        private static final Logger logger = LoggerFactory.getLogger(CompressingByteBufferOutputStream.class);
+
         CompressingByteBufferOutputStream(int size) {
             super(size);
         }
@@ -406,7 +445,7 @@ abstract class DataStructure extends Sizable implements Persistable {
                 throw new IllegalArgumentException("out is not direct ByteBuffer");
             } else {
                 // this makes a copy of the byte buffer
-                byte[] compressed = Snappy.compress(buf);
+                byte[] compressed = Snappy.rawCompress(buf, count);
                 try {
                     if (compressed.length > out.capacity()) {
                         // CRAP!!!
@@ -415,14 +454,17 @@ abstract class DataStructure extends Sizable implements Persistable {
                         String errorMessage = String.format("Data with length %d doesn't fit in buffer with size %d", compressed.length, out.capacity());
                         throw new IllegalStateException(errorMessage);
                     }
+
+                    // make the leading 4 bytes the size
+                    // of the compressed data
+                    byte[] header = Ints.toByteArray(compressed.length);
                     out.position(0);
                     // make sure the limit of the byte buffer has the length
                     // of the byte array we want to put in there
-                    out.limit(compressed.length);
+                    out.limit(header.length + compressed.length);
+                    out.put(header, 0, header.length);
                     // put my byte array at the beginning of the byte buffer
                     out.put(compressed, 0, compressed.length);
-                    // galaxy expects the pointer to be where we stopped writing
-                    out.position(compressed.length);
                 } catch (BufferOverflowException | IllegalArgumentException | IllegalStateException xcp) {
                     logger.error("Bytebuffer size [{}] pos [{}] lim [{}] compressed length [{}]", out.capacity(), out.position(), out.limit(), compressed.length, xcp);
                     throw new IllegalStateException(xcp);
@@ -431,8 +473,8 @@ abstract class DataStructure extends Sizable implements Persistable {
         }
     }
 
-    static class UncompressingByteBufferInputStream extends ByteArrayInputStream {
-        UncompressingByteBufferInputStream(ByteBuffer in) {
+    static class DecompressingByteBufferInputStream extends ByteArrayInputStream {
+        DecompressingByteBufferInputStream(ByteBuffer in) {
             super(readFrom(in));
         }
 
@@ -440,11 +482,29 @@ abstract class DataStructure extends Sizable implements Persistable {
             if (!in.isDirect()) {
                 throw new IllegalArgumentException("in is not direct ByteBuffer");
             } else {
+                // the leading 4 bytes are the length of
+                // the compressed array
+                byte[] header = new byte[4];
+                in.get(header);
+                int compressedArraySize = Ints.fromBytes(
+                        header[0],
+                        header[1],
+                        header[2],
+                        header[3]
+                );
+
                 // this makes a copy of the byte buffer
-                byte[] compressed = new byte[in.limit()];
+                byte[] compressed = new byte[compressedArraySize];
                 in.get(compressed);
-                // and this makes another one
                 try {
+                    // beware: sometimes decompression leads to (an unknown number of) trailing zeros
+                    // those trailing zeros can cause a problem in the deserialize method of data structures
+                    // we can either a) take care of that in data structures or b) trim all trailing zeros here
+                    // but really only the data structure knows what the byte stream is supposed to look like
+                    // however you could expect trailing zeros to be an optional part of a data structure
+                    // which can have a default value
+                    // at this point I'm enforcing all trailing zeros being purged off and we see how this goes
+                    // decompression makes another copy
                     return Snappy.uncompress(compressed);
                 } catch (IOException xcp) {
                     throw new IllegalStateException(xcp);
