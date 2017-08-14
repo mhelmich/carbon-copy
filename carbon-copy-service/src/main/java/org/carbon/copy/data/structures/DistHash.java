@@ -63,7 +63,6 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
     private int hashTableSize;
     private HashMap<Short, Long> hashTable;
-    private final Object hashTableLock = new Object();
 
     DistHash(Store store, InternalDataStructureFactory dsFactory, Cluster cluster, Messenger messenger, Txn txn) {
         super(store);
