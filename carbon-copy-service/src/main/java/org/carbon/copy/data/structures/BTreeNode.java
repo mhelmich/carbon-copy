@@ -141,10 +141,10 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
                 out.writeObject(entry.getKey());
                 out.writeObject(entry.getValue());
                 BTreeNode<Key, Value> n = entry.getChildNode();
-                out.writeObject((n != null) ? n.getId() : null);
+                out.writeObject((n != null) ? n.getId() : null, Long.class);
             }
         }
-        out.writeObject((next != null) ? next.getId() : null);
+        out.writeObject((next != null) ? next.getId() : null, Long.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -158,7 +158,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
             for (int i = 0; i < numChildren && in.available() > 0; i++) {
                 Key key = (Key) in.readObject();
                 Value value = (Value) in.readObject();
-                Long id = (Long) in.readObject();
+                Long id = in.readObject(Long.class);
 
                 addObjectToObjectSize(key);
                 addObjectToObjectSize(value);
@@ -169,7 +169,7 @@ class BTreeNode<Key extends Comparable<Key>, Value> extends DataStructure {
                 entries.set(i, entry);
             }
 
-            Long nextId = (Long) in.readObject();
+            Long nextId = in.readObject(Long.class);
             addObjectToObjectSize(nextId);
             if (nextId != null) {
                 next = dsFactory.loadBTreeNodeProxy(nextId);
