@@ -71,7 +71,7 @@ public class DataBlockTest {
         ByteBuffer bb = ByteBuffer.allocateDirect(DataStructure.MAX_BYTE_SIZE);
         db.write(bb);
         assertEquals(78, db.size());
-        assertEquals(1549, bb.position());
+        assertEquals(14, bb.position());
         assertTrue(DataStructure.MAX_BYTE_SIZE > bb.remaining());
 
         bb.rewind();

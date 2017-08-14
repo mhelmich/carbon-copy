@@ -20,6 +20,7 @@ package org.carbon.copy.data.structures;
 
 import co.paralleluniverse.galaxy.Store;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -202,24 +203,47 @@ class DataBlock<Key extends Comparable<Key>, Value> extends DataStructure {
     @Override
     void serialize(SerializerOutputStream out) {
         Node x = first;
-        while (x != null) {
-            out.writeObject(x.key);
-            out.writeObject(x.value);
-            x = x.next;
+        if (x != null) {
+            Class keyKlass = x.key.getClass();
+            Class valueKlass = x.value.getClass();
+            // write in the class information at the beginning
+            out.writeType(keyKlass);
+            out.writeType(valueKlass);
+            while (x != null) {
+                // subsequently just shove in the data
+                // without type information
+                out.writeObject(x.key, keyKlass);
+                out.writeObject(x.value, valueKlass);
+                x = x.next;
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     @Override
     void deserialize(SerializerInputStream in) {
-        boolean shouldDoIt;
-        do {
-            Key key = (Key) in.readObject();
-            Value value = (Value) in.readObject();
-            shouldDoIt = key != null && value != null;
-            if (shouldDoIt) first = new Node(key, value, first);
-            addObjectToObjectSize(key);
-            addObjectToObjectSize(value);
-        } while (shouldDoIt);
+        boolean shouldDoIt = true;
+        try {
+            if (in.available() >= 8) {
+                // slurp out type info first
+                Class<Key> keyKlass = in.readType();
+                Class<Value> valueKlass = in.readType();
+                while (shouldDoIt && in.available() > 0) {
+                    // on the upside we don't need to worry
+                    // about type information anymore :)
+                    Key key = in.readObject(keyKlass);
+                    shouldDoIt = key != null;
+                    if (shouldDoIt) {
+                        // if we have a key, there must be a value
+                        Value value = in.readObject(valueKlass);
+                        first = new Node(key, value, first);
+                        addObjectToObjectSize(key);
+                        addObjectToObjectSize(value);
+                    }
+                }
+            }
+        } catch (IOException xcp) {
+            throw new IllegalStateException(xcp);
+        }
     }
 }
