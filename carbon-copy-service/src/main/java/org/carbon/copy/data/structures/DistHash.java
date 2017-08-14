@@ -204,7 +204,7 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
                 .asLong();
     }
 
-    protected Set<Short> getNodes(Cluster cluster) {
+    private Set<Short> getNodes(Cluster cluster) {
         Set<Short> nodes = cluster.getNodes();
         return (nodes.size() > 0) ? nodes : ImmutableSet.of(cluster.getMyNodeId());
     }
@@ -369,6 +369,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
             this.messenger = messenger;
         }
 
+        @Override
+        protected String getTopic() {
+            return TOPIC;
+        }
+
         @SuppressWarnings("unchecked")
         @Override
         protected void handle(short fromNode, byte[] bytes) throws IOException {
@@ -411,6 +416,16 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         protected ChainingHash loadChainingHashForWrites(long blockId, Txn txn) {
             return dsFactory.get().loadChainingHashForWrites(blockId, txn);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof PutRequestMessageListener) {
+                PutRequestMessageListener theOther = (PutRequestMessageListener) obj;
+                return getTopic().equals(theOther.getTopic());
+            } else {
+                return false;
+            }
+        }
     }
 
     static class PutResponseMessageListener extends BaseMessageListener {
@@ -426,6 +441,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
 
         @Override
+        protected String getTopic() {
+            return TOPIC;
+        }
+
+        @Override
         protected void handle(short fromNode, byte[] bytes) {
             PutResponse resp = new PutResponse(bytes);
             complete(resp.requestId, resp.blockId);
@@ -433,6 +453,16 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
         protected void complete(UUID requestId, Object blockId) {
             messenger.get().complete(requestId, blockId);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof PutResponseMessageListener) {
+                PutResponseMessageListener theOther = (PutResponseMessageListener) obj;
+                return getTopic().equals(theOther.getTopic());
+            } else {
+                return false;
+            }
         }
     }
 
@@ -518,6 +548,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
             this.messenger = messenger;
         }
 
+        @Override
+        protected String getTopic() {
+            return TOPIC;
+        }
+
         @SuppressWarnings("unchecked")
         @Override
         protected void handle(short fromNode, byte[] bytes) throws IOException {
@@ -541,6 +576,16 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         protected void replyTo(short toNode, UUID requestId, BaseMessage messageToSend) {
             messenger.get().replyTo(toNode, requestId, messageToSend);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof GetRequestMessageListener) {
+                GetRequestMessageListener theOther = (GetRequestMessageListener) obj;
+                return getTopic().equals(theOther.getTopic());
+            } else {
+                return false;
+            }
+        }
     }
 
     static class GetResponseMessageListener extends BaseMessageListener {
@@ -556,6 +601,11 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         }
 
         @Override
+        protected String getTopic() {
+            return TOPIC;
+        }
+
+        @Override
         protected void handle(short fromNode, byte[] bytes) throws IOException {
             GetResponse resp = new GetResponse(bytes);
             complete(resp.requestId, resp.value);
@@ -563,6 +613,16 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
 
         protected void complete(UUID requestId, Object value) {
             messenger.get().complete(requestId, value);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof GetResponseMessageListener) {
+                GetResponseMessageListener theOther = (GetResponseMessageListener) obj;
+                return getTopic().equals(theOther.getTopic());
+            } else {
+                return false;
+            }
         }
     }
 }

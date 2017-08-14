@@ -18,5 +18,6 @@ abstract class BaseMessageListener implements MessageListener {
         }
     }
 
+    protected abstract String getTopic();
     protected abstract void handle(short fromNode, byte[] bytes) throws Exception;
 }
