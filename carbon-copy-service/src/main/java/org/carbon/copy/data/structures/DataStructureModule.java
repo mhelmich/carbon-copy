@@ -72,17 +72,28 @@ public class DataStructureModule extends AbstractModule {
         bind(Catalog.class).to(CatalogImpl.class);
 
         // attach all galaxy listeners
-        // there must be a better way to do this
-        g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC,
-                new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class)));
+        // there must be a better way to do this...
+        // so here's the deal -- obviously there are multiple listeners per topic allowed
+        // unfortunately that's exactly the behavior we do not want
+        // for that I hacked *sigh*
+        // 1. we call remove before adding to make sure a pre-existing listener is deleted
+        //    - that works because all listeners now override equals to:
+        //      - return true when you're the same class and the same topic
+        // 2. add the same listener again
+        DistHash.PutRequestMessageListener putReqListener = new DistHash.PutRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(TxnManager.class), getProvider(Messenger.class));
+        g.messenger().removeMessageListener(DistHash.PutRequestMessageListener.TOPIC, putReqListener);
+        g.messenger().addMessageListener(DistHash.PutRequestMessageListener.TOPIC, putReqListener);
 
-        g.messenger().addMessageListener(DistHash.PutResponseMessageListener.TOPIC,
-                new DistHash.PutResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
+        DistHash.PutResponseMessageListener putRespListener = new DistHash.PutResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class));
+        g.messenger().removeMessageListener(DistHash.PutResponseMessageListener.TOPIC, putRespListener);
+        g.messenger().addMessageListener(DistHash.PutResponseMessageListener.TOPIC, putRespListener);
 
-        g.messenger().addMessageListener(DistHash.GetRequestMessageListener.TOPIC,
-                new DistHash.GetRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(Messenger.class)));
+        DistHash.GetRequestMessageListener getReqListener = new DistHash.GetRequestMessageListener(getProvider(InternalDataStructureFactory.class), getProvider(Messenger.class));
+        g.messenger().removeMessageListener(DistHash.GetRequestMessageListener.TOPIC, getReqListener);
+        g.messenger().addMessageListener(DistHash.GetRequestMessageListener.TOPIC, getReqListener);
 
-        g.messenger().addMessageListener(DistHash.GetResponseMessageListener.TOPIC,
-                new DistHash.GetResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class)));
+        DistHash.GetResponseMessageListener getRespListener = new DistHash.GetResponseMessageListener(getProvider(org.carbon.copy.data.structures.Messenger.class));
+        g.messenger().removeMessageListener(DistHash.GetResponseMessageListener.TOPIC, getRespListener);
+        g.messenger().addMessageListener(DistHash.GetResponseMessageListener.TOPIC, getRespListener);
     }
 }
