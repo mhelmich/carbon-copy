@@ -30,7 +30,9 @@ import java.util.UUID;
  * (and hence their byte size needs to be calculated).
  */
 abstract class Sizable {
-    static final int MAX_BYTE_SIZE = 32768;
+    static final short MAX_BYTE_SIZE = 32768
+            - 2 // two leading bytes to decode the payload data size
+            ;
 
     // actually there's a +1 is for the kryo byte to identify the class
     // however I hope that compression and not having the +1
