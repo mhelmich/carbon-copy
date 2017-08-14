@@ -18,9 +18,11 @@
 
 package org.carbon.copy.data.structures;
 
+import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
@@ -38,6 +40,9 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
 
     @Inject
     private TxnManager txnManager;
+
+    @Inject
+    private Store store;
 
     @Test
     public void testBasicPutGet() throws IOException {
@@ -309,5 +314,33 @@ public class GalaxyDataBlockTest extends GalaxyBaseTest {
             assertTrue(keys.remove(k));
             assertTrue(values.remove(db3.get(k)));
         });
+    }
+
+    @Test
+    public void testDeserializationEdgeCasePlainEmptyStream() throws IOException {
+        byte[] uncompressedToRead = new byte[] {
+                2, -10, 1, 9, -10, 1
+        };
+
+        DataBlock<String, Long> db = new DataBlock<>(store, -99, false);
+        try (DataStructure.SerializerInputStream in = new DataStructure.SerializerInputStream(new ByteArrayInputStream(uncompressedToRead))) {
+            // this used to throw in case the stream was plain empty
+            // the reason is that kryo internally *might* write down a integer as type specifier
+            // and that type specifier needs to be present even for null values
+            db.deserialize(in);
+        }
+    }
+
+    @Test
+    public void testDeserializationEdgeCaseNullKeyButNoValue() throws IOException {
+        byte[] uncompressedToRead = new byte[] {
+                2, -10, 1, 9, -10, 1, 0
+        };
+
+        DataBlock<String, Long> db = new DataBlock<>(store, -99, false);
+        try (DataStructure.SerializerInputStream in = new DataStructure.SerializerInputStream(new ByteArrayInputStream(uncompressedToRead))) {
+            // this used to throw
+            db.deserialize(in);
+        }
     }
 }

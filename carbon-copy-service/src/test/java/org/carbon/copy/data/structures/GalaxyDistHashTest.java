@@ -24,18 +24,32 @@ import co.paralleluniverse.galaxy.Store;
 import com.google.inject.Inject;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GalaxyDistHashTest extends GalaxyBaseTest {
+    private static Logger logger = LoggerFactory.getLogger(GalaxyDistHashTest.class);
+
     @Inject
     private InternalDataStructureFactory dsFactory;
 
@@ -61,6 +75,20 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
         txn.commit();
 
         String receivedStr = dh.get(123);
+        assertEquals(str, receivedStr);
+    }
+
+    @Test
+    public void testPuttingValuesWithReloading() throws Exception {
+        String str = UUID.randomUUID().toString();
+
+        Txn txn = txnManager.beginTransaction();
+        DistHash<Integer, String> dh = dsFactory.newDistHash(txn);
+        dh.put(123, str, txn);
+        txn.commit();
+
+        DistHash<Integer, String> dh2 = dsFactory.loadDistHash(dh.getId());
+        String receivedStr = dh2.get(123);
         assertEquals(str, receivedStr);
     }
 
@@ -116,5 +144,84 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
 
         // this call will throw
         dsFactory.loadDistHash(blockId);
+    }
+
+    @Test
+    public void testMultiThreadedPuttingAndGetting() throws IOException, InterruptedException {
+        Random r = new Random();
+        Txn txn = txnManager.beginTransaction();
+        DistHash<Long, String> dh = dsFactory.newDistHash(txn);
+        long blockId = dh.getId();
+        long originalKey = r.nextLong();
+        dh.put(originalKey, UUID.randomUUID().toString(), txn);
+        txn.commit();
+
+        String originalValue = dsFactory.<Long, String>loadDistHash(blockId).get(originalKey);
+        assertNotNull(originalValue);
+
+        int count = 5;
+        ExecutorService es = Executors.newFixedThreadPool(count);
+        List<Future<Set<Long>>> futureList = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            Future<Set<Long>> f = es.submit(new PutterGetter(blockId, dsFactory, txnManager));
+            futureList.add(f);
+        }
+
+        es.shutdown();
+        es.awaitTermination(10, TimeUnit.SECONDS);
+
+        Set<Long> allKeys = new HashSet<>();
+        futureList.forEach(f -> {
+            try {
+                allKeys.addAll(f.get());
+            } catch (InterruptedException | ExecutionException e) {
+                fail();
+            }
+        });
+
+        DistHash<Long, String> dh2 = dsFactory.loadDistHash(blockId);
+        allKeys.forEach(k -> assertNotNull(dh2.get(k)));
+    }
+
+    private static class PutterGetter implements Callable<Set<Long>> {
+        private final Random rand = new Random();
+        private final long distHashId;
+        private final InternalDataStructureFactory dsFactory;
+        private final TxnManager txnManager;
+
+        PutterGetter(long distHashId, InternalDataStructureFactory dsFactory, TxnManager txnManager) {
+            this.distHashId = distHashId;
+            this.dsFactory = dsFactory;
+            this.txnManager = txnManager;
+        }
+
+        @Override
+        public Set<Long> call() throws Exception {
+            Txn txn = txnManager.beginTransaction();
+            DistHash<Long, String> dhRW = dsFactory.loadDistHashForWrites(distHashId, txn);
+            int count = 47;
+            Set<Long> putValues = new HashSet<>();
+            for (int i = 0; i < count; i++) {
+                long key = rand.nextLong();
+                putValues.add(key);
+                dhRW.put(key, UUID.randomUUID().toString(), txn);
+                logger.info("put {}", key);
+            }
+
+            try {
+                txn.commit();
+            } catch (IOException e) {
+                logger.error("Couldn't commit txn", e);
+            }
+
+            logger.info("Thread {} committed txn {}", Thread.currentThread().getName(), txn);
+
+            DistHash<Long, String> dhR = dsFactory.loadDistHash(distHashId);
+            putValues.forEach(l ->
+                    assertNotNull(dhR.get(l))
+            );
+
+            return putValues;
+        }
     }
 }
