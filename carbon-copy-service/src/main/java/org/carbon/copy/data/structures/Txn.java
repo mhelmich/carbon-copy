@@ -240,4 +240,9 @@ public class Txn {
             createdObjects.clear();
         }
     }
+
+    @Override
+    public String toString() {
+        return "ended? " + txnEnded + " - " + changedObjects + " - " + createdObjects + " - " + deletedObjects;
+    }
 }

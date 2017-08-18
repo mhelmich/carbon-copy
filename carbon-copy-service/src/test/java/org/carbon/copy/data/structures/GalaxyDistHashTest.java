@@ -173,6 +173,7 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
             try {
                 allKeys.addAll(f.get());
             } catch (InterruptedException | ExecutionException e) {
+                logger.error("Something went wrong :) {}", Thread.currentThread().getName(), e);
                 fail();
             }
         });
@@ -197,13 +198,15 @@ public class GalaxyDistHashTest extends GalaxyBaseTest {
         public Set<Long> call() throws Exception {
             Txn txn = txnManager.beginTransaction();
             DistHash<Long, String> dhRW = dsFactory.loadDistHashForWrites(distHashId, txn);
+            logger.info("got lock for {}", dhRW);
             int count = 47;
             Set<Long> putValues = new HashSet<>();
             for (int i = 0; i < count; i++) {
                 long key = rand.nextLong();
                 putValues.add(key);
-                dhRW.put(key, UUID.randomUUID().toString(), txn);
-                logger.info("put {}", key);
+                String value = UUID.randomUUID().toString();
+                dhRW.put(key, value, txn);
+                logger.info("put {} {}", key, value);
             }
 
             try {

@@ -96,6 +96,8 @@ class DistHash<Key extends Comparable<Key>, Value> extends DataStructure {
         this.messenger = messenger;
         asyncLoadForWrites(txn);
         this.hf = Hashing.murmur3_128(getMyNodeId(cluster));
+        checkDataStructureRetrieved();
+        txn.addToChangedObjects(this);
     }
 
     public void put(Key key, Value val, Txn txn) {

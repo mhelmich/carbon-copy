@@ -91,6 +91,7 @@ class TxnManagerImpl implements TxnManager {
                 Future<Void> f = new LocalAndRemoteLockFuture(remoteFuture, ll);
                 waitFor(f);
                 // recursive call into myself in order to attempt
+                // to get the lock in a second iteration
                 lock(blockId);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException xcp) {
@@ -129,7 +130,16 @@ class TxnManagerImpl implements TxnManager {
     }
 
     private LocalLock releaseLocalLock(long blockId) {
-        LocalLock ll = blocksToLocalLocks.remove(blockId);
+        // TODO
+//        LocalLock ll = blocksToLocalLocks.remove(blockId);
+        LocalLock ll = blocksToLocalLocks.get(blockId);
+        if (!ll.hasThreadsWaiting()) {
+            // TODO
+            // only remove this when there's nobody waiting to get the lock
+            // there is likely a race between
+            // two threads running hasThreadsWaiting->remove and putIfAbsent
+            blocksToLocalLocks.remove(blockId);
+        }
         ll.release();
         return ll;
     }
@@ -143,6 +153,8 @@ class TxnManagerImpl implements TxnManager {
      */
     private static class LocalLock {
         private final ReentrantLock innerLock = new ReentrantLock();
+        // TODO
+//        private final Condition innerLockCondition = innerLock.newCondition();
         private final long blockId;
 
         LocalLock(long blockId) {
@@ -159,14 +171,21 @@ class TxnManagerImpl implements TxnManager {
         }
 
         String getCurrentLockOwner() {
-            return blockId + " - " + innerLock.toString() + " - " + innerLock.getHoldCount();
+            return blockId + " - " + innerLock.toString() + " - " + innerLock.getHoldCount() + " - " + innerLock.getQueueLength();
         }
 
         void lock(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            // TODO
+//            boolean waitingTimeElapsed = innerLockCondition.await(timeout, unit);
+//            // try to behave like a future
+//            if (!waitingTimeElapsed) {
+//                throw new TimeoutException("I " + Thread.currentThread().getName() + " couldn't acquire lock from " + getCurrentLockOwner());
+//            }
+
             boolean haveLock = innerLock.tryLock(timeout, unit);
             // try to behave like a future
             if (!haveLock) {
-                throw new TimeoutException("Couldn't acquire lock from " + getCurrentLockOwner());
+                throw new TimeoutException("I " + Thread.currentThread().getName() + " couldn't acquire lock from " + getCurrentLockOwner());
             }
             if (innerLock.getHoldCount() > 1) {
                 logger.warn("LocalLock {} is being acquired more than once", getCurrentLockOwner());
@@ -174,11 +193,15 @@ class TxnManagerImpl implements TxnManager {
         }
 
         void lock() throws InterruptedException, ExecutionException {
+            // TODO
+//            innerLockCondition.await();
             innerLock.lockInterruptibly();
         }
 
         void release() {
             if (amIHoldingTheLock()) {
+                // TODO
+//                innerLockCondition.signalAll();
                 innerLock.unlock();
                 if (innerLock.getHoldCount() > 0) {
                     logger.warn("LocalLock {} is still being held more than once", getCurrentLockOwner());
@@ -186,6 +209,11 @@ class TxnManagerImpl implements TxnManager {
             } else {
                 throw new IllegalStateException("Can't release a lock you don't own: " + getCurrentLockOwner());
             }
+        }
+
+        @Override
+        public String toString() {
+            return getCurrentLockOwner();
         }
     }
 
@@ -240,6 +268,11 @@ class TxnManagerImpl implements TxnManager {
 
             remoteLockingFuture.get(stillToWait, TimeUnit.MILLISECONDS);
             return null;
+        }
+
+        @Override
+        public String toString() {
+            return remoteLockingFuture + " - " + localLock.getCurrentLockOwner();
         }
     }
 }

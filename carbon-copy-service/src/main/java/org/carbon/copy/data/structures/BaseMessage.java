@@ -13,7 +13,8 @@ import static org.carbon.copy.data.structures.DataStructure.kryoPool;
 
 abstract class BaseMessage {
 
-    protected UUID requestId;
+    // package-protected seems to be better than protected (according to intellij)
+    UUID requestId;
 
     In getIn(byte[] bytes) {
         return new In(kryoPool.borrow(), new Input(new ByteArrayInputStream(bytes)));
@@ -46,6 +47,21 @@ abstract class BaseMessage {
 
     abstract String getTopic();
     abstract void toBytes(Out out);
+
+    @Override
+    public final boolean equals(final Object obj) {
+        if (BaseMessage.class.isAssignableFrom(obj.getClass())) {
+            BaseMessage theOther = (BaseMessage) obj;
+            return (requestId != null && theOther.requestId != null) && requestId.equals(theOther.requestId);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public final int hashCode() {
+        return 31 + ((requestId == null) ? super.hashCode() : requestId.hashCode());
+    }
 
     static class Out implements AutoCloseable {
         private final Kryo kryo;
