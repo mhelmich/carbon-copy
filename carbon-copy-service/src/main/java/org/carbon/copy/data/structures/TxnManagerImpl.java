@@ -130,16 +130,22 @@ class TxnManagerImpl implements TxnManager {
     }
 
     private LocalLock releaseLocalLock(long blockId) {
-        // TODO
-//        LocalLock ll = blocksToLocalLocks.remove(blockId);
         LocalLock ll = blocksToLocalLocks.get(blockId);
-        if (!ll.hasThreadsWaiting()) {
-            // TODO
-            // only remove this when there's nobody waiting to get the lock
-            // there is likely a race between
-            // two threads running hasThreadsWaiting->remove and putIfAbsent
-            blocksToLocalLocks.remove(blockId);
-        }
+        // merge runs atomically
+        // if blockId does exist (which it always should)
+        // the function is run and a new value is computed
+        // however, the key is removed if null is returned
+        // https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentHashMap.html#merge-K-V-java.util.function.BiFunction-
+        blocksToLocalLocks.merge(blockId, ll, (lBlockId, lLocalLock) -> {
+            if (lLocalLock.hasThreadsWaiting()) {
+                // keep the mapping if the lock has waiters
+                return lLocalLock;
+            } else {
+                // delete the key if no threads are waiting
+                return null;
+            }
+        });
+
         ll.release();
         return ll;
     }
@@ -153,8 +159,6 @@ class TxnManagerImpl implements TxnManager {
      */
     private static class LocalLock {
         private final ReentrantLock innerLock = new ReentrantLock();
-        // TODO
-//        private final Condition innerLockCondition = innerLock.newCondition();
         private final long blockId;
 
         LocalLock(long blockId) {
@@ -175,33 +179,23 @@ class TxnManagerImpl implements TxnManager {
         }
 
         void lock(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            // TODO
-//            boolean waitingTimeElapsed = innerLockCondition.await(timeout, unit);
-//            // try to behave like a future
-//            if (!waitingTimeElapsed) {
-//                throw new TimeoutException("I " + Thread.currentThread().getName() + " couldn't acquire lock from " + getCurrentLockOwner());
-//            }
-
             boolean haveLock = innerLock.tryLock(timeout, unit);
             // try to behave like a future
             if (!haveLock) {
                 throw new TimeoutException("I " + Thread.currentThread().getName() + " couldn't acquire lock from " + getCurrentLockOwner());
             }
+
             if (innerLock.getHoldCount() > 1) {
                 logger.warn("LocalLock {} is being acquired more than once", getCurrentLockOwner());
             }
         }
 
         void lock() throws InterruptedException, ExecutionException {
-            // TODO
-//            innerLockCondition.await();
             innerLock.lockInterruptibly();
         }
 
         void release() {
             if (amIHoldingTheLock()) {
-                // TODO
-//                innerLockCondition.signalAll();
                 innerLock.unlock();
                 if (innerLock.getHoldCount() > 0) {
                     logger.warn("LocalLock {} is still being held more than once", getCurrentLockOwner());
