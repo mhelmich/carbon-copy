@@ -48,7 +48,7 @@ class TxnManagerImpl implements TxnManager {
     // this contains the node-wide set of blocks that are engaged in a transaction
     // if a transaction tries to pin a block that is already in this set,
     // the transaction steps on somebody else's foot
-    private static final ConcurrentHashMap<Long, LocalLock> blocksToLocalLocks = new ConcurrentHashMap<>(16, 0.75f, 8);
+    private static final ConcurrentHashMap<Long, LocalLock> blocksToLocalLocks = new ConcurrentHashMap<>(4, 0.75f, 64);
 
     private final Store store;
 
@@ -78,6 +78,8 @@ class TxnManagerImpl implements TxnManager {
     // and then there's the remote lock that is a galaxy feature ensuring that only one node in the cluster
     // has ownership of the block and is allowed to change it
     void lock(long blockId) {
+        // the local synchronization point is the local lock
+        // you need to get the local lock first!!
         LocalLock ll = tryGetLocalLock(blockId);
         Future<byte[]> remoteFuture = tryGetRemoteLock(blockId);
 
@@ -119,35 +121,29 @@ class TxnManagerImpl implements TxnManager {
     // meaning before releasing the remote lock as well, we check whether other threads want the lock as well
     // if so, we pass on the local lock while retaining the remote lock
     void release(long blockId) {
-        // release local lock first
-        LocalLock ll = releaseLocalLock(blockId);
-        // find out whether there's a waitlist for this block
-        // we might piggy back on this remote lock while we have it
-        if (!ll.hasThreadsWaiting()) {
-            // release remote lock
-            releaseRemoteLock(blockId);
-        }
-    }
-
-    private LocalLock releaseLocalLock(long blockId) {
         LocalLock ll = blocksToLocalLocks.get(blockId);
         // merge runs atomically
         // if blockId does exist (which it always should)
         // the function is run and a new value is computed
         // however, the key is removed if null is returned
         // https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentHashMap.html#merge-K-V-java.util.function.BiFunction-
-        blocksToLocalLocks.merge(blockId, ll, (lBlockId, lLocalLock) -> {
-            if (lLocalLock.hasThreadsWaiting()) {
+        blocksToLocalLocks.merge(blockId, ll, (oldValue, newValue) -> {
+            // find out whether there's a waitlist for this block
+            // we might piggy back on this remote lock while we have it
+            if (oldValue.hasThreadsWaiting()) {
+                oldValue.release();
                 // keep the mapping if the lock has waiters
-                return lLocalLock;
+                return oldValue;
             } else {
+                oldValue.release();
+                // this might not be crazy performant
+                // also keep in mind that for the duration of this call
+                // the entire segment of the concurrent hashmap is locked up
+                releaseRemoteLock(blockId);
                 // delete the key if no threads are waiting
                 return null;
             }
         });
-
-        ll.release();
-        return ll;
     }
 
     private void releaseRemoteLock(long blockId) {
