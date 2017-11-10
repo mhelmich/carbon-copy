@@ -30,12 +30,16 @@
         <module>carbon-copy-service</module>
         <module>carbon-copy-api</module>
         <module>carbon-copy-jdbc</module>
+        <module>carbon-copy-grid</module>
     </modules>
 
     <properties>
         <dropwizard.version>1.1.2</dropwizard.version>
         <jackson.version>2.8.9</jackson.version>
         <jetty.version>9.4.6.v20170531</jetty.version>
+        <guice.version>4.1.0</guice.version>
+        <junit.version>4.12</junit.version>
+        <mockito.version>1.10.19</mockito.version>
     </properties>
 
     <build>
